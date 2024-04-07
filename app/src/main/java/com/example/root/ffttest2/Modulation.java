@@ -1,5 +1,10 @@
 package com.example.root.ffttest2;
 
+import org.apache.commons.math3.complex.Complex;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class Modulation {
     public static short[] pskdemod_test(double[][] fft_spectrum, int[] valid_carrier) {
         short[] out = new short[valid_carrier.length];
@@ -26,6 +31,42 @@ public class Modulation {
         }
         return mod_dat;
     }
+
+    public static double[][] cssmod(short[] bits)// Generate data symbols
+    {
+        int bit_num = bits.length;
+
+        int[] symbols = new int[bit_num / Constants.SF];
+
+        for (int i = 0; i < symbols.length; i++) {
+            int symbol = 0;
+            for (int j = 0; j < Constants.SF; j++) {
+                symbol |= (bits[i *Constants.SF + j] << (Constants.SF - j - 1));
+            }
+            symbols[i] = symbol;
+        }
+
+
+
+        ArrayList<Complex> dataList = new ArrayList<>();
+        for (int symbol : symbols) {
+            Complex[] chirp = Utils.chirp(true, Constants.SF, Constants.BW, Constants.FS, symbol, 0, 0, 1); // Assuming this method exists and returns Complex[]
+            dataList.addAll(Arrays.asList(chirp));
+        }
+
+        // Convert ArrayList back to array
+        Complex[] data = new Complex[dataList.size()];
+        data = dataList.toArray(data);
+
+        double[][] mod_dat = new double[2][data.length];
+        for (int i = 0; i < data.length; i++){
+            mod_dat[0][i] = data[i].getReal();
+            mod_dat[1][i] = data[i].getImaginary();
+        }
+
+        return mod_dat;
+    }
+
 
 
     public static double[][] qpskmod(short[] bits) {
@@ -108,6 +149,19 @@ public class Modulation {
             }
         }
         return bits;
+    }
+
+    public static short[] differential_decoding(short[] initialCode, short[] encodedCode){
+        short[] decodedCode = new short[initialCode.length];
+
+        // Assuming the first code in the sequence is directly the initial code
+        // and each subsequent code is differentially encoded based on the previous code.
+        for (int i = 0; i < encodedCode.length; i++) {
+            // If encoded bit is 1, flip the bit from the initial/previous code, otherwise keep it the same.
+            decodedCode[i] = (encodedCode[i] == 1) ? (short)(1 - initialCode[i]) : initialCode[i];
+        }
+
+        return decodedCode;
     }
 
     public static short[][] qpskDemodulateDifferential(double[][][] symbols, int[] valid_bins) {

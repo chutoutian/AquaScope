@@ -143,86 +143,122 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
     }
 
     public int work(int m_attempt) {
-        double[] tx_preamble = PreambleGen.preamble_d();
-        if (Constants.user.equals(Constants.User.Alice)) {
-            int chirpLoopNumber = 0;
-            double[] feedback_signal = null;
-            do {
-                short[] sig = PreambleGen.sounding_signal_s();
-                FileOperations.writetofile(MainActivity.av, sig, Utils.genName(Constants.SignalType.Sounding, m_attempt) + ".txt");
+        //
+        if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt) {
+            double[] tx_preamble = PreambleGen.preamble_d();
+            if (Constants.user.equals(Constants.User.Alice)) {
+                int chirpLoopNumber = 0;
+                double[] feedback_signal = null;
+                do {
+                    short[] sig = PreambleGen.sounding_signal_s();
+                    FileOperations.writetofile(MainActivity.av, sig, Utils.genName(Constants.SignalType.Sounding, m_attempt) + ".txt");
 
-                Constants.sp1 = new AudioSpeaker(av, sig, Constants.fs, 0, sig.length, false);
-                appendToLog(Constants.SignalType.Sounding.toString());
-                Constants.sp1.play(Constants.volume);
+                    Constants.sp1 = new AudioSpeaker(av, sig, Constants.fs, 0, sig.length, false);
+                    appendToLog(Constants.SignalType.Sounding.toString());
+                    Constants.sp1.play(Constants.volume);
 
-                int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
-                sleep(sig_len+Constants.SendPad);
+                    int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
+                    sleep(sig_len+Constants.SendPad);
 
-                feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber);
-                chirpLoopNumber++;
-                if (chirpLoopNumber >= 3 || !Constants.work) {
-                    return -1;
-                }
-            } while (feedback_signal == null);
+                    feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber);
+                    chirpLoopNumber++;
+                    if (chirpLoopNumber >= 3 || !Constants.work) {
+                        return -1;
+                    }
+                } while (feedback_signal == null);
 
-            double[] seg = Utils.segment(feedback_signal,0,24000-1);
-            double[] xcorr_out = Utils.xcorr_online(tx_preamble, seg);
-
-            int[] valid_bins = FeedbackSignal.extractSignalHelper(feedback_signal, (int)xcorr_out[1], m_attempt);
-
-            if (Constants.SEND_DATA) {
-                appendToLog(Constants.SignalType.Data.toString());
-                if (valid_bins.length >= 1 && valid_bins[0] != -1) {
-                    sendData(valid_bins, m_attempt);
-                }
-                try {
-                    Thread.sleep(3000);
-                }
-                catch(Exception e){
-                    Log.e("asdf",e.toString());
-                }
-            }
-            return 0;
-        }
-        else if (Constants.user.equals(Constants.User.Bob)) {
-            int chirpLoopNumber = 0;
-            int[] valid_bins = null;
-            double[] sounding_signal = null;
-            do {
-                sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber);
-                if (sounding_signal == null) {
-                    return -1;
-                }
-
-                double[] seg = Utils.segment(sounding_signal,0,24000-1);
+                double[] seg = Utils.segment(feedback_signal,0,24000-1);
                 double[] xcorr_out = Utils.xcorr_online(tx_preamble, seg);
 
-                valid_bins = ChannelEstimate.extractSignal_withsymbol_helper(av, sounding_signal, (int)xcorr_out[1], m_attempt);
-                chirpLoopNumber++;
+                int[] valid_bins = FeedbackSignal.extractSignalHelper(feedback_signal, (int)xcorr_out[1], m_attempt);
 
-                if (!Constants.work) {
-                    return -1;
+                if (Constants.SEND_DATA) {
+                    appendToLog(Constants.SignalType.Data.toString());
+                    if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+                        sendData(valid_bins, m_attempt);
+                    }
+                    try {
+                        Thread.sleep(3000);
+                    }
+                    catch(Exception e){
+                        Log.e("asdf",e.toString());
+                    }
                 }
-            } while (valid_bins == null || valid_bins.length == 0 || valid_bins[0] == -1);
-
-            short[] feedback = FeedbackSignal.encodeFeedbackSignal(valid_bins[0], valid_bins[valid_bins.length - 1],
-                    Constants.fbackTime, true, m_attempt);
-
-            Constants.sp1 = new AudioSpeaker(av, feedback, Constants.fs, 0, feedback.length, false);
-            appendToLog(Constants.SignalType.Feedback.toString());
-            Constants.sp1.play(Constants.volume);
-
-            int stime = (int) ((feedback.length / (double) Constants.fs) * 1000);
-            sleep(stime+Constants.SendPad);
-
-            double[] data_signal = null;
-            if (Constants.SEND_DATA) {
-                data_signal = Utils.waitForChirp(Constants.SignalType.DataRx, m_attempt, 0);
+                return 0;
             }
-            if (data_signal!=null) {
-                Decoder.decode_helper(av, data_signal, valid_bins, m_attempt);
+            else if (Constants.user.equals(Constants.User.Bob)) {
+                int chirpLoopNumber = 0;
+                int[] valid_bins = null;
+                double[] sounding_signal = null;
+                do {
+                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber);
+                    if (sounding_signal == null) {
+                        return -1;
+                    }
+
+                    double[] seg = Utils.segment(sounding_signal,0,24000-1);
+                    double[] xcorr_out = Utils.xcorr_online(tx_preamble, seg);
+
+                    valid_bins = ChannelEstimate.extractSignal_withsymbol_helper(av, sounding_signal, (int)xcorr_out[1], m_attempt);
+                    chirpLoopNumber++;
+
+                    if (!Constants.work) {
+                        return -1;
+                    }
+                } while (valid_bins == null || valid_bins.length == 0 || valid_bins[0] == -1);
+
+                short[] feedback = FeedbackSignal.encodeFeedbackSignal(valid_bins[0], valid_bins[valid_bins.length - 1],
+                        Constants.fbackTime, true, m_attempt);
+
+                Constants.sp1 = new AudioSpeaker(av, feedback, Constants.fs, 0, feedback.length, false);
+                appendToLog(Constants.SignalType.Feedback.toString());
+                Constants.sp1.play(Constants.volume);
+
+                int stime = (int) ((feedback.length / (double) Constants.fs) * 1000);
+                sleep(stime+Constants.SendPad);
+
+                double[] data_signal = null;
+                if (Constants.SEND_DATA) {
+                    data_signal = Utils.waitForChirp(Constants.SignalType.DataRx, m_attempt, 0);
+                }
+                if (data_signal!=null) {
+                    Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
+                }
+                return 0;
             }
-            return 0;
+        }
+        else if (Constants.scheme == Constants.Modulation.LoRa || Constants.scheme == Constants.Modulation.OFDM_freq_all){
+            if (Constants.user.equals(Constants.User.Alice)) {
+                int[] valid_bins = new int[]{20,49};
+
+                if (Constants.SEND_DATA) {
+                    appendToLog(Constants.SignalType.Data.toString());
+                    if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+                        sendData(valid_bins, m_attempt);
+                    }
+                    try {
+                        Thread.sleep(3000);
+                    } catch (Exception e) {
+                        Log.e("asdf", e.toString());
+                    }
+                }
+            }
+            else if (Constants.user.equals(Constants.User.Bob)){
+                int[] valid_bins = new int[]{20,49};
+
+                double[] data_signal = null;
+                if (Constants.SEND_DATA) {
+                    // need new packet detection algorithms
+                    data_signal = Utils.waitForChirp(Constants.SignalType.DataRx, m_attempt, 0);
+                }
+
+
+
+                if (data_signal!=null) {
+                    Decoder.decode_helper(av, data_signal, valid_bins, m_attempt);
+                }
+                return 0;
+            }
         }
         return 0;
     }
@@ -235,6 +271,21 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                  Constants.SignalType sigType,Constants.ExpType expType) {
         short[] bits = SymbolGeneration.getCodedBits(m_attempt);
 
+        byte[] test_byte = {1,2,3,4,5};
+        int[] encoded_symbol = SymbolGeneration.encode_LoRa(test_byte,m_attempt);
+        //short[] sig_tx = SymbolGeneration.modulate_LoRa(encoded_symbol,m_attempt);
+
+        //double[] sig_rx = new double[sig_tx.length];
+        //for (int i = 0; i < sig_rx.length; i++)
+        //{
+        //    sig_rx[i] = (double) sig_tx[i] / 32767;
+        //}
+
+        //int[] demodulated_symbol = Decoder.demodulate(sig_rx, m_attempt);
+
+
+
+
         String out="";
         for (int i = 0; i < bits.length; i++) {
             out+=bits[i]+"";
@@ -243,9 +294,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         short[] txsig=SymbolGeneration.generateDataSymbols(bits, valid_bins, Constants.data_symreps, true, sigType,m_attempt);
 
         FileOperations.writetofile(MainActivity.av, txsig,
-                Utils.genName(Constants.SignalType.DataAdapt, m_attempt) + ".txt");
+                Utils.genName(sigType, m_attempt) + ".txt");
 
-        Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs, 0, txsig.length, false);
+        Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs, 0, txsig.length, false); // this is where I leave to solve Mar. 19.
         Constants.sp1.play(Constants.volume);
 
         int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
@@ -324,11 +375,30 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         msgbits += traceDepth;
 
         // adapt//////////////////////////////////////////////
-        send_data_helper(msgbits,
-                valid_bins, m_attempt,
-                Constants.SignalType.DataAdapt, Constants.ExpType.PER);
-        Log.e("numbits","adapt "+msgbits);
-        // full bandwidth//////////////////////////////////////////////
+        if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt )
+        {
+            send_data_helper(msgbits,
+                    valid_bins, m_attempt,
+                    Constants.SignalType.DataAdapt, Constants.ExpType.PER);
+            Log.e("numbits","adapt "+msgbits);
+        }
+        else if(Constants.scheme == Constants.Modulation.OFDM_freq_all || Constants.scheme == Constants.Modulation.LoRa)
+        {
+            // full bandwidth////////////////////////////////////////////// utilize the full bandwidth
+            int[] end_bins = new int[]{49};
+            Constants.SignalType[] sigTypes = new Constants.SignalType[]{
+                    //Constants.SignalType.DataFull_1000_4000,
+                    Constants.SignalType.DataFull_1000_2500,
+                    //Constants.SignalType.DataFull_1000_1500,
+            };
+            for (int i = 0; i < end_bins.length; i++) {
+                int[] bins = generateBins(20, end_bins[i]);
+                send_data_helper(bins.length * Constants.Nsyms, bins, m_attempt,
+                        sigTypes[i],Constants.ExpType.BER);
+            }
+        }
+
+
     }
 
     public static void sleep(int s) {

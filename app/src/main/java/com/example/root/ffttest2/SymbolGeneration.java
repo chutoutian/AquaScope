@@ -1,12 +1,18 @@
 package com.example.root.ffttest2;
 
 import static com.example.root.ffttest2.Constants.LOG;
+import static com.example.root.ffttest2.Constants.besselFiltOffset;
+import static com.example.root.ffttest2.Constants.tv2;
 
 import android.app.Activity;
 import android.util.Log;
 
+import org.apache.commons.math3.complex.Complex;
+
 import java.util.Arrays;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SymbolGeneration {
     public static short[] generatePreamble(short[] bits, int[] valid_carrier,
@@ -104,16 +110,40 @@ public class SymbolGeneration {
                                               int symreps, boolean preamble, Constants.SignalType sigType,
                                               int m_attempt) {
         int numrounds = 0;
-        if (valid_carrier.length > 0) {
-            numrounds = (int) Math.ceil((double)bits.length/valid_carrier.length);
+        int symlen = 0;
+        if (Constants.scheme == Constants.Modulation.LoRa)
+        {
+            numrounds = (int) Math.ceil((double)bits.length/Constants.SF);
+            Log.e("sym",bits.length+","+Constants.SF+","+numrounds+","+Constants.Ns_lora);
+            symlen = Constants.Ns_lora*symreps;
         }
-        Log.e("sym",bits.length+","+valid_carrier.length+","+numrounds+","+Constants.Ns+","+Constants.subcarrier_number_default);
+        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+        {
+            if (valid_carrier.length > 0) {
+                numrounds = (int) Math.ceil((double)bits.length/valid_carrier.length);
+            }
+            Log.e("sym",bits.length+","+valid_carrier.length+","+numrounds+","+Constants.Ns+","+Constants.subcarrier_number_default);
 
-        int symlen = (Constants.Ns+Constants.Cp)*symreps + Constants.Gi;
+            symlen = (Constants.Ns+Constants.Cp)*symreps + Constants.Gi;
+        }
 
-        int siglen = symlen*(numrounds+1);
+
+
+
+
+        //int symlen = (Constants.Ns+Constants.Cp)*symreps + Constants.Gi;
+
+
+        int siglen = symlen*numrounds;
         if (preamble) {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
+        }
+        if (Constants.scheme == Constants.Modulation.LoRa) {
+            siglen += Constants.Ns_lora * 2;
+        }
+        else if(Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+        {
+            siglen += symlen;
         }
         short[] txsig = new short[siglen];
 
@@ -127,20 +157,42 @@ public class SymbolGeneration {
             counter += Constants.ChirpGap;
         }
 
-        // add training symbol
-        short[][] bit_list = new short[numrounds+1][valid_carrier.length];
 
-        short[] training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
 
-        short[] symbol = generate_helper(
-                training_bits,
-                valid_carrier,
-                symreps,
-                sigType);
-        for (Short s : symbol) {
-            txsig[counter++] = s;
+        short[][] bit_list = null;
+        short[] symbol;
+
+        if (Constants.scheme == Constants.Modulation.LoRa) {
+            // add downchirp and upchirp
+            short[] preamble_up = Utils.GeneratePreamble_LoRa(true, 30);
+            short[] preamble_down = Utils.GeneratePreamble_LoRa(true, 30);
+
+            for (Short s : preamble_up) {
+                txsig[counter++] = s;
+            }
+
+            for (Short s : preamble_down) {
+                txsig[counter++] = s;
+            }
+
+            bit_list = new short[numrounds+1][Constants.SF];
+            bit_list[0] = new short[]{0,0,1,1,1,1,0};
         }
-        bit_list[0] = training_bits;
+        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all ){
+            // add training symbol
+            short[] training_bits = new short[0];
+            bit_list = new short[numrounds+1][valid_carrier.length];
+            training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
+            symbol = generate_helper(
+                    training_bits,
+                    valid_carrier,
+                    symreps,
+                    sigType);
+            for (Short s : symbol) {
+                txsig[counter++] = s;
+            }
+            bit_list[0] = training_bits;
+        }
 
         int bit_counter = 0;
         Log.e("symbol", sigType.toString());
@@ -164,7 +216,17 @@ public class SymbolGeneration {
             numberOfDataBits += bits_seg.length+", ";
             bitsWithoutPadding += Utils.trim(Arrays.toString(bits_seg))+", ";
 
-            short[] pad_bits = Utils.random_array(valid_carrier.length-bits_seg.length);
+            short[] pad_bits = new short[0];
+            if (Constants.scheme == Constants.Modulation.LoRa)
+            {
+                pad_bits = Utils.random_array(Constants.SF-bits_seg.length);
+            }
+            else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+            {
+                pad_bits = Utils.random_array(valid_carrier.length-bits_seg.length);
+            }
+
+
             Log.e("symbol", "sym "+i+": "+bits_seg.length+","+pad_bits.length);
 
             short[] tx_bits = Utils.concat_short(bits_seg,pad_bits);
@@ -179,6 +241,13 @@ public class SymbolGeneration {
                 for (int j = 0; j < tx_bits.length; j++) {
                     bit_list[i+1][j] = tx_bits[j];
                 }
+            }
+
+            if (Constants.GRAY_CODING)
+            {
+                int con_symbol = Utils.BitsToSymbols(tx_bits);
+                con_symbol = gray_decoding(con_symbol);
+                tx_bits = Utils.symbolsToBits(con_symbol);
             }
 
             symbol = generate_helper(
@@ -229,7 +298,15 @@ public class SymbolGeneration {
     }
 
     public static short[] getTrainingSymbol(int[] valid_carrier) {
-        short[] training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
+        short[] training_bits = new short[0];
+        if (Constants.scheme == Constants.Modulation.LoRa)
+        {
+            training_bits = Utils.segment(Constants.pn60_bits, 0, Constants.SF - 1);
+        }
+        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+        {
+            training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
+        }
         short[] symbol = generate_helper(
                 training_bits,
                 valid_carrier,
@@ -250,39 +327,53 @@ public class SymbolGeneration {
 
     public static short[] mod(int bound1, int bound2, int[] valid_carrier, short[] bits, int subnum, Constants.SignalType sigType) {
         double[][] mod;
-        //if (sigType.equals(Constants.SignalType.Sounding)){
-        mod = Modulation.pskmod(bits);
-        //}
-        //else {
-        //    mod = Modulation.qpskmod(bits);
-        //}
-        if (bits.length < subnum) {
-            bound2 = bound1+bits.length-1;
+        short[] symbol = new short[0];
+        if (Constants.scheme == Constants.Modulation.LoRa)
+        {
+            mod = Modulation.cssmod(bits);
+            symbol = new short[mod[0].length * 2];
+            for (int i = 0, j = 0; i < mod[0].length; i++) {
+                symbol[j++] = (short) (mod[0][i] * 32767.0);
+                symbol[j++] = (short) (mod[1][i] * 32767.0);
+            }
         }
+        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+        {
+            mod = Modulation.pskmod(bits);
+            if (bits.length < subnum) {
+                bound2 = bound1+bits.length-1;
+            }
+
+            double[][] sig = new double[2][Constants.Ns];
+            int counter=0;
+            for (int i = bound1; i <= bound2; i++) {
+                if (contains(valid_carrier, i)) {
+                    sig[0][i] = mod[0][counter];
+                    sig[1][i] = mod[1][counter++];
+                }
+            }
+
+            double[][] symbol_complex = Utils.ifftnative2(sig);
+
+            symbol = new short[symbol_complex[0].length];
+            double divval=(bound2-bound1)+1;
+            if (sigType.equals(Constants.SignalType.Sounding)) {
+                divval = divval/2;
+            }
+            for (int i = 0; i < symbol.length; i++) {
+                symbol[i] = (short)((symbol_complex[0][i]/(double)divval)*32767.0);
+            }
+        }
+
+
+
+
 
         //if (mod[0].length  < subnum) {
         //    bound2 = bound1 + mod[0].length -1 ;
         //}
 
-        double[][] sig = new double[2][Constants.Ns];
-        int counter=0;
-        for (int i = bound1; i <= bound2; i++) {
-            if (contains(valid_carrier, i)) {
-                sig[0][i] = mod[0][counter];
-                sig[1][i] = mod[1][counter++];
-            }
-        }
 
-        double[][] symbol_complex = Utils.ifftnative2(sig);
-
-        short[] symbol = new short[symbol_complex[0].length];
-        double divval=(bound2-bound1)+1;
-        if (sigType.equals(Constants.SignalType.Sounding)) {
-            divval = divval/2;
-        }
-        for (int i = 0; i < symbol.length; i++) {
-            symbol[i] = (short)((symbol_complex[0][i]/(double)divval)*32767.0);
-        }
 
         return symbol;
     }
@@ -352,8 +443,17 @@ public class SymbolGeneration {
                 }
             }
         }
+        short[] final_out = new short[0];
+        if (Constants.scheme == Constants.Modulation.LoRa)
+        {
+            final_out = symbol;
+        }
+        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+        {
+            final_out = out;
+        }
 
-        return out;
+        return final_out;
     }
 
     public static boolean contains(int[] data, int k) {
@@ -378,6 +478,7 @@ public class SymbolGeneration {
             meta = "0";
             fish_information = Constants.NumFish;
         }
+        int test = 45396387;
         String uncoded = meta + Utils.pad2(Integer.toBinaryString(fish_information));
 
 
@@ -399,5 +500,380 @@ public class SymbolGeneration {
         //Utils.log(uncoded +"=>"+coded+"=>"+Constants.mmap.get(Constants.messageID));fff
         Utils.log(uncoded +"=>"+coded);
         return Utils.convert(coded);
+    }
+
+    public static short[] modulate_LoRa(int[] symbols, int m_attempt)
+    {
+        Complex[] uc = Utils.chirp(true, Constants.SF, Constants.BW, Constants.FS,0,0,0,1); // upchirp
+        Complex[] dc = Utils.chirp(false,Constants.SF,Constants.BW,Constants.FS,0,0,0,1); // this is where we left Mar. 6 downchirp
+
+        // Generate preamble
+        Complex[] preamble = new Complex[uc.length * Constants.preamble_length];
+        for (int i = 0; i < preamble.length; i++){
+            preamble[i] = uc[i % uc.length];
+        }
+        // Generate network id
+        Complex[] tmp1 = Utils.chirp(true, Constants.SF, Constants.BW, Constants.FS,24, 0, 0, 1);
+        Complex[] tmp2 = Utils.chirp(true, Constants.SF, Constants.BW, Constants.FS, 32, 0,0, 1);
+        Complex[] netid = new Complex[tmp1.length + tmp2.length]; // network ID  LoRaWAN
+        System.arraycopy(tmp1,0,netid,0,tmp1.length);
+        System.arraycopy(tmp2, 0,netid, tmp1.length, tmp2.length);
+
+
+        // Generate start frame delimiter
+        int chirp_length = uc.length;
+        Complex[] sfd = new  Complex[dc.length * 2 + Math.round(chirp_length / 4)];
+        System.arraycopy(dc,0, sfd, 0, dc.length);
+        System.arraycopy(dc, 0, sfd, dc.length, dc.length);
+        System.arraycopy(dc, 0, sfd, 2 * dc.length,Math.round(chirp_length / 4) );
+
+
+        // Generate data symbols
+        ArrayList<Complex> dataList = new ArrayList<>();
+        for (int symbol : symbols) {
+            Complex[] chirp = Utils.chirp(true, Constants.SF, Constants.BW, Constants.FS, symbol, 0, 0, 1); // Assuming this method exists and returns Complex[]
+            dataList.addAll(Arrays.asList(chirp));
+        }
+
+        // Convert ArrayList back to array
+        Complex[] data = new Complex[dataList.size()];
+        data = dataList.toArray(data);
+
+        Complex[] output_sig = new Complex[preamble.length + netid.length + sfd.length + data.length];
+        System.arraycopy(preamble,0,output_sig, 0, preamble.length);
+        System.arraycopy(netid,0,output_sig,preamble.length,netid.length);
+        System.arraycopy(sfd, 0, output_sig, preamble.length + netid.length, sfd.length);
+        System.arraycopy(data, 0, output_sig, preamble.length+ netid.length + sfd.length, data.length);
+
+        short[] sigtx = new short[output_sig.length];
+        for (int i = 0; i < output_sig.length; i++){
+            sigtx[i] = (short)(output_sig[i].getReal() * 32767);
+        }
+
+
+        return sigtx;
+    }
+
+
+    public static int[] encode_LoRa(byte[] payload, int m_attempt){
+
+        byte[] data;
+        if (Constants.CRC) {
+            byte[] crcBytes = calc_crc(payload); // calc_crc needs to be implemented
+            data = new byte[payload.length + crcBytes.length];
+            System.arraycopy(payload, 0, data, 0, payload.length);
+            System.arraycopy(crcBytes, 0, data, payload.length, crcBytes.length);
+        }
+        else {
+            data = payload;
+        }
+
+        int plen = payload.length;
+        int sym_num = calc_sym_num(plen); // calc_sym_num needs to be implemented
+        int nibble_num = Constants.SF - 2 + (sym_num - 8) / (Constants.CodeRate_LoRA + 4) * (Constants.SF - 2 * Constants.LDR);
+        byte[] data_w = new byte[(int)Math.ceil((double)(nibble_num - 2 * data.length) / 2) + data.length];
+        System.arraycopy(data, 0, data_w, 0, data.length);
+        for (int i = data.length; i < data_w.length; i++) {
+            data_w[i] = (byte)255;
+        }
+
+        data_w = whiten(data_w, plen); // whiten needs to be implemented, adjusted signature for example
+
+        byte[] data_nibbles = new byte[nibble_num];
+        for (int i = 0; i < nibble_num; i++) {
+            int idx = i / 2;
+            if (i % 2 == 0) {
+                data_nibbles[i] = (byte)(data_w[idx] & 0x0F);
+            } else {
+                data_nibbles[i] = (byte)((data_w[idx] & 0xF0) >> 4);
+            }
+        }
+
+        byte[] header_nibbles = Constants.HasHead ? gen_header(plen) : new byte[0]; // gen_header needs to be implemented this is where left Mar. 3
+
+        byte[] codewords = hamming_encode(concatArrays(header_nibbles, data_nibbles)); // hamming_encode needs to be implemented, concatArrays is a helper method
+
+
+        int[] symbols_i = diag_interleave(Arrays.copyOfRange(codewords, 0, Constants.SF - 2),  8); // Adjusted to include start index and length
+
+        int ppm = Constants.SF - 2 * Constants.LDR;
+        int rdd = Constants.CodeRate_LoRA + 4;   // this is where left Mar. 4
+        for (int i = Constants.SF - 1 -1; i < codewords.length - ppm + 1; i += ppm) {
+            byte[] subset = Arrays.copyOfRange(codewords, i, i+ppm);
+            int[] part = diag_interleave(subset, rdd);
+            symbols_i = concatArrays_int(symbols_i, part);
+        }
+        int[] test_index = new int[]{1,2,3,4,5};
+        int[] coded_index = new int[test_index.length];
+        int[] decoded_index = new int[test_index.length];
+        for (int i = 0; i< test_index.length;i++)
+        {
+            coded_index[i] = gray_decoding(test_index[i]);
+            decoded_index[i] = gray_coding(coded_index[i]);
+        }
+        int symbols = gray_decoding(5);
+
+        return new int[0];
+
+    }
+
+    private static byte[] calc_crc(byte[] data) {
+        byte[] checksum;
+        switch (data.length) {
+            case 0:
+                checksum = new byte[]{0, 0};
+                break;
+            case 1:
+                checksum = new byte[]{data[data.length - 1], 0};
+                break;
+            case 2:
+                checksum = new byte[]{data[data.length - 1], data[data.length - 2]};
+                break;
+            default:
+                byte[] input = Arrays.copyOf(data, data.length - 2);
+                // Assuming crc_generator returns a byte array representing the CRC sequence
+                // and that you implement the conversion from byte array to binary sequence and vice versa.
+                // seq = self.crc_generator(reshape(logical(de2bi(input, 8, 'left-msb'))', [], 1)); matlab implementation
+                boolean[] converted_input = Utils.byteToBinaryBooleanArray(input);
+                int crc = crc_generator(converted_input); // toBitArray needs to be implemented
+                byte checksum_b1 = (byte) ((crc >> 8) & 0xFF);
+                byte checksum_b2 = (byte) (crc & 0xFF);
+                checksum = new byte[]{(byte) (checksum_b2 ^ data[data.length - 1]), (byte) (checksum_b1 ^ data[data.length - 2])};
+        }
+        return checksum;
+    }
+
+    private static int crc_generator(boolean[] input) {
+        // Implement your CRC generation logic here
+        int crc = 0x0000; // Initial value
+        for (boolean bit : input) {
+            int bitVal = bit ? 1 : 0; // Convert boolean to int (1 or 0)
+            int msb = (crc >> 15) & 1; // Most significant bit of crc
+            crc = ((crc << 1) | bitVal) & 0xFFFF; // Shift crc left, add current bit, mask to 16 bits
+
+            if (msb != 0) {
+                crc ^= 0x1021; // If msb was 1 before shift, XOR with polynomial
+            }
+        }
+
+        // Additional processing for padding, as per CCITT specification
+        for (int i = 0; i < 16; i++) {
+            int msb = (crc >> 15) & 1; // Most significant bit of crc
+            crc = (crc << 1) & 0xFFFF; // Shift crc left, mask to 16 bits
+
+            if (msb != 0) {
+                crc ^= 0x1021; // If msb was 1 before shift, XOR with polynomial
+            }
+        }
+
+        return crc;
+    }
+    private static int calc_sym_num(int plen) {
+        // Implementation needed
+        int crcFactor = Constants.CRC ? 1 : 0; // Convert CRC flag to an integer factor
+        int headerFactor = Constants.HasHead ? 0 : 1; // Convert header presence flag to an integer factor for subtraction
+        return 8 + Math.max((4 + Constants.CodeRate_LoRA) * (int) Math.ceil((double) (2 * plen - Constants.SF + 7 + 4 * crcFactor - 5 * headerFactor) / (double) (Constants.SF - 2 * Constants.LDR )), 0);
+    }
+
+    private static byte[] whiten(byte[] data, int plen) {
+        byte[] dataW = new byte[data.length];
+        for (int i = 0; i < plen; i++) {
+            dataW[i] = (byte) (data[i] ^ Constants.whiteningSeq[i % Constants.whiteningSeq.length]);
+        }
+        for (int i = plen; i < data.length; i++){
+            dataW[i] = data[i];
+        }
+        return dataW;
+    }
+
+    private static byte[] gen_header(int plen) {
+        // Implementation needed
+        byte[] headerBytes = new byte[5];
+        headerBytes[0] = (byte) ((plen >> 4) & 0x0F); // High nibble
+        headerBytes[1] = (byte) (plen & 0x0F); // Low nibble
+        headerBytes[2] = (byte) ((2 * Constants.CodeRate_LoRA | (Constants.CRC ? 1 : 0)) & 0x0F);
+
+        byte[] binaryVector = new byte[3];
+        System.arraycopy(headerBytes, 0, binaryVector, 0, 3);
+        int[] converted_binaryVector = Utils.nibbleToBinaryBooleanArray(binaryVector);
+
+
+        // Perform the matrix multiplication in GF(2)
+        int[] resultVector = new int[Constants.headerChecksumMatrix.length];
+        for (int row = 0; row < Constants.headerChecksumMatrix.length; row++) {
+            for (int col = 0; col < converted_binaryVector.length; col++) {
+                resultVector[row] ^= (Constants.headerChecksumMatrix[row][col] * converted_binaryVector[col]);
+            }
+            // Since we are in GF(2), ensure the result is modulo 2
+            resultVector[row] = resultVector[row] % 2;
+        }
+
+        headerBytes[3] = (byte) resultVector[0];
+        for (int i = 0; i < 4; i++) {
+            headerBytes[4] |= resultVector[i + 1] << (3 - i);
+        }
+
+
+        return headerBytes; // Placeholder
+    }
+
+    private static byte[] hamming_encode(byte[] nibbles) {
+        int nibbleNum = nibbles.length;
+        byte[] codewords = new byte[nibbleNum];
+
+        for (int i = 0; i < nibbleNum; i++) {
+            byte nibble = nibbles[i];
+            byte p1 = bitReduce(nibble, new int[]{1, 3, 4});
+            byte p2 = bitReduce(nibble, new int[]{1, 2, 4});
+            byte p3 = bitReduce(nibble, new int[]{1, 2, 3});
+            byte p4 = bitReduce(nibble, new int[]{1, 2, 3, 4});
+            byte p5 = bitReduce(nibble, new int[]{2, 3, 4});
+
+            int crNow = i < Constants.SF - 2 ? 4 : Constants.CodeRate_LoRA; // Adjust coding rate based on position
+
+            switch (crNow) {
+                case 1:
+                    codewords[i] = (byte) ((p4 << 4) | nibble);
+                    break;
+                case 2:
+                    codewords[i] = (byte) ((p5 << 5) | (p3 << 4) | nibble);
+                    break;
+                case 3:
+                    codewords[i] = (byte) ((p2 << 6) | (p5 << 5) | (p3 << 4) | nibble);
+                    break;
+                case 4:
+                    codewords[i] = (byte) ((p1 << 7) | (p2 << 6) | (p5 << 5) | (p3 << 4) | nibble);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid Code Rate!");
+            }
+        }
+
+        return codewords;
+    }
+
+    private  static  byte bitReduce(byte nibble, int[] positions) {
+        byte result = 0;
+        for (int pos : positions) {
+            result ^= (nibble >> (pos - 1)) & 1; // Adjust for zero-based indexing
+        }
+        return result;
+    }
+    // Helper method to concatenate two byte arrays
+    private static byte[] concatArrays(byte[] a, byte[] b) {
+        byte[] result = new byte[a.length + b.length];
+        System.arraycopy(a, 0, result, 0, a.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;
+    }
+
+    private static int[] concatArrays_int(int[] array1, int[] array2) {
+        int[] result = new int[array1.length + array2.length];
+        System.arraycopy(array1, 0, result, 0, array1.length);
+        System.arraycopy(array2, 0, result, array1.length, array2.length);
+        return result;
+    }
+
+    private static int[] diag_interleave(byte[] codewords, int rdd) {
+        int tmp[][] = Utils.nibbleToBinaryBooleanArray_right(codewords,8);
+
+        int rows = tmp.length;
+        int columns = tmp[0].length;
+        int[][] tempColumn = new int[rows][columns];
+
+        for (int x = 0; x < columns; x++) {
+            int shiftAmount =  -x;
+
+            // Copy and shift column by column
+            for (int i = 0; i < rows; i++) {
+                int newIndex = i + shiftAmount;
+
+                // Correctly handle upward and downward shifts with wrap-around
+                while (newIndex < 0) newIndex += rows;  // Upward shift with wrap-around
+                while (newIndex >= rows) newIndex -= rows;  // Downward shift with wrap-around
+
+                // Apply the shift
+                tempColumn[newIndex][x] = tmp[i][x];
+            }
+
+            // Copy the shifted column back to the matrix
+            for (int i = 0; i < rows; i++) {
+                tmp[i][x] = tempColumn[i][x];
+            }
+        }
+
+        int[] symbol_i = Utils.binaryMatrixToDecimal(tmp);
+        for (int i = 0; i < symbol_i.length; i++) {
+            // Ensure the value fits into the uint16 range
+            symbol_i[i] = symbol_i[i] & 0xFFFF;
+        }
+
+
+        return symbol_i;
+    }
+
+    private static int[] gray_coding(int[] symbols)
+    {
+        int[] encodedSymbols = new int[symbols.length];
+
+        for (int i = 0; i < symbols.length; i++) {
+            int num = symbols[i];
+            // The Gray code is obtained by XORing the number with itself shifted right by one bit.
+            int gray = num ^ (num >>> 1);
+
+            // Since the result must fit in a byte, we ensure it's within the byte range.
+            // This is a simplistic approach and works well if you know the input range is suitable.
+            encodedSymbols[i] = gray;
+        }
+
+        return encodedSymbols;
+    }
+
+    private static int gray_coding(int symbols)
+    {
+        int num = symbols;
+        // The Gray code is obtained by XORing the number with itself shifted right by one bit.
+        int gray = num ^ (num >>> 1);
+
+        // Since the result must fit in a byte, we ensure it's within the byte range.
+        // This is a simplistic approach and works well if you know the input range is suitable.
+
+        return gray;
+    }
+
+    private static int[] gray_decoding(int[] symbols_i) {
+        int[] symbols = new int[symbols_i.length];
+        //boolean isLDR;
+        //if (Constants.LDR == 1){
+        //    isLDR = true;
+        //}
+        //else {
+        //    isLDR = false;
+        //}
+        for (int i = 0; i < symbols_i.length; i++) {
+            int num = symbols_i[i];
+            int mask = num >>> 1; // Logical right shift, equivalent to MATLAB's bitshift(num, -1) in java >>> only applies to int and long;
+            while (mask != 0) {
+                num = num ^ mask; // XOR operation, equivalent to MATLAB's bitxor
+                mask = mask >>> 1; // Logical right shift
+            }
+            //if (i < 8) {
+            //    symbols[i] = (num * 4 + 1) % (int)Math.pow(2, Constants.SF);
+            //} else {
+            //    symbols[i] = (num + 1) % (int)Math.pow(2, Constants.SF);
+            //}
+            symbols[i] = num;
+        }
+        return symbols;
+    }
+
+    private static int gray_decoding(int symbols_i) {
+        int num = symbols_i;
+        int mask = num >>> 1; // Logical right shift, equivalent to MATLAB's bitshift(num, -1) in java >>> only applies to int and long;
+        while (mask != 0) {
+            num = num ^ mask; // XOR operation, equivalent to MATLAB's bitxor
+            mask = mask >>> 1; // Logical right shift
+        }
+        return num;
     }
 }

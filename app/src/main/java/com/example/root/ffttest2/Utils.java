@@ -17,6 +17,7 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -25,6 +26,8 @@ import android.graphics.BitmapFactory;
 import java.io.ByteArrayOutputStream;
 
 import android.graphics.Color;
+
+import org.apache.commons.math3.complex.Complex;
 
 public class Utils {
 
@@ -96,8 +99,294 @@ public class Utils {
         return byteArray;
     }
 
+    public static byte[] convertIntArrayToByteArray(int[] intArray) {
+        byte[] byteArray = new byte[intArray.length];
+
+        for (int i = 0; i < intArray.length; i++) {
+            // Convert each int to a byte, keeping only the lowest 8 bits
+            byteArray[i] = (byte) intArray[i];
+        }
+
+        return byteArray;
+    }
+
+    public static boolean[] byteToBinaryBooleanArray(byte[] input) {
+        // Each byte will be converted into 8 boolean values, so the size of the output array
+        // is input.length * 8
+        boolean[] bitArray = new boolean[input.length * 8];
+
+        for (int i = 0; i < input.length; i++) {
+            for (int bit = 0; bit < 8; bit++) {
+                // Shift each bit of the byte to the least significant position and mask with 1
+                // to isolate the bit. The result is compared to 0 to get a boolean value.
+                // Note: We start with the MSB by subtracting the bit index from 7.
+                bitArray[i * 8 + bit] = ((input[i] >> (7 - bit)) & 1) != 0;
+            }
+        }
+
+        return bitArray;
+    }
+
+    public static int[] nibbleToBinaryBooleanArray(byte[] input) {
+        // Each byte will be converted into 8 boolean values, so the size of the output array
+        // is input.length * 8
+        //boolean[] bitArray = new boolean[input.length * 4];
+        int[] intArray = new int[input.length * 4];
+
+        for (int i = 0; i < input.length; i++) {
+            for (int bit = 0; bit < 4; bit++) {
+                // Shift each bit of the byte to the least significant position and mask with 1
+                // to isolate the bit. The result is compared to 0 to get a boolean value.
+                // Note: We start with the MSB by subtracting the bit index from 7.
+                intArray[i * 4 + bit] = ((input[i] >> (3 - bit )) & 1);
+                //intArray[i* 4 + bit] = bitArray[i * 4 + bit] ? 1 : 0;
+            }
+        }
+
+        return intArray;
+    }
+
+    public static int[][] nibbleToBinaryBooleanArray_right(byte[] input, int rdd)
+    {
+        int[][] intArray = new int[input.length ][rdd]; // 4 bits per nibble
+
+        for (int i = 0; i < input.length; i++) {
+            // Process high nibble
+            for (int bit = 0; bit < rdd; bit++) {
+                // Extract bits of the high nibble starting from the least significant bit
+                intArray[i][bit] = (input[i] >> bit) & 1;
+            }
+        }
+
+        return intArray;
+    }
+
+    public static int[] binaryMatrixToDecimal(int[][] binaryMatrix) {
+        int rows = binaryMatrix.length;
+        int columns = binaryMatrix[0].length;
+        int[] decimalValues = new int[columns];
+
+        for (int i = 0; i < columns; i++) {
+            int decimalValue = 0;
+            for (int j = 0; j < rows; j++) {
+                decimalValue += binaryMatrix[j][i] * Math.pow(2, j);
+            }
+            decimalValues[i] = decimalValue;
+        }
+
+        return decimalValues;
+    }
+
+    public static short[][] symbolsToBits(int[] symbols){
+        short[][] bits = new short[symbols.length][Constants.SF];
+        for (int i = 0; i< symbols.length; i++)
+        {
+            int symbol = symbols[i];
+            for (int j = 0; j< Constants.SF; j++)
+            {
+                int bitPosition = Constants.SF - j - 1;
+                bits[i][j] = (short)((symbol >> bitPosition) & 1);
+            }
+        }
+        return bits;
+    }
+
+    public static short[] symbolsToBits(int symbols){
+        short[] bits = new short[Constants.SF];
+        for (int j = 0; j< Constants.SF; j++)
+        {
+            int bitPosition = Constants.SF - j - 1;
+            bits[j] = (short)((symbols >> bitPosition) & 1);
+        }
+        return bits;
+    }
+
+    public static int BitsToSymbols(short[] bits)
+    {
+        int symbol = 0;
+        for (int j = 0; j < Constants.SF; j++) {
+            symbol |= (bits[j] << (Constants.SF - j - 1));
+        }
+        return symbol;
+    }
+
+    public static int gray_coding(int symbols)
+    {
+        int num = symbols;
+        // The Gray code is obtained by XORing the number with itself shifted right by one bit.
+        int gray = num ^ (num >>> 1);
+
+        // Since the result must fit in a byte, we ensure it's within the byte range.
+        // This is a simplistic approach and works well if you know the input range is suitable.
+
+        return gray;
+    }
+
+
+    public static double[][] downsample(double[][] original, int targetSamples)
+    {
+        int originalSamples = original[0].length; // Assuming uniform length for all rows
+        double[][] downsampledArray = new double[original.length][targetSamples];
+
+        double interval = (double) originalSamples / targetSamples;
+        for (int i = 0; i < targetSamples; i++) {
+            int sampleIndex = (int) Math.round(i * interval);
+            if (sampleIndex >= originalSamples) {
+                sampleIndex = originalSamples - 1; // Handle edge case for rounding
+            }
+            for (int row = 0; row < original.length; row++) {
+                downsampledArray[row][i] = original[row][sampleIndex];
+            }
+        }
+
+        return downsampledArray;
+    }
+
+    public static int getMaxIndex(double[] pks)
+    {
+        double maxValue = pks[0];
+        int indexOfMax = 0;
+
+        // Iterate through the array starting from the second element
+        for (int i = 1; i < pks.length; i++) {
+            if (pks[i] > maxValue) {
+                maxValue = pks[i];
+                indexOfMax = i;
+            }
+        }
+        return indexOfMax;
+    }
+
+    public static double[] dechirp(double[][] symbol, boolean isUpChirp)
+    {
+        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW,Constants.BW ,0,Constants.CFO,0,1);
+        double[][] mod_dat = new double[2][chirp.length];
+        for (int i = 0; i < chirp.length; i++){
+            mod_dat[0][i] = chirp[i].getReal();
+            mod_dat[1][i] = chirp[i].getImaginary();
+        }
+        int length = symbol[0].length;
+        double[][] result = timesnative(symbol,mod_dat);
+
+        double[][] result_spec = fftcomplexinoutnative_double(result,result[0].length);
+
+
+        double[] abs_value = new double[result_spec[0].length];
+        for (int i = 0; i < length; i++) {
+            double real = result_spec[0][i];
+            double imaginary = result_spec[1][i];
+            abs_value[i] = Math.sqrt(real * real + imaginary * imaginary);
+        }
+        double maxValue = abs_value[0];
+        int indexofMax = 0;
+        for (int i = 1; i< abs_value.length; i++){
+            if (abs_value[i] > maxValue) {
+                maxValue = abs_value[i];
+                indexofMax = i;
+            }
+        }
+
+
+        return new double[]{indexofMax, maxValue};
+
+    }
+
+    public static Complex[] chirp(boolean isUpChirp, int sf, int bw, int fs, double h, double cfo, double tdelta, double tscale) {
+        if (tscale == 0) tscale = 1;
+        int N = (int)Math.pow(2,sf);
+        double T = N / (double)bw;  // symbol period
+        int sampPerSym = (int)Math.round(fs / (double)bw * N);
+        double hOrig = h;
+        h = Math.round(h);
+        cfo = cfo + (hOrig - h) / N * bw;
+        double k, f0;
+
+        if (isUpChirp) {
+            k = bw / T;
+            f0 = -bw / 2.0 + cfo;
+        } else {
+            k = -bw / T;
+            f0 = bw / 2.0 + cfo;
+        }
+
+        double phi = 0;
+        double[] t1 = new double[(int) (sampPerSym * (N -h) / N) + 1];
+        for (int i = 0; i<t1.length; i++){
+            t1[i] = (i / (double)fs) * tscale + tdelta;
+        }
+
+        Complex[] c1 = new Complex[t1.length];
+        for (int i = 0; i < t1.length; i++){
+            double freq = f0 + k * T * h / N + 0.5 *k * t1[i];
+            c1[i] = new Complex(0,2* Math.PI* freq * t1[i]).exp();
+        }
+        if (t1.length == 0){
+            phi = 0;
+        }
+        else{
+            phi = Math.atan2(c1[c1.length-1].getImaginary(), c1[c1.length-1].getReal());
+        }
+        double[] t2;
+        if (h == 0.0)
+        {
+            t2 = new double[0];
+        }
+        else {
+            t2 = new double[(int) (sampPerSym * h / N) + 1];
+        }
+
+
+        for (int i = 0; i <t2.length; i++){
+            t2[i] = (i/ (double)fs) + tdelta;
+        }
+
+
+        Complex[] c2 = new Complex[t2.length];
+        for (int i = 0; i<t2.length; i++){
+            double freq = f0 + 0.5 * k * t2[i];
+            c2[i] = new Complex(0,phi + 2* Math.PI * freq * t2[i] ).exp();
+        }
+        Complex[] partC1 = Arrays.copyOfRange(c1, 0, c1.length - 1);
+
+        // Step 2: Concatenate partC1 and c2
+        Complex[] y = new Complex[partC1.length + c2.length];
+        System.arraycopy(partC1, 0, y, 0, partC1.length);
+        System.arraycopy(c2, 0, y, partC1.length, c2.length);
+
+        return y;
+    }
+
+    public static short[] GeneratePreamble_LoRa(boolean isUpChirp, int sym)
+    {
+        Complex[] chirp = Utils.chirp(isUpChirp, Constants.SF, Constants.BW, Constants.FS, sym, 0, 0, 1); // Assuming this method exists and returns Complex[]
+        double[][] mod_dat = new double[2][chirp.length];
+        for (int i = 0; i < chirp.length; i++){
+            mod_dat[0][i] = chirp[i].getReal();
+            mod_dat[1][i] = chirp[i].getImaginary();
+        }
+
+        short[] symbol = new short[mod_dat[0].length * 2];
+        for (int i = 0, j = 0; i < mod_dat[0].length; i++) {
+            symbol[j++] = (short) (mod_dat[0][i] * 32767.0);
+            symbol[j++] = (short) (mod_dat[1][i] * 32767.0);
+        }
+        return symbol;
+
+    }
     public static Bitmap convertByteArrayToBitmap(byte[] byteArray) {
         return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
+    }
+
+    public static double[][] deInterleave(double[] data){
+        int length = data.length / 2;
+        double[][] mod_dat = new double[2][length];
+
+        for (int i = 0, j = 0; i < data.length; i += 2, j++){
+            mod_dat[0][j] = data[i];
+            mod_dat[1][j] = data[i+1];
+        }
+
+        return mod_dat;
     }
 
     public static double[] copyArray2(Double[] sig) {
@@ -911,7 +1200,7 @@ public class Utils {
             }
             else if (Constants.exp_num==5) {
                 if (Constants.Ns==960||Constants.Ns==1920) {
-                    timeout = 3;
+                    timeout = 15; // now receiver directly listens for the data, so the timeout should be set large enough to get the signal
                 }
                 else if (Constants.Ns==4800) {
                     timeout=6;
@@ -920,7 +1209,14 @@ public class Utils {
                     timeout=6;
                 }
             }
-            len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+            if (Constants.scheme == Constants.Modulation.LoRa)
+            {
+                len = ChirpSamples+Constants.ChirpGap+((Constants.Ns_lora+Constants.Cp)*32);
+            }
+            else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+            {
+                len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+            }
         }
 
         int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
@@ -977,8 +1273,8 @@ public class Utils {
                             if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
                                 Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
                                 Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
-                                //numWindowsLeft = MAX_WINDOWS-1;
-                                numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
+                                numWindowsLeft = MAX_WINDOWS-1;
+                                //numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
                                 Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS + ' ' + numWindowsLeft);
 
 //                                Log.e("copy","copying "+out[t_idx]+","+out[t_idx+1]+","+out[t_idx+2]+","+out[t_idx+3]+","+out[t_idx+4]);
