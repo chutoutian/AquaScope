@@ -131,6 +131,15 @@
         app:layout_constraintTop_toBottomOf="@+id/graphProd3" />
 
     <ImageView
+        android:id="@+id/my_image_view"
+        android:layout_width="400dp"
+        android:layout_height="180dp"
+        android:gravity="center"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/msg" />
+
+    <ImageView
         android:id="@+id/imageView_fish"
         android:layout_width="match_parent"
         android:layout_height="200dp"
@@ -293,15 +302,7 @@
         app:layout_constraintBottom_toTopOf="@+id/modelSpinner"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <ImageView
-        android:id="@+id/my_image_view"
-        android:layout_width="400dp"
-        android:layout_height="180dp"
-        android:gravity="center"
-        android:visibility="gone"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/graphProd3" />
+
 
     <GridLayout
         android:id="@+id/scrollView2"
@@ -735,7 +736,7 @@
         android:ems="10"
         android:inputType="numberDecimal"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/msg" />
+        app:layout_constraintTop_toBottomOf="@+id/my_image_view" />
 
     <TextView
         android:id="@+id/textView"

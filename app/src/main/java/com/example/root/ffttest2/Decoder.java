@@ -5,6 +5,7 @@ import android.app.UiAutomation;
 import android.graphics.Bitmap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.commons.math3.complex.Complex;
 
@@ -15,6 +16,13 @@ public class Decoder {
         int start = ptime+Constants.ChirpGap;
         double[] rx_pilots;
         String coded = "";
+        String received_symbol = "";
+        //for (int j = 0 ; j < start + 16 * Constants.Ns_lora; j++)
+        //{
+        //    received_symbol += (data[j] + ",");
+        //}
+        //FileOperations.writetofile(MainActivity.av, received_symbol + "",
+        //        Utils.genName(Constants.SignalType.RxSymbols, m_attempt) + ".txt");
         if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
         {
             data = Utils.filter(data);
@@ -64,128 +72,70 @@ public class Decoder {
                     coded += newbits[j] + "";
                 }
             }
-
         }
         else if (Constants.scheme == Constants.Modulation.LoRa)
         {
-            int[] index_count = new int[5];
-            //int[] error_index_up = new int[Constants.Ns_lora /2 + 5];
-            double[] pks_down = new double[5];
-            //double[] pks_up = new double[Constants.Ns_lora /2 + 5];
-            for (int i = 0; i<index_count.length  ; i++)
+            int bitsfill[] = SymbolGeneration.binFillOrder_LoRa();
+            int numsyms = bitsfill[0]; // number of data symbols
+
+            double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+4) * Constants.Ns_lora-1);
+            start = 0;
+            double[][] data_deinterleava = Utils.deInterleave(data_remove_preamble);
+            data_deinterleava = Utils.downsample(data_deinterleava,Constants.Sample_Lora,Constants.Ns_lora / 2);
+
+            int[] index_count = new int[4];
+            double[] pks = new double[4];
+            for (int i = 0 ; i < 2 ; i++)
             {
-                // test the different synchronization algorithm
-                int start_test = ptime+Constants.ChirpGap;
-                double[] preamble_upchirp = Utils.segment(data,start_test + i, start_test +i+ Constants.Ns_lora-1);
-                double[][] preamble_upchirp_ori = Utils.deInterleave(preamble_upchirp);
-                preamble_upchirp_ori = Utils.downsample(preamble_upchirp_ori,(int)Math.pow(2,Constants.SF));
-                double[] index_upchirp_pk  = Utils.dechirp(preamble_upchirp_ori, false);
-                //String upchirp_symbol = index_upchirp_pk + "";
-                //Utils.log("upchirp_symbol =>" + upchirp_symbol);
-                start_test = start_test + i + Constants.Ns_lora;
-                //index_count[i * 2] = (int)index_upchirp_pk[0];
-                //pks_down[i * 2] = index_upchirp_pk[1];
-
-                double[] preamble_downchirp = Utils.segment(data,start_test , start_test+Constants.Ns_lora-1);
-                double[][] preamble_downchirp_ori = Utils.deInterleave(preamble_downchirp);
-                preamble_downchirp_ori = Utils.downsample(preamble_downchirp_ori,(int)Math.pow(2,Constants.SF));
-                double[] index_downchirp_pk  = Utils.dechirp(preamble_downchirp_ori, false);
-                //double[] index_upchirp_pk  = Utils.dechirp(preamble_downchirp_ori, true);
-                index_count[i ] = (int)index_downchirp_pk[0];
-                pks_down[i] = index_downchirp_pk[1];
-                //error_index_up[i + error] = (int)index_upchirp_pk[0];
-                //pks_up[i + error] = index_upchirp_pk[1];
-
+                double[][] preamble = Utils.segment2(data_deinterleava,start, start + Constants.Sample_Lora - 1);
+                start = start + Constants.Sample_Lora;
+                double[] index_upchirp = Utils.dechirp(preamble,false);
+                int index_tmp = Utils.MaxIndex(index_upchirp);
+                //index_count[i] = ((double)(index_tmp + Constants.bin_num_lora ) / Constants.zero_padding_ratio )% (Math.pow(2,Constants.SF));
+                index_count[i] = index_tmp;
+                pks[i] = Utils.MaxValue(index_upchirp);
             }
-            //int offset = Utils.getMaxIndex(pks_down); //// is it good ?
-            int offset = 0;
-            start = start +  2* Constants.Ns_lora + offset;
-            String index_test = "";
-            String pks_test = "";
-            for (int i = 0 ; i < index_count.length; i++)
+
+            for (int i = 2 ; i < 4 ; i++)
             {
-                index_test += (index_count[i] + ",");
-                pks_test += (pks_down[i] + ",");
-            }
-            Utils.log("index =>" + index_test);
-            Utils.log("pks =>" + pks_test );
-            //String downchirp_symbol = "";
-            //for (int i = 0 ; i < error_index.length; i++)
-            //{
-            //    downchirp_symbol += (error_index[i] + "");
-            //}
-            //Utils.log("downchirp_symbol =>" + downchirp_symbol);
-            //start = start + Constants.Ns_lora;
-
-            //rx_pilots=Utils.segment(data,start+Constants.Cp,start+Constants.Cp+Constants.Ns_lora-1);
-            //double[][] rx_pilots_ori = Utils.deInterleave(rx_pilots);
-            //start = start+Constants.Cp+Constants.Ns_lora;
-
-            //short [] tx_symbol = SymbolGeneration.getTrainingSymbol(Utils.arange(valid_bins[0],valid_bins[1]));
-            //double [] tx_pilots = Utils.convert(tx_symbol);
-            //int[] test = new int[4];
-            //tx_pilots = Utils.segment(tx_pilots,Constants.Cp ,Constants.Cp  +  Constants.Ns_lora-1); //
-            //double[][] tx_pilots_ori = Utils.deInterleave(tx_pilots);
-            //tx_pilots_ori = Utils.downsample(tx_pilots_ori,(int)Math.pow(2,Constants.SF));
-            //test[0]  = Utils.dechirp(tx_pilots_ori, false);
-            //for (int i = 1; i < 4; i++)
-            //{
-            //    tx_pilots_sub = Utils.segment(tx_pilots,Constants.Cp  + i * Constants.Ns_lora,Constants.Cp  + (i+1) * Constants.Ns_lora-1); //
-            //    tx_pilots_ori = Utils.deInterleave(tx_pilots_sub);
-            //    tx_pilots_ori = Utils.downsample(tx_pilots_ori,(int)Math.pow(2,Constants.SF));
-            //    test[i]  = Utils.dechirp(tx_pilots_ori, false);
-
-            //}
-
-
-
-            String temp = "";
-            for (int i = 0; i < Constants.maxbits; i++) {
-                temp+="0";
-            }
-            int maxcodedbits = Constants.maxbits;
-            if (Constants.CODING) {
-                maxcodedbits = Utils.encode(temp, Constants.cc[0],Constants.cc[1],Constants.cc[2]).length();
+                double[][] preamble = Utils.segment2(data_deinterleava,start, start + Constants.Sample_Lora - 1);
+                start = start + Constants.Sample_Lora;
+                double[] index_downchirp = Utils.dechirp(preamble,true);
+                int index_tmp = Utils.MaxIndex(index_downchirp);
+                //index_count[i] = ((double)(index_tmp + Constants.bin_num_lora ) / Constants.zero_padding_ratio )% Math.pow(2,Constants.SF);
+                index_count[i] = index_tmp;
+                pks[i] = Utils.MaxValue(index_downchirp);
             }
 
-            int numsyms = (int) Math.ceil((double)maxcodedbits/ Constants.SF); // number of data symbols
-            int bitsfill[] = new int[numsyms];
+
+
+
+            int[] detected_index = new int[numsyms + 4];
+
+            for (int j =0 ; j< 4; j++)
+            {
+                detected_index[j] = (int)index_count[j];
+            }
+
+
+
+            // extract each symbol
             for (int i = 0; i < numsyms; i++) {
-                if (maxcodedbits % numsyms == 0)
-                {
-                    bitsfill[i] = Constants.SF;
-                }
-                else {
-                    // If maxcodedbits % numsyms != 0
-                    if (i < numsyms - (maxcodedbits % numsyms)) {
-                        // For the first (numsyms - remainder) elements, set to Constants.SF
-                        bitsfill[i] = Constants.SF;
-                    } else {
-                        // For the last remainder elements, set to 6
-                        bitsfill[i] = Constants.SF - 1;
-                    }
-                }
-            }
-
-            int[] detected_index = new int[numsyms + 2];
-
-            //rx_pilots_ori = Utils.downsample(rx_pilots_ori,(int)Math.pow(2,Constants.SF));
-            //double[] index_received_test_bits  = Utils.dechirp(rx_pilots_ori, false);
-            //detected_index[0] = (int)index_received_test_bits[0];
-
-            //tx_pilots_ori = Utils.downsample(tx_pilots_ori,(int)Math.pow(2,Constants.SF));
-            //double[] index_transmit_test_bits  = Utils.dechirp(tx_pilots_ori, false);
-            //detected_index[1] = (int)index_transmit_test_bits[0];
-
-            // extract each symbol and equalize with weights
-            for (int i = 0; i < numsyms; i++) {
-                double[] sym = Utils.segment(data, start , start  + Constants.Ns_lora - 1);
-                start = start  + Constants.Ns_lora;
-                double[][] sym_ori = Utils.deInterleave(sym);
-                sym_ori = Utils.downsample(sym_ori,(int)Math.pow(2,Constants.SF));
-                double[] index = Utils.dechirp(sym_ori,false);
-                detected_index[i+2] = (int)index[0];
-
+                double[][] sym = Utils.segment2(data_deinterleava, start , start  +Constants.Sample_Lora - 1);
+                start = start  + Constants.Sample_Lora;
+                //double[][] sym_ori = Utils.deInterleave(sym);
+                //sym_ori = Utils.downsample(sym_ori,(int)Math.pow(2,Constants.SF));
+                double[] index = Utils.dechirp(sym,false);
+                detected_index[i+4] = Utils.MaxIndex(index);
+                //if (i < 5){
+                    //String energy = "";
+                    //for (int j = 0 ; j < index.length; j++)
+                    //{
+                    //    energy += (index[j] + ",");
+                    //}
+                    //Utils.log("energy =>" + energy);
+                    //Utils.log("data_symbol =>" + detected_index[i+4]);
+                //}
             }
             String all_symbol = "";
             for (int i = 0 ; i < detected_index.length; i++)
@@ -195,32 +145,23 @@ public class Decoder {
             Utils.log("all_symbols =>" + all_symbol);
             // demodulate the symbols to bits
             short[][] bits_lora = Utils.symbolsToBits(detected_index);
-            //String test_transmit_bits = "";
-            //String test_receive_bits = "";
-            //for (int j = 0; j < Constants.SF; j++) {
-            //    test_receive_bits += bits_lora[0][j] + "";
-            //    test_transmit_bits += bits_lora[1][j] + "";
-            //}
-            //Utils.log("test_transmit_bits =>" + test_transmit_bits);
-            //Utils.log("test_receive_bits =>" + test_receive_bits);
 
-            // differential decoding
-            if (Constants.DIFFERENTIAL)
-            {
-                for (int i = 2; i < bits_lora.length; i++)
-                {
-                    short[] decoded = Modulation.differential_decoding(bits_lora[i-1],bits_lora[i]);
-                    for (int j = 0; j < decoded.length; j++)
-                    {
-                        bits_lora[i][j] = decoded[j];
-                    }
-                }
-            }
+            //if (Constants.DIFFERENTIAL)
+            //{
+            //    for (int i = 2; i < bits_lora.length; i++)
+            //    {
+            //        short[] decoded = Modulation.differential_decoding(bits_lora[i-1],bits_lora[i]);
+            //        for (int j = 0; j < decoded.length; j++)
+            //        {
+            //            bits_lora[i][j] = decoded[j];
+            //        }
+            //    }
+            //}
 
             // gray coding
             if (Constants.GRAY_CODING)
             {
-                for (int i = 2; i < bits_lora.length; i++)
+                for (int i = 4; i < bits_lora.length; i++)
                 {
                     int tmp = Utils.BitsToSymbols(bits_lora[i]);
                     tmp = Utils.gray_coding(tmp);
@@ -235,11 +176,11 @@ public class Decoder {
             // for each symbol reorder the bits that were shuffled from interleaving
             // extract bits from the symbol corresponding to valid data
             //String coded = "";
-            for (int i = 2; i < bits_lora.length; i++) {
+            for (int i = 4; i < bits_lora.length; i++) {
                 short[] newbits = bits_lora[i];
                 //short[] newbits = SymbolGeneration.unshuffle(bits_lora[i], i);
                 // extract the data bits
-                for (int j = 0; j < bitsfill[i-2]; j++) {
+                for (int j = 0; j < bitsfill[i-3]; j++) {
                     coded += newbits[j] + "";
                 }
             }
@@ -261,15 +202,23 @@ public class Decoder {
 
 
         // image
-        //byte[] imageBytes = Utils.convertBitStringToByteArray(uncoded);
-        //Bitmap image = Utils.convertByteArrayToBitmap(imageBytes);
-        // FileOperations.writetofile(MainActivity.av, imageBytes + "",
-        //        "recevied_bytes.txt");
+        byte[] imageBytes = Utils.convertBitStringToByteArray(uncoded);
+        String image_byte = "";
+        for (int i = 0; i < imageBytes.length; i++)
+        {
+            image_byte += (imageBytes[i] + ",");
+        }
+        Utils.log("received image byte =>"+image_byte);
+
+        Bitmap image = Utils.convertByteArrayToBitmap(imageBytes);
+        FileOperations.writetofile(MainActivity.av, imageBytes + "",
+                "recevied_bytes.txt");
         // display message
         String message="Error";
 
 
-        //Utils.log(coded +"=>"+uncoded);
+        // fish application
+        /*
         if (meta == '1')
         {
             String data_bits = uncoded.substring(4);
@@ -286,17 +235,18 @@ public class Decoder {
             int messageID=Integer.parseInt(data_bits,2);
             message = "Detected " + messageID + " Fish" ;
         }
-        //if (Constants.mmap.containsKey(messageID)) { message = Constants.mmap.get(messageID); }
+        */
         String finalMessage = message;
-        Utils.log(coded +"=>"+uncoded+"=>"+message);
+        Utils.log("rx_bits_before_coding=>"+coded);
+        Utils.log("rx_bits_after_coding =>"+ uncoded);
         av.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 //Utils.sendNotification(av, "Notification",message, R.drawable.warning2);
-                Utils.sendNotification(av, "Notification",finalMessage, R.drawable.warning2);
-                Constants.msgview.setText(finalMessage);
-                //Constants.imgview.setImageBitmap(image);
-                //Utils.sendNotification(av, "Notification","Image received", R.drawable.warning2);
+                //Utils.sendNotification(av, "Notification",finalMessage, R.drawable.warning2);
+                //Constants.msgview.setText(finalMessage);
+                Constants.imgview.setImageBitmap(image);
+                Utils.sendNotification(av, "Notification","Image received", R.drawable.warning2);
 
             }
         });
@@ -305,51 +255,138 @@ public class Decoder {
     public static int[] demodulate(double[] data, int m_attempt)
     {
 
-        Constants.CFO = 0;
-        // initialization
-        Constants.bin_num = (int)Math.pow(2,Constants.SF) * Constants.zero_padding_ratio;
-        Constants.sample_num = 2 * (int)Math.pow(2, Constants.SF);
-        Constants.fft_length = Constants.sample_num * Constants.zero_padding_ratio;
-
-
-
-        if ( (int)Math.pow(2,Constants.SF) / Constants.BW > 0.016)
-        {
-            Constants.LDR = 1;
-        }
-        else {
-            Constants.LDR = 0;
-        }
-        //data = Utils.filter(data);
-        //double[] sig_sampled = movingAverageFilter(data, 4);
-        double[] sig_sampled = downsample(data, Constants.FS / (2 * Constants.BW));
-
-        int x = 0;
-        //while (x < sig_sampled.length)
+        int ptime = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+        int start = ptime+Constants.ChirpGap;
+        int numsyms = 192;
+        String received_symbol = "";
+        //for (int j = 0 ; j < start + 20 * Constants.Ns_lora; j++)
         //{
-            //x = detect(x,sig_sampled);
-            //if (x < 0) break;
+        //    received_symbol += (data[j] + ",");
         //}
+        FileOperations.writetofile(MainActivity.av, received_symbol + "",
+                Utils.genName(Constants.SignalType.RxSymbols, m_attempt) + ".txt");
+        double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+4) * Constants.Ns_lora-1);
+        start = 0;
+        double[][] data_deinterleava = Utils.deInterleave(data_remove_preamble);
+        data_deinterleava = Utils.downsample(data_deinterleava,Constants.Sample_Lora,Constants.Ns_lora / 2);
 
-
-
-        return new int[0];
-    }
-
-    public static byte[] decoding(int[] symbol, int m_attempt)
-    {
-        return new byte[0];
-    }
-
-    public static double[] downsample(double[] filteredSignal, int factor) {
-        if (factor <= 1) return filteredSignal;
-        int newSize = (int) Math.ceil((double) filteredSignal.length / factor);
-        double[] downsampled = new double[newSize];
-        for (int i = 0; i < newSize; i++) {
-            downsampled[i] = filteredSignal[i * factor];
+        int[] index_count = new int[4];
+        double[] pks = new double[4];
+        for (int i = 0 ; i < 2 ; i++)
+        {
+            double[][] preamble = Utils.segment2(data_deinterleava,start, start + Constants.Sample_Lora - 1);
+            start = start + Constants.Sample_Lora;
+            double[] index_upchirp = Utils.dechirp(preamble,false);
+            int index_tmp = Utils.MaxIndex(index_upchirp);
+            //index_count[i] = ((double)(index_tmp + Constants.bin_num_lora ) / Constants.zero_padding_ratio )% (Math.pow(2,Constants.SF));
+            index_count[i] = index_tmp;
+            pks[i] = Utils.MaxValue(index_upchirp);
         }
-        return downsampled;
+
+        for (int i = 2 ; i < 4 ; i++)
+        {
+            double[][] preamble = Utils.segment2(data_deinterleava,start, start + Constants.Sample_Lora - 1);
+            start = start + Constants.Sample_Lora;
+            double[] index_downchirp = Utils.dechirp(preamble,true);
+            int index_tmp = Utils.MaxIndex(index_downchirp);
+            //index_count[i] = ((double)(index_tmp + Constants.bin_num_lora ) / Constants.zero_padding_ratio )% Math.pow(2,Constants.SF);
+            index_count[i] = index_tmp;
+            pks[i] = Utils.MaxValue(index_downchirp);
+        }
+
+
+
+
+        int[] detected_index = new int[numsyms + 4];
+
+        for (int j =0 ; j< 4; j++)
+        {
+            detected_index[j] = index_count[j];
+        }
+
+
+
+        // extract each symbol
+        for (int i = 0; i < numsyms; i++) {
+            double[][] sym = Utils.segment2(data_deinterleava, start , start  +Constants.Sample_Lora - 1);
+            start = start  + Constants.Sample_Lora;
+            double[] index = Utils.dechirp(sym,false);
+            detected_index[i+4] = Utils.MaxIndex(index);
+        }
+        String all_symbol = "";
+        for (int i = 0 ; i < detected_index.length; i++)
+        {
+            all_symbol += (detected_index[i] + ",");
+        }
+        Utils.log("all_symbols =>" + all_symbol);
+
+
+        return detected_index;
     }
+
+    public static void decoding(Activity av, double[] received_data, int m_attempt)
+    {
+        int[] symbol = demodulate(received_data,m_attempt);
+
+        int[] symbol_remove_preamble = Utils.segment(symbol,4,symbol.length-1);
+        // gray coding
+        int[] symbol_g = SymbolGeneration.gray_coding(symbol_remove_preamble);
+        // deinterleaving
+        int[] codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, 0, 8),  Constants.SF - 2);
+        // hamming decoding
+        int[] nibbles = SymbolGeneration.hamming_decode(codewords,8);
+        int rdd = Constants.CodeRate_LoRA + 4;
+        for (int i = 8; i < symbol_g.length - rdd + 1; i += rdd)
+        {
+            codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, i, i+ rdd ), Constants.SF - 2 * Constants.LDR);
+            int[] tem_nibbles = SymbolGeneration.hamming_decode(codewords,rdd);
+            nibbles = Utils.concatArrays_int(nibbles, tem_nibbles);
+        }
+        // convert nibbles to the bytes
+        int byteCount = Math.min(255,nibbles.length /2 );
+        byte[] bytes = new byte[byteCount];
+        for (int i = 0; i < byteCount; i++) {
+            int firstNibble = nibbles[2 * i];       // 2*i because of zero-based indexing in Java
+            int secondNibble = 16 * nibbles[2 * i + 1];  // 2*i+1 to get the next nibble
+
+            // Shift the first nibble left by 4 bits and OR with the second nibble
+            bytes[i] = (byte) (firstNibble | secondNibble);
+        }
+
+        int len = 80;
+        // dewhitening
+        byte[] data = SymbolGeneration.dewhiten(Arrays.copyOfRange(bytes, 0, len ));
+
+        String all_data = "";
+        for (int i = 0 ; i < data.length; i++)
+        {
+            all_data += (data[i] + ",");
+        }
+        Utils.log("all_data_bytes =>" + all_data);
+
+        long[] embedding = Utils.Bytes2Embedding(data);
+        String all_embedding = "";
+        for (int i = 0 ; i < embedding.length; i++)
+        {
+            all_embedding += (embedding[i] + ",");
+        }
+        Utils.log("all_embedding =>" + all_embedding);
+
+        av.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //Utils.sendNotification(av, "Notification",message, R.drawable.warning2);
+                //Utils.sendNotification(av, "Notification",finalMessage, R.drawable.warning2);
+                //Constants.msgview.setText(finalMessage);
+                //Constants.imgview.setImageBitmap(image);
+                Utils.sendNotification(av, "Notification","Embedding received", R.drawable.warning2);
+
+            }
+        });
+
+        //return data;
+    }
+
 
     public static double[] movingAverageFilter(double[] input, int windowSize) {
         double[] output = new double[input.length];

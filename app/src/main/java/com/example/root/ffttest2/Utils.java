@@ -40,39 +40,40 @@ public class Utils {
         // Load the image as a Bitmap
         Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), drawableId);
 
-        // Convert the Bitmap to a byte array
-        // Convert to grayscale
-        //Bitmap grayscaleBitmap = convertToGrayscale(bitmap);
-
-        //Bitmap resizedBitmap = resizeImage(grayscaleBitmap, grayscaleBitmap.getWidth() / 2, grayscaleBitmap.getHeight() / 2); // Resize to half of the original
-
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
         //bitmap.recycle();
         return stream.toByteArray();
     }
 
-    private static Bitmap convertToGrayscale(Bitmap originalBitmap) {
-        Bitmap grayscaleBitmap = Bitmap.createBitmap(
-                originalBitmap.getWidth(),
-                originalBitmap.getHeight(),
-                Bitmap.Config.ARGB_8888);
 
-        for (int i = 0; i < originalBitmap.getWidth(); i++) {
-            for (int j = 0; j < originalBitmap.getHeight(); j++) {
-                int originalColor = originalBitmap.getPixel(i, j);
-                int grayScaleValue = (int) (Color.red(originalColor) * 0.3 + Color.green(originalColor) * 0.59 + Color.blue(originalColor) * 0.11);
-                int grayColor = Color.rgb(grayScaleValue, grayScaleValue, grayScaleValue);
-                grayscaleBitmap.setPixel(i, j, grayColor);
+    // Convert a Bitmap to a binary string
+    public static String convertBitmapToBitString(Bitmap bitmap) {
+        StringBuilder bitString = new StringBuilder();
+
+        // Loop over each pixel in the bitmap
+        for (int y = 0; y < bitmap.getHeight(); y++) {
+            for (int x = 0; x < bitmap.getWidth(); x++) {
+                // Get the pixel's ARGB value
+                int pixel = bitmap.getPixel(x, y);
+
+                // Extract color components
+                int alpha = (pixel >> 24) & 0xff; // Alpha component
+                int red = (pixel >> 16) & 0xff;   // Red component
+                int green = (pixel >> 8) & 0xff;  // Green component
+                int blue = pixel & 0xff;          // Blue component
+
+                // Convert each color component to a binary string and concatenate
+                bitString.append(String.format("%8s", Integer.toBinaryString(alpha)).replace(' ', '0'));
+                bitString.append(String.format("%8s", Integer.toBinaryString(red)).replace(' ', '0'));
+                bitString.append(String.format("%8s", Integer.toBinaryString(green)).replace(' ', '0'));
+                bitString.append(String.format("%8s", Integer.toBinaryString(blue)).replace(' ', '0'));
             }
         }
 
-        return grayscaleBitmap;
+        return bitString.toString();
     }
 
-    private static Bitmap resizeImage(Bitmap originalBitmap, int width, int height) {
-        return Bitmap.createScaledBitmap(originalBitmap, width, height, false);
-    }
 
     public static String convertByteArrayToBitString(byte[] byteArray) {
         StringBuilder bitString = new StringBuilder();
@@ -191,6 +192,8 @@ public class Utils {
         return bits;
     }
 
+
+
     public static short[] symbolsToBits(int symbols){
         short[] bits = new short[Constants.SF];
         for (int j = 0; j< Constants.SF; j++)
@@ -223,9 +226,10 @@ public class Utils {
     }
 
 
-    public static double[][] downsample(double[][] original, int targetSamples)
-    {
+    public static double[][] downsample(double[][] original, int q, int p) {
         int originalSamples = original[0].length; // Assuming uniform length for all rows
+        int targetSamples = (int) Math.round((double) originalSamples * q / p); // Calculate target samples
+
         double[][] downsampledArray = new double[original.length][targetSamples];
 
         double interval = (double) originalSamples / targetSamples;
@@ -259,7 +263,7 @@ public class Utils {
 
     public static double[] dechirp(double[][] symbol, boolean isUpChirp)
     {
-        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW,Constants.BW ,0,Constants.CFO,0,1);
+        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW, Constants.BW ,0,Constants.CFO,0,1);
         double[][] mod_dat = new double[2][chirp.length];
         for (int i = 0; i < chirp.length; i++){
             mod_dat[0][i] = chirp[i].getReal();
@@ -268,27 +272,62 @@ public class Utils {
         int length = symbol[0].length;
         double[][] result = timesnative(symbol,mod_dat);
 
-        double[][] result_spec = fftcomplexinoutnative_double(result,result[0].length);
+        double[][] result_spec = fftcomplexinoutnative_double(result,length);
 
-
-        double[] abs_value = new double[result_spec[0].length];
-        for (int i = 0; i < length; i++) {
-            double real = result_spec[0][i];
-            double imaginary = result_spec[1][i];
-            abs_value[i] = Math.sqrt(real * real + imaginary * imaginary);
+        double[] abs_value = new double[length];
+        for (int i = 0; i < abs_value.length; i++) {
+            double real_1 = result_spec[0][i];
+            double imaginary_1 = result_spec[1][i];
+            abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1);
         }
-        double maxValue = abs_value[0];
+        /*
+        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW,2 * Constants.BW ,0,Constants.CFO,0,1);
+        double[][] mod_dat = new double[2][chirp.length];
+        for (int i = 0; i < chirp.length; i++){
+            mod_dat[0][i] = chirp[i].getReal();
+            mod_dat[1][i] = chirp[i].getImaginary();
+        }
+        int length = symbol[0].length;
+        double[][] result = timesnative(symbol,mod_dat);
+
+        double[][] result_spec = fftcomplexinoutnative_double(result,Constants.padding_ratio * result[0].length);
+
+        double[][] result_spec_1 = segment2(result_spec,0, Constants.bin_num_lora -1);
+        double[][] result_spec_2 = segment2(result_spec, Constants.bin_num_lora, Constants.padding_ratio * result[0].length - 1);
+        double[] abs_value = new double[Constants.bin_num_lora];
+        for (int i = 0; i < Constants.bin_num_lora; i++) {
+            double real_1 = result_spec_1[0][i];
+            double imaginary_1 = result_spec_1[1][i];
+            abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1);
+            double real_2 = result_spec_2[0][i];
+            double imaginary_2 = result_spec_2[1][i];
+            abs_value[i] += Math.sqrt(real_2 * real_2 + imaginary_2 * imaginary_2);
+        }
+        */
+
+        return abs_value;
+    }
+
+    public static int MaxIndex(double[] values){
+        double maxValue = values[0];
         int indexofMax = 0;
-        for (int i = 1; i< abs_value.length; i++){
-            if (abs_value[i] > maxValue) {
-                maxValue = abs_value[i];
+        for (int i = 1; i< values.length; i++){
+            if (values[i] > maxValue) {
+                maxValue = values[i];
                 indexofMax = i;
             }
         }
+        return indexofMax;
+    }
 
-
-        return new double[]{indexofMax, maxValue};
-
+    public static double MaxValue(double[] values){
+        double maxValue = values[0];
+        for (int i = 1; i< values.length; i++){
+            if (values[i] > maxValue) {
+                maxValue = values[i];
+            }
+        }
+        return maxValue;
     }
 
     public static Complex[] chirp(boolean isUpChirp, int sf, int bw, int fs, double h, double cfo, double tdelta, double tscale) {
@@ -310,7 +349,7 @@ public class Utils {
         }
 
         double phi = 0;
-        double[] t1 = new double[(int) (sampPerSym * (N -h) / N) + 1];
+        double[] t1 = new double[(int) (sampPerSym * (N - h) / N) + 1];
         for (int i = 0; i<t1.length; i++){
             t1[i] = (i / (double)fs) * tscale + tdelta;
         }
@@ -359,16 +398,13 @@ public class Utils {
     public static short[] GeneratePreamble_LoRa(boolean isUpChirp, int sym)
     {
         Complex[] chirp = Utils.chirp(isUpChirp, Constants.SF, Constants.BW, Constants.FS, sym, 0, 0, 1); // Assuming this method exists and returns Complex[]
-        double[][] mod_dat = new double[2][chirp.length];
-        for (int i = 0; i < chirp.length; i++){
-            mod_dat[0][i] = chirp[i].getReal();
-            mod_dat[1][i] = chirp[i].getImaginary();
-        }
+        // Preparing to store real and imaginary components scaled and converted to short
+        short[] symbol = new short[chirp.length * 2];
 
-        short[] symbol = new short[mod_dat[0].length * 2];
-        for (int i = 0, j = 0; i < mod_dat[0].length; i++) {
-            symbol[j++] = (short) (mod_dat[0][i] * 32767.0);
-            symbol[j++] = (short) (mod_dat[1][i] * 32767.0);
+        for (int i = 0, j = 0; i < chirp.length; i++) {
+            // Scale the real and imaginary parts to the maximum range of short type
+            symbol[j++] = (short) (chirp[i].getReal() * 32767.0);
+            symbol[j++] = (short) (chirp[i].getImaginary() * 32767.0);
         }
         return symbol;
 
@@ -377,16 +413,75 @@ public class Utils {
         return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
     }
 
+    public static byte[] Embedding2Bytes(long[] embedding) {
+        StringBuilder binaryStringBuilder = new StringBuilder();
+
+        // Step 1: Convert all long integers to a single binary string with each being a 10-bit segment
+        for (long value : embedding) {
+            // Mask with 0x3FF to ensure only the lowest 10 bits are used
+            String binaryString = String.format("%10s", Long.toBinaryString(value & 0x3FF)).replace(' ', '0');
+            binaryStringBuilder.append(binaryString);
+        }
+
+        // Step 2: Convert the binary string into a byte array
+        String allBits = binaryStringBuilder.toString();
+        int numBytes = (allBits.length() + 7) / 8; // Calculate how many bytes are needed
+        byte[] byteList = new byte[numBytes];
+
+        for (int i = 0, byteIndex = 0; i < allBits.length(); i += 8, byteIndex++) {
+            // Ensure not to go out of bounds on the last byte
+            int end = Math.min(i + 8, allBits.length());
+            String byteString = allBits.substring(i, end);
+            // Pad to 8 bits if necessary (on the last byte)
+            byteString = String.format("%-8s", byteString).replace(' ', '0');
+            byte newByte = (byte) Integer.parseInt(byteString, 2);
+            byteList[byteIndex] = newByte;
+        }
+
+        return byteList;
+    }
+
+    public static long[] Bytes2Embedding(byte[] bytes) {
+        // Step 1: Convert bytes to a binary string
+        StringBuilder binaryStringBuilder = new StringBuilder();
+        for (byte b : bytes) {
+            String binaryString = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+            binaryStringBuilder.append(binaryString);
+        }
+
+        // The complete binary string
+        String allBits = binaryStringBuilder.toString();
+        int numInts = allBits.length() / 10; // Calculate how many 10-bit integers are needed
+
+        long[] longs = new long[numInts];
+        for (int i = 0, intIndex = 0; i + 10 <= allBits.length(); i += 10, intIndex++) {
+            String intString = allBits.substring(i, i + 10);
+            long newLong = Long.parseLong(intString, 2);
+            longs[intIndex] = newLong;
+        }
+
+        return longs;
+    }
+
     public static double[][] deInterleave(double[] data){
         int length = data.length / 2;
         double[][] mod_dat = new double[2][length];
 
         for (int i = 0, j = 0; i < data.length; i += 2, j++){
-            mod_dat[0][j] = data[i];
-            mod_dat[1][j] = data[i+1];
+            mod_dat[0][j] = data[i] / 32767.0;
+            mod_dat[1][j] = data[i+1] / 32767.0;
         }
 
         return mod_dat;
+    }
+
+
+
+    public static int[] concatArrays_int(int[] array1, int[] array2) {
+        int[] result = new int[array1.length + array2.length];
+        System.arraycopy(array1, 0, result, 0, array1.length);
+        System.arraycopy(array2, 0, result, array1.length, array2.length);
+        return result;
     }
 
     public static double[] copyArray2(Double[] sig) {
@@ -882,14 +977,22 @@ public class Utils {
         return out;
     }
 
-    public static double[] segment2(double[] data, int i, int j) {
-        double[] out = new double[j-i+1];
-        int total_len = data.length;
-
+    public static int[] segment(int[] data, int i, int j) {
+        int[] out = new int[j-i+1];
         int counter=0;
         for (int k = i; k <= j; k++) {
-            int idx =(k + total_len)%total_len;
-            out[counter++] = data[idx];
+            out[counter++] = data[k];
+        }
+        return out;
+    }
+
+    public static double[][] segment2(double[][] data, int i, int j) {
+        double[][] out = new double[2][j-i+1];
+        int counter=0;
+        for (int k = i; k <= j; k++) {
+            out[0][counter] = data[0][k];
+            out[1][counter] = data[1][k];
+            counter += 1;
         }
         return out;
     }
@@ -1192,30 +1295,41 @@ public class Utils {
         }
         else if (sigType.equals(Constants.SignalType.DataRx)) {
             MAX_WINDOWS = 2; //
-            if (Constants.exp_num==1 || Constants.exp_num == 2) {
-                timeout = 11;
-            }
-            else if (Constants.exp_num==3 || Constants.exp_num == 4) {
-                timeout = 4;
-            }
-            else if (Constants.exp_num==5) {
-                if (Constants.Ns==960||Constants.Ns==1920) {
-                    timeout = 15; // now receiver directly listens for the data, so the timeout should be set large enough to get the signal
-                }
-                else if (Constants.Ns==4800) {
-                    timeout=6;
-                }
-                else if (Constants.Ns==9600) {
-                    timeout=6;
-                }
-            }
-            if (Constants.scheme == Constants.Modulation.LoRa)
+            if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
             {
-                len = ChirpSamples+Constants.ChirpGap+((Constants.Ns_lora+Constants.Cp)*32);
+                if (Constants.IsCountingFish || Constants.IsDectectingFish)
+                {
+                    timeout = 3;
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+
+                }
+                else if(Constants.SegmentationFish)
+                {
+                    timeout = 30;
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*500);
+                }
             }
-            else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
+            else if(Constants.scheme == Constants.Modulation.LoRa)
             {
-                len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+                if (Constants.IsCountingFish || Constants.IsDectectingFish)
+                {
+                    timeout = 15;
+                    len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*32;
+
+                }
+                else if(Constants.SegmentationFish)
+                {
+                    if (Constants.SF == 7)
+                    {
+                        timeout = 15;
+                        len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*200;
+                    }
+                    else if (Constants.SF == 4)
+                    {
+                        timeout = 15;
+                        len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*1600;
+                    }
+                }
             }
         }
 
@@ -1228,7 +1342,31 @@ public class Utils {
         int synclag = 12000;
         double[] sounding_signal = new double[]{};
 
-        sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
+        if(Constants.SegmentationFish)
+        {
+            if (sigType.equals(Constants.SignalType.DataRx))
+            {
+                sounding_signal=new double[(30+1)*Constants.RecorderStepSize];
+                if (Constants.scheme == Constants.Modulation.LoRa)
+                {
+                    if (Constants.SF == 7)
+                    {
+                        sounding_signal=new double[(10+1)*Constants.RecorderStepSize];
+                    }
+                    else if (Constants.SF == 8)
+                    {
+                        sounding_signal=new double[(50+1)*Constants.RecorderStepSize];
+                    }
+                    else if (Constants.SF == 4)
+                    {
+                        sounding_signal=new double[(15+1)*Constants.RecorderStepSize];
+                    }
+                }
+            }
+        }
+        else {
+            sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
+        }
         Log.e("len","sig length "+sounding_signal.length+","+sigType.toString());
         boolean valid_signal = false;
 //        boolean getOneMoreFlag = false;
@@ -1272,10 +1410,10 @@ public class Utils {
                         if (xcorr_out[0] != -1) {
                             if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
                                 Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
-                                Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
-                                numWindowsLeft = MAX_WINDOWS-1;
-                                //numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
-                                Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS + ' ' + numWindowsLeft);
+                                //Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
+                                //numWindowsLeft = MAX_WINDOWS-1;
+                                numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
+                                Utils.log("need more windows" + xcorr_out[1] + ' ' + len + ' ' + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS + ' ' + numWindowsLeft);
 
 //                                Log.e("copy","copying "+out[t_idx]+","+out[t_idx+1]+","+out[t_idx+2]+","+out[t_idx+3]+","+out[t_idx+4]);
                                 for (int j = (int)xcorr_out[1]; j < out.length; j++) {
@@ -1326,6 +1464,7 @@ public class Utils {
 
         if (valid_signal) {
             return Utils.filter(sounding_signal);
+            //return sounding_signal;
         }
         return null;
     }

@@ -2,6 +2,7 @@ package com.example.root.ffttest2;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
@@ -18,6 +19,9 @@ import androidx.core.widget.NestedScrollView;
 
 import com.jjoe64.graphview.GraphView;
 
+import org.apache.commons.math3.analysis.function.Constant;
+
+import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -70,6 +74,7 @@ public class Constants {
         FlipSyms,
         TxBits,
         RxBits,
+        RxSymbols,
         Timestamp
     }
     public enum EstSignalType {
@@ -93,12 +98,17 @@ public class Constants {
     }
 
     public static Modulation scheme = Modulation.LoRa;
-    public static boolean CRC = true; // CRC = 1 if CRC Check is enabled else 0
+    public static boolean CRC = false; // CRC = 1 if CRC Check is enabled else 0
 
     public static int SF = 7; //  (7-12)
 
+    public static int Sample_Lora = (int)Math.pow(2,Constants.SF);
+
     public static int CodeRate_LoRA = 4; // (code rate = 4/8 (1:4/5 2:4/6 3:4/7 4:4/8))
 
+    public static int padding_ratio = 10;
+
+    public static int bin_num_lora = padding_ratio * (int)Math.pow(2,Constants.SF);
     public static int LDR = 0;
 
     public static int BW = 20000; // bandwidth 125kHz which should be changed in the acoustic system (12.5kHz for testing)
@@ -106,8 +116,6 @@ public class Constants {
     public static int FS = 48000; // sampling rate 1Mhz which should be changed to fs = 48000hz
 
     public static int Ns_lora = 614;
-
-    public static int symbol_time = 10;
 
     public static int CFO = 0;
 
@@ -119,7 +127,7 @@ public class Constants {
 
     public static int fft_length;
 
-    public static boolean HasHead = true;
+    public static boolean HasHead = false;
 
     public static int preamble_length = 8;
 
@@ -155,8 +163,12 @@ public class Constants {
     // fish related
     public static boolean IsFish = false;
     public static int NumFish = 0;
+
+    public static long[] SegFish;
     public static boolean IsDectectingFish = false;
     public static boolean IsCountingFish = false;
+
+    public static boolean SegmentationFish = true;
     public static double XCORR_MAX_VAL_HEIGHT_FAC = .8;
     public static boolean CODING = true;
     public static int XcorrVersion = 2;
@@ -207,8 +219,8 @@ public class Constants {
 
     public static double GammaThresh = .8;
 
-    //public static int maxbits=3056;
-    public static int maxbits=5;
+    public static int maxbits=3056;
+    //public static int maxbits=5;
     public static int exp_num=5;
     public static int SNR_THRESH = 10; //unused
     public static Spinner spinner,spinner2,spinner3;
@@ -784,6 +796,26 @@ public class Constants {
         ////////////////////////////////////////////////////////////////////////////////
 
         updateNbins();
+
+        Constants.Ns_lora = (int)Math.round( 2 * FS / (double)BW * Math.pow(2,SF));
+        if (Constants.Ns_lora % 2 != 0)
+        {
+            Constants.Ns_lora += 1;
+        }
+
+        if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
+        {
+            Constants.DIFFERENTIAL = true;
+            Constants.INTERLEAVE = true;
+            Constants.GRAY_CODING = false;
+        }
+        else if (Constants.scheme == Constants.Modulation.LoRa)
+        {
+            Constants.DIFFERENTIAL = false;
+            Constants.INTERLEAVE = false;
+            Constants.GRAY_CODING = true;
+        }
+
 
         ////////////////////////////////////////////////////////
 

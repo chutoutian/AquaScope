@@ -255,7 +255,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
 
                 if (data_signal!=null) {
-                    Decoder.decode_helper(av, data_signal, valid_bins, m_attempt);
+                    //Decoder.decode_helper(av, data_signal, valid_bins, m_attempt);
+                    //int[] signal_d = Decoder.demodulate(data_signal,m_attempt);
+                    Decoder.decoding(av,data_signal,m_attempt);
+                    //long[] embedding = Utils.Bytes2Embedding(decoded_data);
                 }
                 return 0;
             }
@@ -269,10 +272,21 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
     public static void send_data_helper(int numbits, int[] valid_bins, int m_attempt,
                                  Constants.SignalType sigType,Constants.ExpType expType) {
-        short[] bits = SymbolGeneration.getCodedBits(m_attempt);
+        //short[] bits = SymbolGeneration.getCodedBits(m_attempt);
 
-        byte[] test_byte = {1,2,3,4,5};
-        int[] encoded_symbol = SymbolGeneration.encode_LoRa(test_byte,m_attempt);
+        //byte[] test_byte = {1,2,3,4,5,6,24,67,14,4,5,6,82,41,74,42,88};
+        //byte[] imageData = Utils.convertImageToByteArray(MainActivity.av, R.drawable.i1_test);
+        //byte[] embedding_bytes = Utils.Embedding2Bytes(Constants.SegFish);
+        byte[] embedding_bytes_test = {31, 69, 72, -112, -19, -104, 60, -51, -84, -72, -112, 95, 45, -33, -118, 43, 33, 8, 111, -96, 127, 57, 37, -8, -39, -74, -91, 25, 54, -85, -123, 114, -84, -44, 92, 42, -21, -49, 90, 67, -59, 37, -103, 52, -30, -100, 50, -34, 30, 98, -22, 124, -95, -74, 97, -122, -38, 20, -45, 67, -66, 93, 117, -102, -19, 117, 118, 31, -48, -106, 125, 50, 84, 20, 40, 125, -30, 79, 22, -55};
+
+        int[] encoded_symbol = SymbolGeneration.encode_LoRa(embedding_bytes_test,m_attempt);
+
+        String encoded_byte = "";
+        for (int i = 0; i < encoded_symbol.length; i++)
+        {
+            encoded_byte += (encoded_symbol[i] + ",");
+        }
+        Utils.log("encoded_symbol =>"+encoded_byte);
         //short[] sig_tx = SymbolGeneration.modulate_LoRa(encoded_symbol,m_attempt);
 
         //double[] sig_rx = new double[sig_tx.length];
@@ -286,20 +300,27 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
 
 
-        String out="";
-        for (int i = 0; i < bits.length; i++) {
-            out+=bits[i]+"";
-        }
+        //String out="";
+        //for (int i = 0; i < bits.length; i++) {
+        //    out+=bits[i]+"";
+        //}
+        short[] txsig_lora = SymbolGeneration.generateDataSymbols_LoRa(encoded_symbol,true,m_attempt);
+        //short[] txsig=SymbolGeneration.generateDataSymbols(bits, valid_bins, Constants.data_symreps, true, sigType,m_attempt);
+        // demodulate and decoding test
+        //double[] rxsig_lora = new double[txsig_lora.length];
+        //for (int i = 0; i<txsig_lora.length; i++)
+        //{
+        //    rxsig_lora[i] = txsig_lora[i];
+        //}
+        //int[] symbols_d =  Decoder.demodulate(rxsig_lora, m_attempt);
 
-        short[] txsig=SymbolGeneration.generateDataSymbols(bits, valid_bins, Constants.data_symreps, true, sigType,m_attempt);
-
-        FileOperations.writetofile(MainActivity.av, txsig,
+        FileOperations.writetofile(MainActivity.av, txsig_lora,
                 Utils.genName(sigType, m_attempt) + ".txt");
 
-        Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs, 0, txsig.length, false); // this is where I leave to solve Mar. 19.
+        Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig_lora, Constants.fs, 0, txsig_lora.length, false); // this is where I leave to solve Mar. 19.
         Constants.sp1.play(Constants.volume);
 
-        int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
+        int sleepTime = (int) (((double) txsig_lora.length / Constants.fs) * 1000);
         sleep(sleepTime + Constants.SendPad);
     }
 

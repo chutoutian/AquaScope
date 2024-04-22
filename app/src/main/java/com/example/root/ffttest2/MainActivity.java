@@ -330,12 +330,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
                             Constants.IsCountingFish = true;
                             Constants.IsDectectingFish = false;
+                            Constants.SegmentationFish = false;
                         }
-
-                        if (currentModelName.equals("lite_optimized_clf.ptl"))
+                        else if (currentModelName.equals("lite_optimized_clf.ptl"))
                         {
                             Constants.IsDectectingFish = true;
                             Constants.IsCountingFish = false;
+                            Constants.SegmentationFish = false;
+                        }
+                        else if (currentModelName.equals("lite_optimized_seg_240p.ptl"))
+                        {
+                            Constants.IsDectectingFish = false;
+                            Constants.IsCountingFish = false;
+                            Constants.SegmentationFish = true;
                         }
 
                         // special handle counting fish
@@ -489,6 +496,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
             Log.d("tbt",  "inference time (ms): " + inferenceTime);
             final long[] results = outTensors.getDataAsLongArray();
+            Constants.SegFish = results;
 
             Log.d("tbt", "result: " + Arrays.toString(results));
             Log.d("tbt", "result length: " + results.length );
@@ -610,7 +618,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Bitmap bmpSegmentation = Bitmap.createScaledBitmap(mBitmap, width, height, true);
             Bitmap outputBitmap = bmpSegmentation.copy(bmpSegmentation.getConfig(), true);
             outputBitmap.setPixels(intValues, 0, outputBitmap.getWidth(), 0, 0, outputBitmap.getWidth(), outputBitmap.getHeight());
-            final Bitmap transferredBitmap = Bitmap.createScaledBitmap(outputBitmap, mBitmap.getWidth(), mBitmap.getHeight(), true);
+            final Bitmap transferredBitmap = Bitmap.createScaledBitmap(outputBitmap, mBitmap.getWidth(), mBitmap.getHeight(), true); //
 
             runOnUiThread(new Runnable() {
                 @Override

@@ -5,6 +5,7 @@ import static com.example.root.ffttest2.Constants.besselFiltOffset;
 import static com.example.root.ffttest2.Constants.tv2;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.apache.commons.math3.complex.Complex;
@@ -106,6 +107,94 @@ public class SymbolGeneration {
         return out;
     }
 
+    public static int[] binFillOrder_LoRa() {
+        int numrounds = 0;
+
+        String temp = "";
+        for (int i = 0; i < Constants.maxbits; i++) {
+            temp+="0";
+        }
+        int maxcodedbits = Constants.maxbits;
+        if (Constants.CODING) {
+            maxcodedbits = Utils.encode(temp, Constants.cc[0],Constants.cc[1],Constants.cc[2]).length();
+        }
+
+        short[] bits = new short[maxcodedbits];
+
+        int bit_counter = 0;
+        numrounds = (int) Math.ceil((double)maxcodedbits/ Constants.SF);
+        int[] out = new int[numrounds+1];
+        out[0]=numrounds;
+        for (int i = 0; i < numrounds; i++) {
+            boolean oneMoreBin = i < bits.length % numrounds;
+
+            int endpoint = (int) (bit_counter + Math.floor(bits.length / numrounds));
+            if (!oneMoreBin) {
+                endpoint -= 1;
+            }
+
+            short[] bits_seg = Utils.segment(bits, bit_counter, endpoint);
+
+            short[] pad_bits = Utils.random_array(Constants.SF - bits_seg.length);
+            Log.e("symbol", "sym " + i + ": " + bits_seg.length + "," + pad_bits.length);
+            out[i+1]=bits_seg.length;
+        }
+        return out;
+    }
+    public static short[] generateDataSymbols_LoRa(int[] sym, boolean preamble,
+                                                   int m_attempt)
+    {
+        int symlen = Constants.Ns_lora * sym.length;
+        int siglen = symlen;
+        if (preamble) {
+            siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
+        }
+        siglen += Constants.Ns_lora * 4;
+        short[] txsig = new short[siglen];
+
+        int counter = 0;
+        if (preamble) {
+            // add preamble
+            short[] preamble_sig = PreambleGen.preamble_s();
+            for (Short s : preamble_sig) {
+                txsig[counter++] = s;
+            }
+            counter += Constants.ChirpGap;
+        }
+
+        short[] symbol;
+            // add downchirp and upchirp
+        short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0);
+        short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0);
+        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0);
+        short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0);
+
+
+        for (Short s : preamble_up_1) {
+            txsig[counter++] = s;
+        }
+
+        for (Short s : preamble_up_2) {
+            txsig[counter++] = s;
+        }
+
+        for (Short s : preamble_down_1) {
+            txsig[counter++] = s;
+        }
+
+        for (Short s : preamble_down_2) {
+            txsig[counter++] = s;
+        }
+        for (int i = 0; i < sym.length; i++) {
+
+            symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
+
+            for (Short s : symbol) {
+                txsig[counter++] = s;
+            }
+        }
+        return txsig;
+    }
     public static short[] generateDataSymbols(short[] bits, int[] valid_carrier,
                                               int symreps, boolean preamble, Constants.SignalType sigType,
                                               int m_attempt) {
@@ -131,6 +220,7 @@ public class SymbolGeneration {
 
 
 
+
         //int symlen = (Constants.Ns+Constants.Cp)*symreps + Constants.Gi;
 
 
@@ -139,7 +229,7 @@ public class SymbolGeneration {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
         if (Constants.scheme == Constants.Modulation.LoRa) {
-            siglen += Constants.Ns_lora * 2;
+            siglen += Constants.Ns_lora * 4;
         }
         else if(Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
         {
@@ -164,19 +254,42 @@ public class SymbolGeneration {
 
         if (Constants.scheme == Constants.Modulation.LoRa) {
             // add downchirp and upchirp
-            short[] preamble_up = Utils.GeneratePreamble_LoRa(true, 30);
-            short[] preamble_down = Utils.GeneratePreamble_LoRa(true, 30);
+            short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0);
+            short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0);
+            short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0);
+            short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0);
 
-            for (Short s : preamble_up) {
+
+            for (Short s : preamble_up_1) {
                 txsig[counter++] = s;
             }
 
-            for (Short s : preamble_down) {
+            for (Short s : preamble_up_2) {
+                txsig[counter++] = s;
+            }
+
+            for (Short s : preamble_down_1) {
+                txsig[counter++] = s;
+            }
+
+            for (Short s : preamble_down_2) {
                 txsig[counter++] = s;
             }
 
             bit_list = new short[numrounds+1][Constants.SF];
-            bit_list[0] = new short[]{0,0,1,1,1,1,0};
+            //if (Constants.SF == 7)
+            //{
+            //    bit_list[0] = new short[]{0,0,0,1,0,1,0};
+            //}
+            //else if (Constants.SF == 8)
+            //{
+            //    bit_list[0] = new short[]{0,0,0,0,1,0,1,0};
+            //}
+            //else if (Constants.SF == 4)
+            //{
+            //    bit_list[0] = new short[]{1,0,1,0};
+            //}
+
         }
         else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all ){
             // add training symbol
@@ -469,22 +582,34 @@ public class SymbolGeneration {
         //String uncoded = Utils.pad2(Integer.toBinaryString(Constants.messageID));
         // fishing identification or counting
         int fish_information;
-        String meta;
+        String meta = "";
+        String uncoded = "";
         if (Constants.IsDectectingFish){
             meta = "1";
             fish_information = Constants.IsFish ? 1 : 0;
+            uncoded = meta + Utils.pad2(Integer.toBinaryString(fish_information));
         }
-        else {
+        else if (Constants.IsCountingFish){
             meta = "0";
             fish_information = Constants.NumFish;
+            uncoded = meta + Utils.pad2(Integer.toBinaryString(fish_information));
         }
-        int test = 45396387;
-        String uncoded = meta + Utils.pad2(Integer.toBinaryString(fish_information));
+        //else if (Constants.SegmentationFish)
+        //{
+        //    Bitmap txBitmap = Constants.SegFish.copy(Constants.SegFish.getConfig(), true);
+        //    uncoded = Utils.convertBitmapToBitString(txBitmap);
+        //}
 
 
         // image
         byte[] imageData = Utils.convertImageToByteArray(MainActivity.av, R.drawable.i1_test);
-        String imageBits = Utils.convertByteArrayToBitString(imageData);
+        String image_byte = "";
+        for (int i = 0; i < imageData.length; i++)
+        {
+            image_byte += (imageData[i] + ",");
+        }
+        Utils.log("tx_image_byte =>"+image_byte);
+        uncoded = Utils.convertByteArrayToBitString(imageData);
 
 
 
@@ -497,8 +622,8 @@ public class SymbolGeneration {
         }
         FileOperations.writetofile(MainActivity.av, uncoded + "",
                 Utils.genName(Constants.SignalType.TxBits, m_attempt) + ".txt");
-        //Utils.log(uncoded +"=>"+coded+"=>"+Constants.mmap.get(Constants.messageID));fff
-        Utils.log(uncoded +"=>"+coded);
+        Utils.log("tx_bits_before_coding=>"+uncoded);
+        Utils.log("tx_bits_after_coding =>"+ coded);
         return Utils.convert(coded);
     }
 
@@ -590,30 +715,22 @@ public class SymbolGeneration {
         }
 
         byte[] header_nibbles = Constants.HasHead ? gen_header(plen) : new byte[0]; // gen_header needs to be implemented this is where left Mar. 3
-
+        //byte[] test_byte = {1,2,3,4,5};
         byte[] codewords = hamming_encode(concatArrays(header_nibbles, data_nibbles)); // hamming_encode needs to be implemented, concatArrays is a helper method
-
+        //byte[] codewords = hamming_encode(test_byte);
 
         int[] symbols_i = diag_interleave(Arrays.copyOfRange(codewords, 0, Constants.SF - 2),  8); // Adjusted to include start index and length
 
         int ppm = Constants.SF - 2 * Constants.LDR;
-        int rdd = Constants.CodeRate_LoRA + 4;   // this is where left Mar. 4
+        int rdd = Constants.CodeRate_LoRA + 4;
         for (int i = Constants.SF - 1 -1; i < codewords.length - ppm + 1; i += ppm) {
             byte[] subset = Arrays.copyOfRange(codewords, i, i+ppm);
             int[] part = diag_interleave(subset, rdd);
-            symbols_i = concatArrays_int(symbols_i, part);
+            symbols_i = Utils.concatArrays_int(symbols_i, part);
         }
-        int[] test_index = new int[]{1,2,3,4,5};
-        int[] coded_index = new int[test_index.length];
-        int[] decoded_index = new int[test_index.length];
-        for (int i = 0; i< test_index.length;i++)
-        {
-            coded_index[i] = gray_decoding(test_index[i]);
-            decoded_index[i] = gray_coding(coded_index[i]);
-        }
-        int symbols = gray_decoding(5);
+        int[] symbols = gray_decoding2(symbols_i);
 
-        return new int[0];
+        return symbols;
 
     }
 
@@ -686,6 +803,17 @@ public class SymbolGeneration {
         return dataW;
     }
 
+    public static byte[] dewhiten(byte[] data)
+    {
+        int len = data.length;
+        byte[] bytes_w = new byte[len];
+        for (int i =0; i<len; i++)
+        {
+            bytes_w[i] = (byte) (data[i] ^ Constants.whiteningSeq[i % Constants.whiteningSeq.length]);
+        }
+        return bytes_w;
+    }
+
     private static byte[] gen_header(int plen) {
         // Implementation needed
         byte[] headerBytes = new byte[5];
@@ -717,6 +845,35 @@ public class SymbolGeneration {
         return headerBytes; // Placeholder
     }
 
+    public static int[] hamming_decode(int[] codewords,int rdd)
+    {
+
+        int[] nibbles = new int[codewords.length];
+        for (int i = 0; i < codewords.length; i++)
+        {
+            int codeword = codewords[i];
+            byte p1 = bitReduce((byte)codeword, new int[]{8, 4, 3,1});
+            byte p2 = bitReduce((byte)codeword, new int[]{7,4,2,1});
+            byte p3 = bitReduce((byte)codeword, new int[]{5,3,2,1});
+            byte p4 = bitReduce((byte)codeword, new int[]{5,4,3,2,1});
+            byte p5 = bitReduce((byte)codeword, new int[]{6,4,3,2});
+
+            switch (rdd){
+                case 5:
+                case 6:
+                    nibbles[i] = codewords[i] % 16;
+                    break;
+                case 7:
+                case 8:
+                    int partity = p2 * 4 + p3 * 2 + p5;
+                    int pf = parityFix(partity);
+                    codewords[i] = codewords[i] ^ pf;
+                    nibbles[i] = codewords[i] % 16;
+                    break;
+            }
+        }
+        return nibbles;
+    }
     private static byte[] hamming_encode(byte[] nibbles) {
         int nibbleNum = nibbles.length;
         byte[] codewords = new byte[nibbleNum];
@@ -759,18 +916,22 @@ public class SymbolGeneration {
         }
         return result;
     }
+
+    private  static  byte[] bitReduce(byte[] codewords, int[] positions) {
+        byte[] result = new byte[codewords.length];
+        for (int i = 0; i< codewords.length; i++)
+        {
+            for (int pos : positions) {
+                result[i] ^= (codewords[i] >> (pos - 1)) & 1; // Adjust for zero-based indexing
+            }
+        }
+        return result;
+    }
     // Helper method to concatenate two byte arrays
     private static byte[] concatArrays(byte[] a, byte[] b) {
         byte[] result = new byte[a.length + b.length];
         System.arraycopy(a, 0, result, 0, a.length);
         System.arraycopy(b, 0, result, a.length, b.length);
-        return result;
-    }
-
-    private static int[] concatArrays_int(int[] array1, int[] array2) {
-        int[] result = new int[array1.length + array2.length];
-        System.arraycopy(array1, 0, result, 0, array1.length);
-        System.arraycopy(array2, 0, result, array1.length, array2.length);
         return result;
     }
 
@@ -812,33 +973,56 @@ public class SymbolGeneration {
         return symbol_i;
     }
 
-    private static int[] gray_coding(int[] symbols)
-    {
-        int[] encodedSymbols = new int[symbols.length];
+    public static int[] diag_deinterleave(int[] symbols, int ppm) {
+        int[][] binary = new int[symbols.length][ppm];
 
+        // Convert symbols to binary
         for (int i = 0; i < symbols.length; i++) {
-            int num = symbols[i];
-            // The Gray code is obtained by XORing the number with itself shifted right by one bit.
-            int gray = num ^ (num >>> 1);
-
-            // Since the result must fit in a byte, we ensure it's within the byte range.
-            // This is a simplistic approach and works well if you know the input range is suitable.
-            encodedSymbols[i] = gray;
+            binary[i] = toBinaryArray(symbols[i], ppm);
         }
 
-        return encodedSymbols;
+        // Diagonal deinterleaving
+        for (int i = 0; i < binary.length; i++) {
+            binary[i] = circularShift(binary[i],  - i);
+        }
+
+        int[][] transpose_binary = new int[ppm][symbols.length];
+        for (int i = 0;i<ppm;i++){
+            for (int j = 0; j<symbols.length;j++)
+            {
+                transpose_binary[i][j] = binary[j][i];
+            }
+        }
+
+        // Convert binary rows back to decimal
+        int[] codewords = new int[transpose_binary.length];
+        for (int i = 0; i < transpose_binary.length; i++) {
+            codewords[i] = toDecimal(transpose_binary[i]);
+        }
+
+        // Flip the array upside down
+        reverse(codewords);
+
+        return codewords;
     }
 
-    private static int gray_coding(int symbols)
+
+    public static int[] gray_coding(int[] symbols)
     {
-        int num = symbols;
-        // The Gray code is obtained by XORing the number with itself shifted right by one bit.
-        int gray = num ^ (num >>> 1);
-
-        // Since the result must fit in a byte, we ensure it's within the byte range.
-        // This is a simplistic approach and works well if you know the input range is suitable.
-
-        return gray;
+        int[] symbol_g = new int[symbols.length];
+        for (int i = 0; i < Math.min(8, symbols.length); i++) {
+            symbol_g[i] = symbols[i] / 4; // Java does integer division like floor for positive numbers
+        }
+        // Handle the remaining elements
+        for (int i = 8; i < symbols.length; i++) {
+            symbol_g[i] = (symbols[i] - 1) % (1 << Constants.SF); // 2^sf is computed as (1 << sf)
+        }
+        // Convert to Gray code
+        for (int i = 0; i < symbol_g.length; i++) {
+            symbol_g[i] = symbol_g[i] ^ (symbol_g[i] >> 1);
+        }
+        // Print the result (for example purposes, we'll use System.out.println)
+        return symbol_g;
     }
 
     private static int[] gray_decoding(int[] symbols_i) {
@@ -867,6 +1051,24 @@ public class SymbolGeneration {
         return symbols;
     }
 
+    private static int[] gray_decoding2(int[] symbols_i) {
+        int[] symbols = new int[symbols_i.length];
+        for (int i = 0; i < symbols_i.length; i++) {
+            int num = symbols_i[i];
+            int mask = num >>> 1; // Logical right shift, equivalent to MATLAB's bitshift(num, -1) in java >>> only applies to int and long;
+            while (mask != 0) {
+                num = num ^ mask; // XOR operation, equivalent to MATLAB's bitxor
+                mask = mask >>> 1; // Logical right shift
+            }
+            if (i < 8) {
+                symbols[i] = (num * 4 + 1) % (int)Math.pow(2, Constants.SF);
+            } else {
+                symbols[i] = (num + 1) % (int)Math.pow(2, Constants.SF);
+            }
+        }
+        return symbols;
+    }
+
     private static int gray_decoding(int symbols_i) {
         int num = symbols_i;
         int mask = num >>> 1; // Logical right shift, equivalent to MATLAB's bitshift(num, -1) in java >>> only applies to int and long;
@@ -875,5 +1077,53 @@ public class SymbolGeneration {
             mask = mask >>> 1; // Logical right shift
         }
         return num;
+    }
+
+    private static int[] toBinaryArray(int number, int size) {
+        int[] binary = new int[size];
+        for (int i = size - 1; i >= 0; i--) {
+            binary[i] = (number >> (size - 1 - i)) & 1;
+        }
+        return binary;
+    }
+
+    private static int[] circularShift(int[] array, int shift) {
+        int len = array.length;
+        int[] shifted = new int[len];
+        for (int i = 0; i < len; i++) {
+            shifted[i] = array[(i - shift + len) % len];
+        }
+        return shifted;
+    }
+
+    private static int toDecimal(int[] binary) {
+        int number = 0;
+        for (int i = 0; i < binary.length; i++) {
+            number += binary[i] << i;
+        }
+        return number;
+    }
+
+    private static void reverse(int[] array) {
+        for (int i = 0, j = array.length - 1; i < j; i++, j--) {
+            int temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+    }
+
+    public static int parityFix(int p) {
+        switch (p) {
+            case 3: // 011 wrong b3
+                return 4;
+            case 5: // 101 wrong b4
+                return 8;
+            case 6: // 110 wrong b1
+                return 1;
+            case 7: // 111 wrong b2
+                return 2;
+            default:
+                return 0;
+        }
     }
 }
