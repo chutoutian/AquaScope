@@ -330,19 +330,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
                             Constants.IsCountingFish = true;
                             Constants.IsDectectingFish = false;
-                            Constants.SegmentationFish = false;
+                            Constants.ImagingFish = false;
                         }
                         else if (currentModelName.equals("lite_optimized_clf.ptl"))
                         {
                             Constants.IsDectectingFish = true;
                             Constants.IsCountingFish = false;
-                            Constants.SegmentationFish = false;
+                            Constants.ImagingFish = false;
                         }
                         else if (currentModelName.equals("lite_optimized_seg_240p.ptl"))
                         {
                             Constants.IsDectectingFish = false;
                             Constants.IsCountingFish = false;
-                            Constants.SegmentationFish = true;
+                            Constants.ImagingFish = true;
                         }
 
                         // special handle counting fish
@@ -1180,9 +1180,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et8.getText().toString();
                 if (Utils.isInteger(ss)) {
-                    editor.putInt("symreps", Integer.parseInt(ss));
+                    editor.putInt("SF", Integer.parseInt(ss));
                     editor.commit();
-                    Constants.data_symreps = Integer.parseInt(ss);
+                    Constants.SF = Integer.parseInt(ss);
                 }
             }
         });
@@ -1571,6 +1571,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     public void onstart(View v) {
+        try {
+            Thread.sleep(3000);
+        }
+        catch (Exception e) {
+            Utils.log(e.getMessage());
+        }
         startWrapper();
     }
 

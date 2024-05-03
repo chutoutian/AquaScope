@@ -255,10 +255,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
 
                 if (data_signal!=null) {
-                    //Decoder.decode_helper(av, data_signal, valid_bins, m_attempt);
-                    //int[] signal_d = Decoder.demodulate(data_signal,m_attempt);
                     Decoder.decoding(av,data_signal,m_attempt);
-                    //long[] embedding = Utils.Bytes2Embedding(decoded_data);
                 }
                 return 0;
             }
@@ -274,8 +271,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                  Constants.SignalType sigType,Constants.ExpType expType) {
         //short[] bits = SymbolGeneration.getCodedBits(m_attempt);
 
-        //byte[] test_byte = {1,2,3,4,5,6,24,67,14,4,5,6,82,41,74,42,88};
-        //byte[] imageData = Utils.convertImageToByteArray(MainActivity.av, R.drawable.i1_test);
+
         //byte[] embedding_bytes = Utils.Embedding2Bytes(Constants.SegFish);
         byte[] embedding_bytes_test = {31, 69, 72, -112, -19, -104, 60, -51, -84, -72, -112, 95, 45, -33, -118, 43, 33, 8, 111, -96, 127, 57, 37, -8, -39, -74, -91, 25, 54, -85, -123, 114, -84, -44, 92, 42, -21, -49, 90, 67, -59, 37, -103, 52, -30, -100, 50, -34, 30, 98, -22, 124, -95, -74, 97, -122, -38, 20, -45, 67, -66, 93, 117, -102, -19, 117, 118, 31, -48, -106, 125, 50, 84, 20, 40, 125, -30, 79, 22, -55};
 

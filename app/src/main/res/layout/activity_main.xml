@@ -867,7 +867,6 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="number"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber7" />
 
@@ -875,8 +874,7 @@
         android:id="@+id/textView10"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="symreps"
-        android:visibility="gone"
+        android:text="SF"
         app:layout_constraintBottom_toBottomOf="@+id/editTextNumber8"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber7" />
@@ -957,7 +955,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Code rate"
-        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@+id/spinner"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/spinner" />
@@ -966,7 +963,6 @@
         android:id="@+id/spinner"
         android:layout_width="204dp"
         android:layout_height="wrap_content"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber9" />
 

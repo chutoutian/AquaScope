@@ -246,6 +246,24 @@ public class Utils {
         return downsampledArray;
     }
 
+    public static double[] downsample(double[] original, int q, int p) {
+        int originalSamples = original.length; // Assuming uniform length for all rows
+        int targetSamples = (int) Math.round((double) originalSamples * q / p); // Calculate target samples
+
+        double[] downsampledArray = new double[targetSamples];
+
+        double interval = (double) originalSamples / targetSamples;
+        for (int i = 0; i < targetSamples; i++) {
+            int sampleIndex = (int) Math.round(i * interval);
+            if (sampleIndex >= originalSamples) {
+                sampleIndex = originalSamples - 1; // Handle edge case for rounding
+            }
+            downsampledArray[i] = original[sampleIndex];
+        }
+
+        return downsampledArray;
+    }
+
     public static int getMaxIndex(double[] pks)
     {
         double maxValue = pks[0];
@@ -280,8 +298,13 @@ public class Utils {
             double imaginary_1 = result_spec[1][i];
             abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1);
         }
-        /*
-        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW,2 * Constants.BW ,0,Constants.CFO,0,1);
+
+        return abs_value;
+    }
+
+    public static double[] dechirp_test(double[][] symbol, boolean isUpChirp)
+    {
+        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW,  2 * Constants.BW ,0,Constants.CFO,0,1);
         double[][] mod_dat = new double[2][chirp.length];
         for (int i = 0; i < chirp.length; i++){
             mod_dat[0][i] = chirp[i].getReal();
@@ -290,22 +313,94 @@ public class Utils {
         int length = symbol[0].length;
         double[][] result = timesnative(symbol,mod_dat);
 
-        double[][] result_spec = fftcomplexinoutnative_double(result,Constants.padding_ratio * result[0].length);
+        double[][] result_spec = fftcomplexinoutnative_double(result,10 * length);
 
-        double[][] result_spec_1 = segment2(result_spec,0, Constants.bin_num_lora -1);
-        double[][] result_spec_2 = segment2(result_spec, Constants.bin_num_lora, Constants.padding_ratio * result[0].length - 1);
-        double[] abs_value = new double[Constants.bin_num_lora];
-        for (int i = 0; i < Constants.bin_num_lora; i++) {
-            double real_1 = result_spec_1[0][i];
-            double imaginary_1 = result_spec_1[1][i];
-            abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1);
-            double real_2 = result_spec_2[0][i];
-            double imaginary_2 = result_spec_2[1][i];
-            abs_value[i] += Math.sqrt(real_2 * real_2 + imaginary_2 * imaginary_2);
+        double[] abs_value = new double[10 * length / 2];
+        for (int i = 0; i < abs_value.length; i++) {
+            double real_1 = result_spec[0][i];
+            double imaginary_1 = result_spec[1][i];
+            double real_2 = result_spec[0][i + abs_value.length ];
+            double imaginary_2 = result_spec[1][i + abs_value.length];
+            abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1) + Math.sqrt(real_2 * real_2 + imaginary_2 * imaginary_2) ;
         }
-        */
 
         return abs_value;
+    }
+
+    public static double[][] downversion(double[] data)
+    {
+        double[] t = new double[data.length];
+        for (int i = 0; i<t.length; i++){
+            t[i] = i / (double)Constants.FS ;
+        }
+        double[][] carrier = new double[2][data.length];
+        for (int i = 0; i< t.length; i++)
+        {
+            carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
+            carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
+            //carrier_sin[i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
+        }
+
+        double[][] downversion_chirp = new double[2][data.length];
+        for (int i = 0; i< data.length; i++)
+        {
+            downversion_chirp[0][i] = data[i] / 32767.0 * carrier[0][i];
+            downversion_chirp[1][i] = - data[i] / 32767.0 * carrier[1][i];
+
+
+        }
+        // low-filter 4k filter
+        downversion_chirp[0] = filter(downversion_chirp[0]);
+        downversion_chirp[1] = filter(downversion_chirp[1]);
+        //downversion_chirp[0] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+        //downversion_chirp[1] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+
+        return downversion_chirp;
+
+    }
+
+    public static double[] synchronization(int up_index, int down_index)
+    {
+        double up_freq =(double) up_index /  Constants.Sample_Lora * Constants.FS;
+        double down_freq =(double) down_index /Constants.Sample_Lora * Constants.FS;
+
+        int up_shift = (up_index > 64) ? up_index - Constants.Sample_Lora : up_index ;
+        int down_shift = (down_index > 64) ? down_index - Constants.Sample_Lora : down_index;
+
+        double CFO = (double)(up_shift + down_shift) / 2;
+
+        double TO = (double) (down_shift - up_shift) / 2 ;
+
+        return new double[]{CFO, TO};
+    }
+
+    public static double[] synchronization2(double up_index, double down_index)
+    {
+        double compensate_index = 0.0;
+        if (Constants.SF == 7)
+        {
+            compensate_index = 64.0;
+        }
+        else if (Constants.SF == 6)
+        {
+            compensate_index = 32.0;
+        }
+        else if (Constants.SF == 5)
+        {
+            compensate_index = 16.0;
+        }
+        else if (Constants.SF == 4)
+        {
+            compensate_index = 8.0;
+        }
+        double up_shift = (up_index > compensate_index) ? up_index - Constants.Sample_Lora : up_index ;
+        double down_shift = (down_index > compensate_index) ? down_index - Constants.Sample_Lora : down_index;
+
+        double CFO = (double)(up_shift + down_shift) / 2;
+
+        double TO = (double) (down_shift - up_shift) / 2 ;
+
+        return new double[]{CFO, TO};
     }
 
     public static int MaxIndex(double[] values){
@@ -330,6 +425,28 @@ public class Utils {
         return maxValue;
     }
 
+    public static double[] bPassFilter(int centerFre, int offsetFre, int sampFre) {
+        int N = (int) Math.ceil(3.6 * sampFre / offsetFre);
+        int M = N - 1;
+        M += M % 2; // Ensure M is even
+
+        double Wp1 = 2 * Math.PI * (centerFre - offsetFre / 2) / sampFre;
+        double Wp2 = 2 * Math.PI * (centerFre + offsetFre / 2) / sampFre;
+
+        double[] h = new double[M + 1]; // Filter coefficients
+
+        for (int k = 0; k <= M; k++) {
+            if (k - M / 2.0 == 0) {
+                h[k] = (Wp2 / Math.PI) - (Wp1 / Math.PI);
+            } else {
+                h[k] = (Wp2 * Math.sin(Wp2 * (k - M / 2.0)) / (Math.PI * (Wp2 * (k - M / 2.0))))
+                        - (Wp1 * Math.sin(Wp1 * (k - M / 2.0)) / (Math.PI * (Wp1 * (k - M / 2.0))));
+            }
+        }
+
+        return h;
+    }
+
     public static Complex[] chirp(boolean isUpChirp, int sf, int bw, int fs, double h, double cfo, double tdelta, double tscale) {
         if (tscale == 0) tscale = 1;
         int N = (int)Math.pow(2,sf);
@@ -349,7 +466,7 @@ public class Utils {
         }
 
         double phi = 0;
-        double[] t1 = new double[(int) (sampPerSym * (N - h) / N) + 1];
+        double[] t1 = new double[(int) Math.round(sampPerSym * (N - h) / (double) N) + 1];
         for (int i = 0; i<t1.length; i++){
             t1[i] = (i / (double)fs) * tscale + tdelta;
         }
@@ -365,14 +482,8 @@ public class Utils {
         else{
             phi = Math.atan2(c1[c1.length-1].getImaginary(), c1[c1.length-1].getReal());
         }
-        double[] t2;
-        if (h == 0.0)
-        {
-            t2 = new double[0];
-        }
-        else {
-            t2 = new double[(int) (sampPerSym * h / N) + 1];
-        }
+        int t2length = sampPerSym + 1 - t1.length;
+        double[] t2 = new double[t2length];
 
 
         for (int i = 0; i <t2.length; i++){
@@ -394,19 +505,27 @@ public class Utils {
 
         return y;
     }
-
     public static short[] GeneratePreamble_LoRa(boolean isUpChirp, int sym)
     {
         Complex[] chirp = Utils.chirp(isUpChirp, Constants.SF, Constants.BW, Constants.FS, sym, 0, 0, 1); // Assuming this method exists and returns Complex[]
         // Preparing to store real and imaginary components scaled and converted to short
-        short[] symbol = new short[chirp.length * 2];
+
+        double[][] symbol = new double[2][chirp.length];
 
         for (int i = 0, j = 0; i < chirp.length; i++) {
             // Scale the real and imaginary parts to the maximum range of short type
-            symbol[j++] = (short) (chirp[i].getReal() * 32767.0);
-            symbol[j++] = (short) (chirp[i].getImaginary() * 32767.0);
+
+            symbol[0][i] = chirp[i].getReal();
+            symbol[1][i] = chirp[i].getImaginary();
         }
-        return symbol;
+        double[][] results_double = timesnative(symbol,Constants.carrier);
+        short[] results_real = new short[results_double[0].length];
+        for (int i =0 ; i<results_real.length;i++)
+        {
+            results_real[i] = (short) (results_double[0][i] * 32767.0);
+        }
+
+        return results_real;
 
     }
     public static Bitmap convertByteArrayToBitmap(byte[] byteArray) {
@@ -1303,31 +1422,33 @@ public class Utils {
                     len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
 
                 }
-                else if(Constants.SegmentationFish)
+                else if(Constants.ImagingFish)
                 {
-                    timeout = 30;
-                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*500);
+                    timeout = 15;
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*100);
                 }
             }
             else if(Constants.scheme == Constants.Modulation.LoRa)
             {
+                timeout = 15;
                 if (Constants.IsCountingFish || Constants.IsDectectingFish)
                 {
-                    timeout = 15;
                     len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*32;
 
                 }
-                else if(Constants.SegmentationFish)
+                else if(Constants.ImagingFish)
                 {
                     if (Constants.SF == 7)
                     {
-                        timeout = 15;
                         len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*200;
+                    }
+                    else if (Constants.SF == 5 || Constants.SF == 6)
+                    {
+                        len = ChirpSamples + Constants.ChirpGap +Constants.Ns_lora * 300;
                     }
                     else if (Constants.SF == 4)
                     {
-                        timeout = 15;
-                        len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*1600;
+                        len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*400;
                     }
                 }
             }
@@ -1342,7 +1463,7 @@ public class Utils {
         int synclag = 12000;
         double[] sounding_signal = new double[]{};
 
-        if(Constants.SegmentationFish)
+        if(Constants.ImagingFish)
         {
             if (sigType.equals(Constants.SignalType.DataRx))
             {
@@ -1351,15 +1472,15 @@ public class Utils {
                 {
                     if (Constants.SF == 7)
                     {
-                        sounding_signal=new double[(10+1)*Constants.RecorderStepSize];
+                        sounding_signal=new double[30*Constants.RecorderStepSize];
                     }
-                    else if (Constants.SF == 8)
+                    else if (Constants.SF == 6)
                     {
-                        sounding_signal=new double[(50+1)*Constants.RecorderStepSize];
+                        sounding_signal=new double[25*Constants.RecorderStepSize];
                     }
-                    else if (Constants.SF == 4)
+                    else if (Constants.SF == 5)
                     {
-                        sounding_signal=new double[(15+1)*Constants.RecorderStepSize];
+                        sounding_signal=new double[15*Constants.RecorderStepSize];
                     }
                 }
             }
@@ -1463,8 +1584,8 @@ public class Utils {
         Constants._OfflineRecorder.halt2();
 
         if (valid_signal) {
-            return Utils.filter(sounding_signal);
-            //return sounding_signal;
+            //return Utils.filter(sounding_signal);
+            return sounding_signal;
         }
         return null;
     }
@@ -1558,6 +1679,13 @@ public class Utils {
 
     public static double[] firwrapper(double[] sig) {
         double[] h=new double[]{0.000182981959336989,0.000281596242979397,0.000278146045925432,0.000175593510303356,-4.62343304809110e-19,-0.000200360419689133,-0.000360951066953434,-0.000412991328953827,-0.000300653514269367,1.50969613210241e-18,0.000465978441137468,0.00102258147190892,0.00155366635073282,0.00192784355834049,0.00203610307379658,0.00183119111593167,0.00135603855040258,0.000749280342023432,0.000220958680427305,-2.30998316092680e-19,0.000264751350126403,0.00107567949517942,0.00233229627684471,0.00377262258405226,0.00502311871694995,0.00569227410155340,0.00548603174290836,0.00431270688583350,0.00234309825736876,0,-0.00213082326080853,-0.00345315860003227,-0.00353962427138790,-0.00228740687362881,3.04497082814396e-18,0.00264042059820580,0.00471756289619728,0.00531631859929438,0.00379212348265709,-1.99178361782373e-17,-0.00558925290045386,-0.0119350370250123,-0.0176440086545525,-0.0213191620435004,-0.0219592383672450,-0.0193021014035209,-0.0140079988312124,-0.00761010753938763,-0.00221480214028708,-3.05997847316821e-18,-0.00261988600696407,-0.0106615919949044,-0.0233019683686087,-0.0382766989959210,-0.0522058307502582,-0.0612344107673335,-0.0618649720104803,-0.0518011604210193,-0.0306049219949348,2.05563094310381e-17,0.0362729247397242,0.0730450660051671,0.104645449260725,0.125975754818137,0.133506082359307,0.125975754818137,0.104645449260725,0.0730450660051671,0.0362729247397242,2.05563094310381e-17,-0.0306049219949348,-0.0518011604210193,-0.0618649720104803,-0.0612344107673335,-0.0522058307502582,-0.0382766989959210,-0.0233019683686087,-0.0106615919949044,-0.00261988600696407,-3.05997847316821e-18,-0.00221480214028708,-0.00761010753938763,-0.0140079988312124,-0.0193021014035209,-0.0219592383672450,-0.0213191620435004,-0.0176440086545525,-0.0119350370250123,-0.00558925290045386,-1.99178361782373e-17,0.00379212348265709,0.00531631859929438,0.00471756289619728,0.00264042059820580,3.04497082814396e-18,-0.00228740687362881,-0.00353962427138790,-0.00345315860003227,-0.00213082326080853,0,0.00234309825736876,0.00431270688583350,0.00548603174290836,0.00569227410155340,0.00502311871694995,0.00377262258405226,0.00233229627684471,0.00107567949517942,0.000264751350126403,-2.30998316092680e-19,0.000220958680427305,0.000749280342023432,0.00135603855040258,0.00183119111593167,0.00203610307379658,0.00192784355834049,0.00155366635073282,0.00102258147190892,0.000465978441137468,1.50969613210241e-18,-0.000300653514269367,-0.000412991328953827,-0.000360951066953434,-0.000200360419689133,-4.62343304809110e-19,0.000175593510303356,0.000278146045925432,0.000281596242979397,0.000182981959336989};
+        double[] filtout = fir(sig,h);
+        return Utils.segment(filtout,63,filtout.length-1);
+    }
+
+    public static double[] bpass_filter(double[] sig, int center_freq, int offset_freq, int sampling_freq)
+    {
+        double[] h = bPassFilter(center_freq,offset_freq,sampling_freq);
         double[] filtout = fir(sig,h);
         return Utils.segment(filtout,63,filtout.length-1);
     }

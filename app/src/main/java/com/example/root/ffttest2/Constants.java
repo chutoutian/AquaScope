@@ -74,7 +74,9 @@ public class Constants {
         FlipSyms,
         TxBits,
         RxBits,
-        RxSymbols,
+        Rx_Raw_Symbols,
+        Rx_Symbols,
+        Rx_Embedding,
         Timestamp
     }
     public enum EstSignalType {
@@ -102,30 +104,33 @@ public class Constants {
 
     public static int SF = 7; //  (7-12)
 
-    public static int Sample_Lora = (int)Math.pow(2,Constants.SF);
+    public static int Sample_Lora = 128;
 
     public static int CodeRate_LoRA = 4; // (code rate = 4/8 (1:4/5 2:4/6 3:4/7 4:4/8))
-
-    public static int padding_ratio = 10;
-
-    public static int bin_num_lora = padding_ratio * (int)Math.pow(2,Constants.SF);
     public static int LDR = 0;
 
-    public static int BW = 20000; // bandwidth 125kHz which should be changed in the acoustic system (12.5kHz for testing)
+    public static int BW = 2000; // bandwidth 125kHz which should be changed in the acoustic system (12.5kHz for testing)
+
+    public static int FC = 2500;
+
+    public static int Center_Freq = 2500;
+
+    public static int Offset_Freq = 1000;
 
     public static int FS = 48000; // sampling rate 1Mhz which should be changed to fs = 48000hz
 
-    public static int Ns_lora = 614;
+    public static int Ns_lora = 1536;
 
-    public static int CFO = 0;
+    public static int EmbeddindBytes = 80;
+
+    public static double[][] carrier = new double[2][Ns_lora];
+
+
+    public static double CFO = 0.0;
 
     public static int bin_num;
 
     public static int sample_num;
-
-    public static int zero_padding_ratio = 10; // ????
-
-    public static int fft_length;
 
     public static boolean HasHead = false;
 
@@ -168,7 +173,7 @@ public class Constants {
     public static boolean IsDectectingFish = false;
     public static boolean IsCountingFish = false;
 
-    public static boolean SegmentationFish = true;
+    public static boolean ImagingFish = true;
     public static double XCORR_MAX_VAL_HEIGHT_FAC = .8;
     public static boolean CODING = true;
     public static int XcorrVersion = 2;
@@ -708,8 +713,8 @@ public class Constants {
         et6.setText(Constants.f_range[0]+"");
         Constants.f_range[1]=prefs.getInt("f2",Constants.f_range[1]);
         et7.setText(Constants.f_range[1]+"");
-        Constants.data_symreps =prefs.getInt("symreps",Constants.data_symreps);
-        et8.setText(Constants.data_symreps +"");
+        Constants.SF =prefs.getInt("SF",Constants.SF);
+        et8.setText(Constants.SF +"");
 
         Constants.mattempts=prefs.getInt("mattempts",Constants.mattempts);
         et9.setText(Constants.mattempts+"");
@@ -750,16 +755,16 @@ public class Constants {
         preambleStartFreq = f_range[0];
         preambleEndFreq = f_range[1];
 
-//        Constants.codeRate=CodeRate.valueOf(prefs.getString("code_rate", Constants.codeRate.toString()));
-//        if (Constants.codeRate.equals(CodeRate.None)) {
-//            Constants.spinner.setSelection(0);
-//        }
-//        else if (Constants.codeRate.equals(CodeRate.C1_2)) {
-//            Constants.spinner.setSelection(1);
-//        }
-//        else if (Constants.codeRate.equals(CodeRate.C2_3)) {
-//            Constants.spinner.setSelection(2);
-//        }
+        Constants.codeRate=CodeRate.valueOf(prefs.getString("code_rate", Constants.codeRate.toString()));
+        if (Constants.codeRate.equals(CodeRate.None)) {
+            Constants.spinner.setSelection(0);
+        }
+        else if (Constants.codeRate.equals(CodeRate.C1_2)) {
+            Constants.spinner.setSelection(1);
+        }
+        else if (Constants.codeRate.equals(CodeRate.C2_3)) {
+            Constants.spinner.setSelection(2);
+        }
 
         Constants.snr_method=prefs.getInt("snr_method",Constants.snr_method);
         Log.e("snr",Constants.snr_method+"");
@@ -797,12 +802,6 @@ public class Constants {
 
         updateNbins();
 
-        Constants.Ns_lora = (int)Math.round( 2 * FS / (double)BW * Math.pow(2,SF));
-        if (Constants.Ns_lora % 2 != 0)
-        {
-            Constants.Ns_lora += 1;
-        }
-
         if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
         {
             Constants.DIFFERENTIAL = true;
@@ -814,6 +813,22 @@ public class Constants {
             Constants.DIFFERENTIAL = false;
             Constants.INTERLEAVE = false;
             Constants.GRAY_CODING = true;
+        }
+
+
+        Sample_Lora = (int)Math.pow(2,Constants.SF);
+        Ns_lora = (int)Math.round(FS / (double)BW * Sample_Lora);
+        carrier = new double[2][Ns_lora];
+
+        double[] t = new double[Ns_lora];
+        for (int i = 0; i<t.length; i++){
+            t[i] = i / (double)Constants.FS ;
+        }
+        for (int i = 0; i< t.length; i++)
+        {
+            carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
+            carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
+            //carrier_sin[i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
         }
 
 

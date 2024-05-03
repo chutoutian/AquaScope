@@ -438,8 +438,15 @@ Java_com_example_root_ffttest2_Utils_fftcomplexinoutnative_1double(JNIEnv *env, 
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fft_len);
 
     for (int i = 0; i < fft_len; i++) {
-        in[i][0] = real1[i];
-        in[i][1] = imag1[i];
+        if (i < datalen)
+        {
+            in[i][0] = real1[i];
+            in[i][1] = imag1[i];
+        }
+        else{
+            in[i][0] = 0;
+            in[i][1] = 0;
+        }
         out[i][0] = 0;
         out[i][1] = 0;
     }

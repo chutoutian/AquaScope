@@ -186,9 +186,9 @@ public class SymbolGeneration {
             txsig[counter++] = s;
         }
         for (int i = 0; i < sym.length; i++) {
-
             symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
-
+            // test
+            //symbol = Utils.GeneratePreamble_LoRa(true, 0);
             for (Short s : symbol) {
                 txsig[counter++] = s;
             }
@@ -785,7 +785,7 @@ public class SymbolGeneration {
 
         return crc;
     }
-    private static int calc_sym_num(int plen) {
+    public static int calc_sym_num(int plen) {
         // Implementation needed
         int crcFactor = Constants.CRC ? 1 : 0; // Convert CRC flag to an integer factor
         int headerFactor = Constants.HasHead ? 0 : 1; // Convert header presence flag to an integer factor for subtraction
