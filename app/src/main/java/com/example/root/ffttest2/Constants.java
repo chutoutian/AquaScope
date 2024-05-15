@@ -55,6 +55,9 @@ public class Constants {
         DataFull_1000_4000,
         DataFull_1000_2500,
         DataFull_1000_1500,
+        DataChirp,
+
+        DataNoise,
         BitsAdapt,
         BitsFull_1000_4000,
         BitsFull_1000_2500,
@@ -77,6 +80,7 @@ public class Constants {
         Rx_Raw_Symbols,
         Rx_Symbols,
         Rx_Embedding,
+        Battery_Level,
         Timestamp
     }
     public enum EstSignalType {
@@ -89,14 +93,16 @@ public class Constants {
     }
     public enum CodeRate {
         None,
-        C1_2,
-        C2_3
+        C4_8,
+        C4_6
     }
     // LoRa related
     public enum Modulation {
         OFDM_freq_adapt,
         OFDM_freq_all,
-        LoRa
+        LoRa,
+        Noise,
+        Chirp
     }
 
     public static Modulation scheme = Modulation.LoRa;
@@ -113,7 +119,9 @@ public class Constants {
 
     public static int FC = 2500;
 
-    public static int Center_Freq = 2500;
+    public static int Gap = 0;
+
+    public static int Center_Freq = 0;
 
     public static int Offset_Freq = 1000;
 
@@ -122,6 +130,10 @@ public class Constants {
     public static int Ns_lora = 1536;
 
     public static int EmbeddindBytes = 80;
+
+    public static float Battery_Level = 100;
+
+    public static int Send_Delay = 3000;
 
     public static double[][] carrier = new double[2][Ns_lora];
 
@@ -216,15 +228,15 @@ public class Constants {
     static double WaitForDataTime = 0;
 
     static TextToSpeech tts = null;
-    static boolean DIFFERENTIAL=false;
-    static boolean INTERLEAVE=false;
+    static boolean DIFFERENTIAL=true;
+    static boolean INTERLEAVE=true;
     static float FreAdaptScaleFactor;
 
     static long StartingTimestamp;
 
     public static double GammaThresh = .8;
 
-    public static int maxbits=3056;
+    public static int maxbits=640;
     //public static int maxbits=5;
     public static int exp_num=5;
     public static int SNR_THRESH = 10; //unused
@@ -667,8 +679,8 @@ public class Constants {
         Constants.volume=prefs.getFloat("volume",Constants.volume);
         et1.setText(Constants.volume+"");
 
-//        Constants.preambleTime=prefs.getInt("preamble_len",Constants.preambleTime);
-//        et2.setText(Constants.preambleTime+"");
+        Constants.preambleTime=prefs.getInt("preamble_len",Constants.preambleTime);
+        et2.setText(Constants.preambleTime+"");
 
         Constants.initSleep=prefs.getInt("init_sleep",Constants.initSleep);
         et3.setText(Constants.initSleep+"");
@@ -709,11 +721,11 @@ public class Constants {
         Constants.Nsyms=prefs.getInt("nsyms",Constants.Nsyms);
         et5.setText(Constants.Nsyms+"");
 
-        Constants.f_range[0]=prefs.getInt("f1",Constants.f_range[0]);
-        et6.setText(Constants.f_range[0]+"");
-        Constants.f_range[1]=prefs.getInt("f2",Constants.f_range[1]);
-        et7.setText(Constants.f_range[1]+"");
-        Constants.SF =prefs.getInt("SF",Constants.SF);
+        //Constants.BW=prefs.getInt("BW",Constants.BW);
+        et6.setText(Constants.BW+"");
+        //Constants.FC=prefs.getInt("FC",Constants.FC);
+        et7.setText(Constants.FC+"");
+        //Constants.SF =prefs.getInt("SF",Constants.SF);  //this code of line is used to remember the last setting
         et8.setText(Constants.SF +"");
 
         Constants.mattempts=prefs.getInt("mattempts",Constants.mattempts);
@@ -755,34 +767,37 @@ public class Constants {
         preambleStartFreq = f_range[0];
         preambleEndFreq = f_range[1];
 
-        Constants.codeRate=CodeRate.valueOf(prefs.getString("code_rate", Constants.codeRate.toString()));
-        if (Constants.codeRate.equals(CodeRate.None)) {
+        //Constants.codeRate=CodeRate.valueOf(prefs.getString("code_rate", Constants.codeRate.toString()));
+        if (Constants.CodeRate_LoRA == 0) {
             Constants.spinner.setSelection(0);
         }
-        else if (Constants.codeRate.equals(CodeRate.C1_2)) {
+        else if (Constants.CodeRate_LoRA == 4) {
             Constants.spinner.setSelection(1);
         }
-        else if (Constants.codeRate.equals(CodeRate.C2_3)) {
+        else if (Constants.CodeRate_LoRA == 2) {
             Constants.spinner.setSelection(2);
         }
 
-        Constants.snr_method=prefs.getInt("snr_method",Constants.snr_method);
-        Log.e("snr",Constants.snr_method+"");
-        if (Constants.snr_method==1) {
+        //String s =prefs.getString("Tx protocol",Constants.scheme.toString());
+       //Log.e("snr",Constants.snr_method+"");
+        if (Constants.scheme== Modulation.LoRa) {
             Constants.spinner2.setSelection(0);
         }
-        else if (Constants.snr_method==2) {
+        else if (Constants.scheme== Constants.Modulation.OFDM_freq_adapt) {
             Constants.spinner2.setSelection(1);
         }
+        else if (Constants.scheme== Modulation.OFDM_freq_all) {
+            Constants.spinner2.setSelection(2);
+        }
+        else if (Constants.scheme== Modulation.Noise) {
+            Constants.spinner2.setSelection(3);
+        }
+        else if (Constants.scheme== Modulation.Chirp) {
+            Constants.spinner2.setSelection(4);
+        }
 
-//        if (Constants.snr_method==1) {
-//            Constants.SNR_THRESH1 = prefs.getInt("snr_thresh1", Constants.SNR_THRESH1);
-//            et4.setText(Constants.SNR_THRESH1 + "");
-//        }
-//        else if (Constants.snr_method==2) {
-            Constants.SNR_THRESH2 = prefs.getInt("snr_thresh2", Constants.SNR_THRESH2);
-            et4.setText(Constants.SNR_THRESH2 + "");
-//        }
+        Constants.Send_Delay = prefs.getInt("Send Delay", Constants.Send_Delay);
+        et4.setText(Constants.Send_Delay + "");
 
         Constants.Ns=prefs.getInt("ns",Constants.Ns);
         if (Constants.Ns==960) {
@@ -802,34 +817,7 @@ public class Constants {
 
         updateNbins();
 
-        if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
-        {
-            Constants.DIFFERENTIAL = true;
-            Constants.INTERLEAVE = true;
-            Constants.GRAY_CODING = false;
-        }
-        else if (Constants.scheme == Constants.Modulation.LoRa)
-        {
-            Constants.DIFFERENTIAL = false;
-            Constants.INTERLEAVE = false;
-            Constants.GRAY_CODING = true;
-        }
-
-
-        Sample_Lora = (int)Math.pow(2,Constants.SF);
-        Ns_lora = (int)Math.round(FS / (double)BW * Sample_Lora);
-        carrier = new double[2][Ns_lora];
-
-        double[] t = new double[Ns_lora];
-        for (int i = 0; i<t.length; i++){
-            t[i] = i / (double)Constants.FS ;
-        }
-        for (int i = 0; i< t.length; i++)
-        {
-            carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
-            carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
-            //carrier_sin[i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
-        }
+        updateChirp_Parameters();
 
 
         ////////////////////////////////////////////////////////
@@ -864,6 +852,28 @@ public class Constants {
         }
     }
 
+    public static void updateChirp_Parameters()
+    {
+        if (BW > 0)
+        {
+            Offset_Freq = BW / 2;
+
+            Sample_Lora = (int)Math.pow(2,Constants.SF);
+            Ns_lora = (int)Math.round(FS / (double)BW * Sample_Lora );
+            carrier = new double[2][Ns_lora];
+
+            double[] t = new double[Ns_lora];
+            for (int i = 0; i<t.length; i++){
+                t[i] = i / (double)Constants.FS ;
+            }
+            for (int i = 0; i< t.length; i++)
+            {
+                carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
+                carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
+            }
+        }
+
+    }
     public static void updateNbins() {
         if (Constants.Ns == 960) {
             Cp = 67;

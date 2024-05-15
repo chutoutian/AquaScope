@@ -27,6 +27,7 @@
         android:layout_height="120dp"
         android:layout_alignParentBottom="true"
         android:layout_marginTop="20dp"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/graphProd" />
 
@@ -35,6 +36,7 @@
         android:layout_width="match_parent"
         android:layout_height="120dp"
         android:layout_alignParentBottom="true"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/graphProd2" />
 
@@ -144,7 +146,7 @@
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:contentDescription="@string/image_view"
-        app:layout_constraintTop_toBottomOf="@+id/textView11" />
+        app:layout_constraintTop_toBottomOf="@+id/textView13" />
 
 
     <TextView
@@ -777,7 +779,6 @@
         android:ems="10"
         android:inputType="numberSigned"
         android:text=""
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber3" />
 
@@ -785,8 +786,7 @@
         android:id="@+id/textView5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="SNR thresh"
-        android:visibility="gone"
+        android:text="Send Delay"
         app:layout_constraintBottom_toBottomOf="@+id/editTextNumber4"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber3" />
@@ -827,7 +827,6 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="number"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber5" />
 
@@ -835,8 +834,7 @@
         android:id="@+id/textView8"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="f1"
-        android:visibility="gone"
+        android:text="BW"
         app:layout_constraintBottom_toBottomOf="@+id/editTextNumber6"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber5" />
@@ -847,7 +845,6 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="number"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber6" />
 
@@ -855,8 +852,7 @@
         android:id="@+id/textView9"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="f2"
-        android:visibility="gone"
+        android:text="FC"
         app:layout_constraintBottom_toBottomOf="@+id/editTextNumber7"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumber6" />
@@ -971,7 +967,6 @@
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/spinner" />
 
@@ -979,8 +974,7 @@
         android:id="@+id/textView13"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="SNR method"
-        android:visibility="gone"
+        android:text="Tx protocol"
         app:layout_constraintBottom_toBottomOf="@+id/spinner2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/spinner2" />

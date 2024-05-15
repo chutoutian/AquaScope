@@ -4,6 +4,10 @@ import static com.example.root.ffttest2.Constants.LOG;
 import static com.example.root.ffttest2.Constants.XCORR_MAX_VAL_HEIGHT_FAC;
 import static com.example.root.ffttest2.Constants.fbackTime;
 
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.Context;
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -13,6 +17,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.Log;
+import android.os.BatteryManager;
 
 import androidx.core.app.NotificationCompat;
 
@@ -95,17 +100,6 @@ public class Utils {
             String byteString = bitString.substring(beginIndex, endIndex);
             byte parsedByte = (byte) Integer.parseInt(byteString, 2);
             byteArray[i] = parsedByte;
-        }
-
-        return byteArray;
-    }
-
-    public static byte[] convertIntArrayToByteArray(int[] intArray) {
-        byte[] byteArray = new byte[intArray.length];
-
-        for (int i = 0; i < intArray.length; i++) {
-            // Convert each int to a byte, keeping only the lowest 8 bits
-            byteArray[i] = (byte) intArray[i];
         }
 
         return byteArray;
@@ -344,19 +338,35 @@ public class Utils {
         double[][] downversion_chirp = new double[2][data.length];
         for (int i = 0; i< data.length; i++)
         {
-            downversion_chirp[0][i] = data[i] / 32767.0 * carrier[0][i];
-            downversion_chirp[1][i] = - data[i] / 32767.0 * carrier[1][i];
+            downversion_chirp[0][i] = data[i]  * carrier[0][i]; // do we really need to divded by 32767.0?
+            downversion_chirp[1][i] = - data[i]  * carrier[1][i];
 
 
         }
         // low-filter 4k filter
-        downversion_chirp[0] = filter(downversion_chirp[0]);
-        downversion_chirp[1] = filter(downversion_chirp[1]);
-        //downversion_chirp[0] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
-        //downversion_chirp[1] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+        //downversion_chirp[0] = filter(downversion_chirp[0]);
+        //downversion_chirp[1] = filter(downversion_chirp[1]);
+        downversion_chirp[0] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+        downversion_chirp[1] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
 
         return downversion_chirp;
 
+    }
+
+    public static float getBatteryLevel(Context context) {
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = context.registerReceiver(null, ifilter);
+        if (batteryStatus == null)
+            return -1; // Unable to retrieve battery status
+
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+        if (level == -1 || scale == -1)
+            return -1; // Unable to retrieve battery level or scale
+
+        float batteryPct = (level / (float) scale) * 100;
+        return batteryPct;
     }
 
     public static double[] synchronization(int up_index, int down_index)
@@ -447,11 +457,38 @@ public class Utils {
         return h;
     }
 
+    public static Complex[] chirp1(boolean isUpChirp, double T, int bw, int fs, int symbol)
+    {
+        int samPerSym = (int)(T * fs);
+        double k, f0;
+        if (isUpChirp) {
+            k = bw / T;
+            f0 = -bw / 2.0 ;
+        } else {
+            k = -bw / T;
+            f0 = bw / 2.0 ;
+        }
+
+        double phi = 0;
+        double[] t1 = new double[samPerSym];
+        for (int i = 0; i<t1.length; i++){
+            t1[i] = (i / (double)fs) ;
+        }
+
+        Complex[] c1 = new Complex[t1.length];
+        for (int i = 0; i < t1.length; i++){
+            double freq = f0  + 0.5 *k * t1[i];
+            c1[i] = new Complex(0,2* Math.PI* freq * t1[i]).exp();
+        }
+
+        return c1;
+
+
+    }
     public static Complex[] chirp(boolean isUpChirp, int sf, int bw, int fs, double h, double cfo, double tdelta, double tscale) {
-        if (tscale == 0) tscale = 1;
         int N = (int)Math.pow(2,sf);
-        double T = N / (double)bw;  // symbol period
-        int sampPerSym = (int)Math.round(fs / (double)bw * N);
+        double T = N / ((double)bw /tscale);  // symbol period
+        int sampPerSym = (int)Math.round(fs / (double)bw * N / tscale);
         double hOrig = h;
         h = Math.round(h);
         cfo = cfo + (hOrig - h) / N * bw;
@@ -468,7 +505,7 @@ public class Utils {
         double phi = 0;
         double[] t1 = new double[(int) Math.round(sampPerSym * (N - h) / (double) N) + 1];
         for (int i = 0; i<t1.length; i++){
-            t1[i] = (i / (double)fs) * tscale + tdelta;
+            t1[i] = (i / (double)fs)  + tdelta;
         }
 
         Complex[] c1 = new Complex[t1.length];
@@ -528,8 +565,41 @@ public class Utils {
         return results_real;
 
     }
-    public static Bitmap convertByteArrayToBitmap(byte[] byteArray) {
-        return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
+
+    public static short[] GenerateChirp_LoRa(boolean isUpChirp)
+    {
+        Complex[] chirp = Utils.chirp1(isUpChirp, 0.5,6000, Constants.FS, 0); // Assuming this method exists and returns Complex[]
+        // Preparing to store real and imaginary components scaled and converted to short
+
+        double[][] symbol = new double[2][chirp.length];
+
+        for (int i = 0, j = 0; i < chirp.length; i++) {
+            // Scale the real and imaginary parts to the maximum range of short type
+
+            symbol[0][i] = chirp[i].getReal();
+            symbol[1][i] = chirp[i].getImaginary();
+        }
+        double[] t = new double[chirp.length];
+        for (int i = 0; i<t.length; i++){
+            t[i] = i / (double)Constants.FS ;
+        }
+        double[][] carrier = new double[2][chirp.length];
+        for (int i = 0; i< t.length; i++)
+        {
+            carrier[0][i] = Math.cos(2* Math.PI* 3000 * t[i]);
+            carrier[1][i] = Math.sin(2* Math.PI* 3000 * t[i]);
+            //carrier_sin[i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
+        }
+
+        double[][] results_double = timesnative(symbol,carrier);
+        short[] results_real = new short[results_double[0].length];
+        for (int i =0 ; i<results_real.length;i++)
+        {
+            results_real[i] = (short) (results_double[0][i] * 32767.0);
+        }
+
+        return results_real;
+
     }
 
     public static byte[] Embedding2Bytes(long[] embedding) {
@@ -582,17 +652,6 @@ public class Utils {
         return longs;
     }
 
-    public static double[][] deInterleave(double[] data){
-        int length = data.length / 2;
-        double[][] mod_dat = new double[2][length];
-
-        for (int i = 0, j = 0; i < data.length; i += 2, j++){
-            mod_dat[0][j] = data[i] / 32767.0;
-            mod_dat[1][j] = data[i+1] / 32767.0;
-        }
-
-        return mod_dat;
-    }
 
 
 
@@ -1371,7 +1430,6 @@ public class Utils {
         }
         return flipped;
     }
-
     public static double[] waitForChirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Log.e("fifo",filename);
@@ -1412,7 +1470,204 @@ public class Utils {
             }
             len = (int)(ChirpSamples+Constants.ChirpGap+((fbackTime/1000.0)*Constants.fs));
         }
-        else if (sigType.equals(Constants.SignalType.DataRx)) {
+
+        int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
+        double[] tx_preamble = PreambleGen.preamble_d();
+        ArrayList<Double[]> sampleHistory = new ArrayList<>();
+        ArrayList<Double> valueHistory = new ArrayList<>();
+        ArrayList<Double> idxHistory = new ArrayList<>();
+        int synclag = 12000;
+        double[] sounding_signal = new double[]{};
+        sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
+        Log.e("len","sig length "+sounding_signal.length+","+sigType.toString());
+        boolean valid_signal = false;
+//        boolean getOneMoreFlag = false;
+        int sounding_signal_counter=0;
+        for (int i = 0; i < N; i++) {
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+//            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
+
+            if (sigType.equals(Constants.SignalType.Sounding)||
+                    sigType.equals(Constants.SignalType.Feedback)||
+                    sigType.equals(Constants.SignalType.DataRx) ) {
+//                Log.e("fifo","loop "+i);
+
+                if (i<MAX_WINDOWS) {
+                    sampleHistory.add(rec);
+                    continue;
+                }
+                else {
+                    if (numWindowsLeft==0) {
+                        double[] out = null;
+                        out = Utils.concat(sampleHistory.get(sampleHistory.size() - 1), rec);
+
+                        double[] filt = Utils.copyArray(out);
+                        filt = Utils.filter(filt);
+
+                        //value,idx
+                        double[] xcorr_out = Utils.xcorr_online(tx_preamble, filt);
+
+                        long t1 = System.currentTimeMillis();
+                        Utils.log(String.format("Listening... (%.2f)",xcorr_out[2]));
+
+                        sampleHistory.add(rec);
+                        valueHistory.add(xcorr_out[0]);
+                        idxHistory.add(xcorr_out[1]);
+
+                        if (xcorr_out[0] != -1) {
+                            if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
+                                Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
+
+                                numWindowsLeft = MAX_WINDOWS-1;
+
+//                                Log.e("copy","copying "+out[t_idx]+","+out[t_idx+1]+","+out[t_idx+2]+","+out[t_idx+3]+","+out[t_idx+4]);
+                                for (int j = (int)xcorr_out[1]; j < out.length; j++) {
+                                    sounding_signal[sounding_signal_counter++]=out[j];
+                                }
+
+                                Log.e("copy", "copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
+                            } else {
+                                Log.e("copy","good! "+filt.length+","+xcorr_out[1]+","+filt.length);
+//                                Utils.log("good");
+                                int counter=0;
+                                for (int k = (int) xcorr_out[1]; k < out.length; k++) {
+                                    sounding_signal[counter++] = out[k];
+                                }
+//                                sounding_signal = Utils.segment(filt, (int) xcorr_out[1], filt.length - 1);
+                                valid_signal = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (sounding_signal_counter>0){
+//                        Utils.log("another window");
+                        Log.e("copy","another window from "+sounding_signal_counter+","+(sounding_signal_counter+rec.length)+","+sounding_signal.length);
+
+//                        double[] filt2 = Utils.copyArray2(rec);
+//                        filt2 = Utils.filter(filt2);
+
+                        for (int j = 0; j < rec.length; j++) {
+                            sounding_signal[sounding_signal_counter++]=rec[j];
+                        }
+                        numWindowsLeft -= 1;
+                        if (numWindowsLeft==0){
+                            valid_signal=true;
+                            break;
+                        }
+                    }
+
+                    if(sampleHistory.size() >= 6){
+                        sampleHistory.remove(0);
+                        valueHistory.remove(0);
+                        idxHistory.remove(0);
+                    }
+                }
+            }
+        }
+
+        Constants._OfflineRecorder.halt2();
+
+        if (valid_signal) {
+            return Utils.filter(sounding_signal);
+        }
+        return null;
+    }
+
+    public static void listen_to_noise(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+
+        String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
+        Constants._OfflineRecorder = new OfflineRecorder(
+                MainActivity.av, Constants.fs, filename);
+        Constants._OfflineRecorder.start2();
+
+        int MAX_WINDOWS = 3;
+
+        int timeout = 30;
+
+
+        double[] sounding_signal = new double[]{};
+        sounding_signal = new double[MAX_WINDOWS * Constants.RecorderStepSize];
+        int sounding_signal_counter = 0;
+        for (int i = 0; i < timeout; i++) {
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            if (i < MAX_WINDOWS) {
+                for (int j = 0; j < rec.length; j++) {
+                    sounding_signal[sounding_signal_counter++] = rec[j];
+                }
+            }
+        }
+        Constants._OfflineRecorder.halt2();
+
+
+        StringBuilder noiseBuilder = new StringBuilder();
+        for (int j = 0; j < sounding_signal.length; j++) {
+            noiseBuilder.append(sounding_signal[j]);
+            noiseBuilder.append(",");
+        }
+        String raw_noise_signal = noiseBuilder.toString();
+        if (raw_noise_signal.endsWith(",")) {
+            raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
+        }
+
+        FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
+                filename + ".txt");
+    }
+
+    public static void listen_to_chirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber)
+    {
+        String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
+        Constants._OfflineRecorder = new OfflineRecorder(
+                MainActivity.av, Constants.fs, filename);
+        Constants._OfflineRecorder.start2();
+
+        int MAX_WINDOWS = 3;
+        int time_out =30;
+
+
+
+        double[] sounding_signal = new double[]{};
+        sounding_signal = new double[MAX_WINDOWS * Constants.RecorderStepSize];
+        int sounding_signal_counter = 0;
+        for (int i = 0; i < time_out; i++) {
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            if (i < MAX_WINDOWS)
+            {
+                for (int j = 0; j < rec.length; j++) {
+                    sounding_signal[sounding_signal_counter++] = rec[j];
+                }
+            }
+        }
+        Constants._OfflineRecorder.halt2();
+
+
+        StringBuilder noiseBuilder = new StringBuilder();
+        for (int j = 0; j < sounding_signal.length; j++) {
+            noiseBuilder.append(sounding_signal[j]);
+            noiseBuilder.append(",");
+        }
+        String raw_noise_signal = noiseBuilder.toString();
+        if (raw_noise_signal.endsWith(",")) {
+            raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
+        }
+
+        FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
+                filename + ".txt");
+    }
+    public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+        String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
+        Log.e("fifo",filename);
+
+        Constants._OfflineRecorder = new OfflineRecorder(
+                MainActivity.av, Constants.fs, filename);
+        Constants._OfflineRecorder.start2();
+
+        int MAX_WINDOWS = 0;
+
+        int numWindowsLeft = 0;
+        double timeout = 0;
+        int len = 0;
+        int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+        if (sigType.equals(Constants.SignalType.DataRx)) {
             MAX_WINDOWS = 2; //
             if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
             {
@@ -1425,7 +1680,7 @@ public class Utils {
                 else if(Constants.ImagingFish)
                 {
                     timeout = 15;
-                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*100);
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*200);
                 }
             }
             else if(Constants.scheme == Constants.Modulation.LoRa)
@@ -1440,6 +1695,7 @@ public class Utils {
                 {
                     if (Constants.SF == 7)
                     {
+                        timeout = 20;
                         len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*200;
                     }
                     else if (Constants.SF == 5 || Constants.SF == 6)
@@ -1452,6 +1708,12 @@ public class Utils {
                     }
                 }
             }
+        }
+        else if (sigType.equals(Constants.SignalType.DataChirp))
+        { // collect just chirp for channel estimation
+            MAX_WINDOWS = 2; //
+            timeout = 15;
+            len = ChirpSamples+Constants.ChirpGap+Constants.fs;
         }
 
         int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
@@ -1467,7 +1729,6 @@ public class Utils {
         {
             if (sigType.equals(Constants.SignalType.DataRx))
             {
-                sounding_signal=new double[(30+1)*Constants.RecorderStepSize];
                 if (Constants.scheme == Constants.Modulation.LoRa)
                 {
                     if (Constants.SF == 7)
@@ -1483,11 +1744,20 @@ public class Utils {
                         sounding_signal=new double[15*Constants.RecorderStepSize];
                     }
                 }
+                else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
+                {
+                    sounding_signal=new double[15*Constants.RecorderStepSize];
+                }
+            }
+            else if (sigType.equals(Constants.SignalType.DataChirp))
+            {
+                sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
             }
         }
         else {
             sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
         }
+
         Log.e("len","sig length "+sounding_signal.length+","+sigType.toString());
         boolean valid_signal = false;
 //        boolean getOneMoreFlag = false;
@@ -1498,7 +1768,7 @@ public class Utils {
             Log.e("received signal ", "rec " + rec);
             if (sigType.equals(Constants.SignalType.Sounding)||
                     sigType.equals(Constants.SignalType.Feedback)||
-                    sigType.equals(Constants.SignalType.DataRx)) {
+                    sigType.equals(Constants.SignalType.DataRx) || sigType.equals(Constants.SignalType.DataChirp)) {
 //                Log.e("fifo","loop "+i);
 
                 if (i<MAX_WINDOWS) {
@@ -1532,8 +1802,15 @@ public class Utils {
                             if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
                                 Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
                                 //Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
-                                //numWindowsLeft = MAX_WINDOWS-1;
-                                numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
+                                if (sigType.equals(Constants.SignalType.DataChirp))
+                                {
+                                    numWindowsLeft = MAX_WINDOWS - 1;
+                                }
+                                else
+                                {
+                                    numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
+                                }
+
                                 Utils.log("need more windows" + xcorr_out[1] + ' ' + len + ' ' + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS + ' ' + numWindowsLeft);
 
 //                                Log.e("copy","copying "+out[t_idx]+","+out[t_idx+1]+","+out[t_idx+2]+","+out[t_idx+3]+","+out[t_idx+4]);
@@ -1585,7 +1862,15 @@ public class Utils {
 
         if (valid_signal) {
             //return Utils.filter(sounding_signal);
-            return sounding_signal;
+            if (Constants.scheme == Constants.Modulation.LoRa || sigType.equals(Constants.SignalType.DataChirp))
+            {
+                return sounding_signal;
+            }
+            else
+            {
+                return Utils.filter(sounding_signal);
+            }
+
         }
         return null;
     }

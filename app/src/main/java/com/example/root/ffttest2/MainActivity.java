@@ -692,8 +692,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         ArrayList<String> arrayList = new ArrayList<>();
         arrayList.add("None");
-        arrayList.add("1/2");
-        arrayList.add("2/3");
+        arrayList.add("4/8");
+        arrayList.add("6/8");
 
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, arrayList);
@@ -705,15 +705,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 if (position == 0) {
                     editor.putString("code_rate", Constants.CodeRate.None.toString());
-                    Constants.codeRate = Constants.CodeRate.None;
+                    Constants.CodeRate_LoRA = 0;
                 }
                 else if (position == 1) {
-                    editor.putString("code_rate", Constants.CodeRate.C1_2.toString());
-                    Constants.codeRate = Constants.CodeRate.C1_2;
+                    editor.putString("code_rate", Constants.CodeRate.C4_8.toString());
+                    Constants.CodeRate_LoRA = 4;
                 }
                 else if (position == 2) {
-                    editor.putString("code_rate", Constants.CodeRate.C2_3.toString());
-                    Constants.codeRate = Constants.CodeRate.C2_3;
+                    editor.putString("code_rate", Constants.CodeRate.C4_6.toString());
+                    Constants.CodeRate_LoRA = 2;
                 }
                 editor.commit();
             }
@@ -723,8 +723,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         });
 
         ArrayList<String> arrayList2 = new ArrayList<>();
-        arrayList2.add("1");
-        arrayList2.add("2");
+        arrayList2.add("Proposed");
+        arrayList2.add("OFDMwiadapt");
+        arrayList2.add("OFDMwoadapt");
+        arrayList2.add("Noise");
+        arrayList2.add("Chirp");
         ArrayAdapter<String> arrayAdapter2 = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, arrayList2);
         arrayAdapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -733,16 +736,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
-                Log.e("snr","pos "+position+"");
+                //Log.e("snr","pos "+position+"");
                 if (position == 0) {
-                    editor.putInt("snr_method", 1);
-                    Constants.snr_method = 1;
-                    Constants.et4.setText(Constants.SNR_THRESH1+"");
+                    editor.putString("Tx protocol", Constants.Modulation.LoRa.toString());
+                    Constants.scheme = Constants.Modulation.LoRa;
+                    //Constants.et4.setText(Constants.Modulation.LoRa+"");
                 }
                 else if (position == 1) {
-                    editor.putInt("snr_method", 2);
-                    Constants.snr_method = 2;
-                    Constants.et4.setText(Constants.SNR_THRESH2+"");
+                    editor.putString("Tx protocol", Constants.Modulation.OFDM_freq_adapt.toString());
+                    Constants.scheme = Constants.Modulation.OFDM_freq_adapt;
+                    //Constants.et4.setText(Constants.Modulation.OFDM_freq_adapt+"");
+                }
+                else if (position == 2) {
+                    editor.putString("Tx protocol", Constants.Modulation.OFDM_freq_all.toString());
+                    Constants.scheme = Constants.Modulation.OFDM_freq_all;
+                    //Constants.et4.setText(Constants.Modulation.OFDM_freq_all+"");
+                }
+                else if (position == 3) {
+                    editor.putString("Tx protocol", Constants.Modulation.Noise.toString());
+                    Constants.scheme = Constants.Modulation.Noise;
+                    //Constants.et4.setText(Constants.Modulation.OFDM_freq_all+"");
+                }
+                else if (position == 4) {
+                    editor.putString("Tx protocol", Constants.Modulation.Chirp.toString());
+                    Constants.scheme = Constants.Modulation.Chirp;
+                    //Constants.et4.setText(Constants.Modulation.OFDM_freq_all+"");
                 }
                 editor.commit();
             }
@@ -838,8 +856,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.et2.setVisibility(View.GONE);
 //        Constants.et4.setVisibility(View.GONE);
         Constants.et5.setVisibility(View.GONE);
-        Constants.et6.setVisibility(View.GONE);
-        Constants.et7.setVisibility(View.GONE);
+        //Constants.et6.setVisibility(View.GONE);
+        //Constants.et7.setVisibility(View.GONE);
         //Constants.et8.setVisibility(View.GONE);
         Constants.et11.setVisibility(View.GONE);
 //        Constants.et13.setVisibility(View.GONE);
@@ -849,12 +867,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.et18.setVisibility(View.GONE);
 
         Constants.tv2.setVisibility(View.GONE);
-//        Constants.tv5.setVisibility(View.GONE);
+        //Constants.tv5.setVisibility(View.GONE);
         Constants.tv7.setVisibility(View.GONE);
-        Constants.tv8.setVisibility(View.GONE);
-        Constants.tv9.setVisibility(View.GONE);
+        //Constants.tv8.setVisibility(View.GONE);
+        //Constants.tv9.setVisibility(View.GONE);
         //Constants.tv10.setVisibility(View.GONE);
-        Constants.tv13.setVisibility(View.GONE);
+        //Constants.tv13.setVisibility(View.GONE);
 //        Constants.tv14.setVisibility(View.GONE);
         Constants.tv15.setVisibility(View.GONE);
 //        Constants.tv17.setVisibility(View.GONE);
@@ -863,7 +881,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.tv20.setVisibility(View.GONE);
         Constants.tv21.setVisibility(View.GONE);
 
-        Constants.spinner2.setVisibility(View.GONE);
+        //Constants.spinner2.setVisibility(View.GONE);
 
         Constants.sw1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -1088,13 +1106,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et4.getText().toString();
                 if (Utils.isInteger(ss)) {
-//                    if (Constants.snr_method==1) {
-//                        editor.putInt("snr_thresh1", Integer.parseInt(ss));
-//                        Constants.SNR_THRESH1 = Integer.parseInt(ss);
-//                    }
-//                    else if (Constants.snr_method==2) {
-                        editor.putInt("snr_thresh2", Integer.parseInt(ss));
-                        Constants.SNR_THRESH2 = Integer.parseInt(ss);
+                        editor.putInt("Send_Delay", Integer.parseInt(ss));
+                        Constants.Send_Delay = Integer.parseInt(ss);
 //                    }
                     editor.commit();
                 }
@@ -1136,10 +1149,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et6.getText().toString();
                 if (Utils.isInteger(ss)) {
-                    editor.putInt("f1", Integer.parseInt(ss));
+                    editor.putInt("BW", Integer.parseInt(ss));
                     editor.commit();
-                    Constants.f_range[0] = Integer.parseInt(ss);
-                    Constants.updateNbins();
+                    Constants.BW = Integer.parseInt(ss);
+                    Constants.updateChirp_Parameters();
+                    //Constants.updateNbins();
                 }
             }
         });
@@ -1158,10 +1172,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et7.getText().toString();
                 if (Utils.isInteger(ss)) {
-                    editor.putInt("f2", Integer.parseInt(ss));
+                    editor.putInt("FC", Integer.parseInt(ss));
                     editor.commit();
-                    Constants.f_range[1] = Integer.parseInt(ss);
-                    Constants.updateNbins();
+                    Constants.FC = Integer.parseInt(ss);
+                    Constants.updateChirp_Parameters();
+                    //Constants.updateNbins();
                 }
             }
         });
@@ -1183,6 +1198,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     editor.putInt("SF", Integer.parseInt(ss));
                     editor.commit();
                     Constants.SF = Integer.parseInt(ss);
+                    Constants.updateChirp_Parameters();
                 }
             }
         });
@@ -1572,7 +1588,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     public void onstart(View v) {
         try {
-            Thread.sleep(3000);
+            Thread.sleep(Constants.Send_Delay);
         }
         catch (Exception e) {
             Utils.log(e.getMessage());

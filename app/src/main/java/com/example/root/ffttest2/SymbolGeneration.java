@@ -144,7 +144,7 @@ public class SymbolGeneration {
     public static short[] generateDataSymbols_LoRa(int[] sym, boolean preamble,
                                                    int m_attempt)
     {
-        int symlen = Constants.Ns_lora * sym.length;
+        int symlen = (Constants.Ns_lora + Constants.Gap)* sym.length;
         int siglen = symlen;
         if (preamble) {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
@@ -173,18 +173,22 @@ public class SymbolGeneration {
         for (Short s : preamble_up_1) {
             txsig[counter++] = s;
         }
+        counter += Constants.Gap;
 
         for (Short s : preamble_up_2) {
             txsig[counter++] = s;
         }
+        counter += Constants.Gap;
 
         for (Short s : preamble_down_1) {
             txsig[counter++] = s;
         }
+        counter += Constants.Gap;
 
         for (Short s : preamble_down_2) {
             txsig[counter++] = s;
         }
+        counter += Constants.Gap;
         for (int i = 0; i < sym.length; i++) {
             symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
             // test
@@ -192,6 +196,7 @@ public class SymbolGeneration {
             for (Short s : symbol) {
                 txsig[counter++] = s;
             }
+            counter += Constants.Gap;
         }
         return txsig;
     }
@@ -200,21 +205,12 @@ public class SymbolGeneration {
                                               int m_attempt) {
         int numrounds = 0;
         int symlen = 0;
-        if (Constants.scheme == Constants.Modulation.LoRa)
-        {
-            numrounds = (int) Math.ceil((double)bits.length/Constants.SF);
-            Log.e("sym",bits.length+","+Constants.SF+","+numrounds+","+Constants.Ns_lora);
-            symlen = Constants.Ns_lora*symreps;
+        if (valid_carrier.length > 0) {
+            numrounds = (int) Math.ceil((double)bits.length/valid_carrier.length);
         }
-        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
-        {
-            if (valid_carrier.length > 0) {
-                numrounds = (int) Math.ceil((double)bits.length/valid_carrier.length);
-            }
-            Log.e("sym",bits.length+","+valid_carrier.length+","+numrounds+","+Constants.Ns+","+Constants.subcarrier_number_default);
+        Log.e("sym",bits.length+","+valid_carrier.length+","+numrounds+","+Constants.Ns+","+Constants.subcarrier_number_default);
 
-            symlen = (Constants.Ns+Constants.Cp)*symreps + Constants.Gi;
-        }
+        symlen = (Constants.Ns+Constants.Cp)*symreps + Constants.Gi;
 
 
 
@@ -228,13 +224,7 @@ public class SymbolGeneration {
         if (preamble) {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
-        if (Constants.scheme == Constants.Modulation.LoRa) {
-            siglen += Constants.Ns_lora * 4;
-        }
-        else if(Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
-        {
-            siglen += symlen;
-        }
+        siglen += symlen;
         short[] txsig = new short[siglen];
 
         int counter = 0;
@@ -252,60 +242,20 @@ public class SymbolGeneration {
         short[][] bit_list = null;
         short[] symbol;
 
-        if (Constants.scheme == Constants.Modulation.LoRa) {
-            // add downchirp and upchirp
-            short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0);
-            short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0);
-            short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0);
-            short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0);
 
-
-            for (Short s : preamble_up_1) {
-                txsig[counter++] = s;
-            }
-
-            for (Short s : preamble_up_2) {
-                txsig[counter++] = s;
-            }
-
-            for (Short s : preamble_down_1) {
-                txsig[counter++] = s;
-            }
-
-            for (Short s : preamble_down_2) {
-                txsig[counter++] = s;
-            }
-
-            bit_list = new short[numrounds+1][Constants.SF];
-            //if (Constants.SF == 7)
-            //{
-            //    bit_list[0] = new short[]{0,0,0,1,0,1,0};
-            //}
-            //else if (Constants.SF == 8)
-            //{
-            //    bit_list[0] = new short[]{0,0,0,0,1,0,1,0};
-            //}
-            //else if (Constants.SF == 4)
-            //{
-            //    bit_list[0] = new short[]{1,0,1,0};
-            //}
-
+        // add training symbol
+        short[] training_bits = new short[0];
+        bit_list = new short[numrounds+1][valid_carrier.length];
+        training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
+        symbol = generate_helper(
+                training_bits,
+                valid_carrier,
+                symreps,
+                sigType);
+        for (Short s : symbol) {
+            txsig[counter++] = s;
         }
-        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all ){
-            // add training symbol
-            short[] training_bits = new short[0];
-            bit_list = new short[numrounds+1][valid_carrier.length];
-            training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
-            symbol = generate_helper(
-                    training_bits,
-                    valid_carrier,
-                    symreps,
-                    sigType);
-            for (Short s : symbol) {
-                txsig[counter++] = s;
-            }
-            bit_list[0] = training_bits;
-        }
+        bit_list[0] = training_bits;
 
         int bit_counter = 0;
         Log.e("symbol", sigType.toString());
@@ -330,14 +280,7 @@ public class SymbolGeneration {
             bitsWithoutPadding += Utils.trim(Arrays.toString(bits_seg))+", ";
 
             short[] pad_bits = new short[0];
-            if (Constants.scheme == Constants.Modulation.LoRa)
-            {
-                pad_bits = Utils.random_array(Constants.SF-bits_seg.length);
-            }
-            else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
-            {
-                pad_bits = Utils.random_array(valid_carrier.length-bits_seg.length);
-            }
+            pad_bits = Utils.random_array(valid_carrier.length-bits_seg.length);
 
 
             Log.e("symbol", "sym "+i+": "+bits_seg.length+","+pad_bits.length);
@@ -356,12 +299,6 @@ public class SymbolGeneration {
                 }
             }
 
-            if (Constants.GRAY_CODING)
-            {
-                int con_symbol = Utils.BitsToSymbols(tx_bits);
-                con_symbol = gray_decoding(con_symbol);
-                tx_bits = Utils.symbolsToBits(con_symbol);
-            }
 
             symbol = generate_helper(
                     tx_bits,
@@ -375,10 +312,10 @@ public class SymbolGeneration {
             }
         }
 
-        FileOperations.writetofile(MainActivity.av, Utils.trim_end(bitsWithPadding),
-                Utils.genName(Constants.SignalType.BitsAdapt_Padding, m_attempt) + ".txt");
-        FileOperations.writetofile(MainActivity.av, Utils.trim_end(bitsWithoutPadding),
-                Utils.genName(Constants.SignalType.BitsAdapt, m_attempt) + ".txt");
+        //FileOperations.writetofile(MainActivity.av, Utils.trim_end(bitsWithPadding),
+        //        Utils.genName(Constants.SignalType.BitsAdapt_Padding, m_attempt) + ".txt");
+        //FileOperations.writetofile(MainActivity.av, Utils.trim_end(bitsWithoutPadding),
+        //        Utils.genName(Constants.SignalType.BitsAdapt, m_attempt) + ".txt");
         FileOperations.writetofile(MainActivity.av, Utils.trim_end(numberOfDataBits),
                 Utils.genName(Constants.SignalType.Bit_Fill_Adapt, m_attempt) + ".txt");
 
@@ -412,14 +349,7 @@ public class SymbolGeneration {
 
     public static short[] getTrainingSymbol(int[] valid_carrier) {
         short[] training_bits = new short[0];
-        if (Constants.scheme == Constants.Modulation.LoRa)
-        {
-            training_bits = Utils.segment(Constants.pn60_bits, 0, Constants.SF - 1);
-        }
-        else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all )
-        {
-            training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
-        }
+        training_bits = Utils.segment(Constants.pn60_bits, 0, valid_carrier.length - 1);
         short[] symbol = generate_helper(
                 training_bits,
                 valid_carrier,
@@ -578,7 +508,7 @@ public class SymbolGeneration {
         return false;
     }
 
-    public static short[] getCodedBits(int m_attempt) {
+    public static short[] getCodedBits(int m_attempt,byte[] imagebyte) {
         //String uncoded = Utils.pad2(Integer.toBinaryString(Constants.messageID));
         // fishing identification or counting
         int fish_information;
@@ -594,23 +524,10 @@ public class SymbolGeneration {
             fish_information = Constants.NumFish;
             uncoded = meta + Utils.pad2(Integer.toBinaryString(fish_information));
         }
-        //else if (Constants.SegmentationFish)
-        //{
-        //    Bitmap txBitmap = Constants.SegFish.copy(Constants.SegFish.getConfig(), true);
-        //    uncoded = Utils.convertBitmapToBitString(txBitmap);
-        //}
 
-
-        // image
-        byte[] imageData = Utils.convertImageToByteArray(MainActivity.av, R.drawable.i1_test);
-        String image_byte = "";
-        for (int i = 0; i < imageData.length; i++)
-        {
-            image_byte += (imageData[i] + ",");
-        }
-        Utils.log("tx_image_byte =>"+image_byte);
-        uncoded = Utils.convertByteArrayToBitString(imageData);
-
+        uncoded = Utils.convertByteArrayToBitString(imagebyte);
+        FileOperations.writetofile(MainActivity.av, uncoded + "",
+                Utils.genName(Constants.SignalType.TxBits, m_attempt) + ".txt");
 
 
         String coded = "";
@@ -620,8 +537,7 @@ public class SymbolGeneration {
         else {
             coded = uncoded;
         }
-        FileOperations.writetofile(MainActivity.av, uncoded + "",
-                Utils.genName(Constants.SignalType.TxBits, m_attempt) + ".txt");
+
         Utils.log("tx_bits_before_coding=>"+uncoded);
         Utils.log("tx_bits_after_coding =>"+ coded);
         return Utils.convert(coded);
@@ -718,8 +634,12 @@ public class SymbolGeneration {
         //byte[] test_byte = {1,2,3,4,5};
         byte[] codewords = hamming_encode(concatArrays(header_nibbles, data_nibbles)); // hamming_encode needs to be implemented, concatArrays is a helper method
         //byte[] codewords = hamming_encode(test_byte);
+        int[] symbols_i = new int[]{};
+        if (Constants.SF - 2 > 0)
+        {
+            symbols_i = diag_interleave(Arrays.copyOfRange(codewords, 0, Constants.SF - 2),  8); // Adjusted to include start index and length
+        }
 
-        int[] symbols_i = diag_interleave(Arrays.copyOfRange(codewords, 0, Constants.SF - 2),  8); // Adjusted to include start index and length
 
         int ppm = Constants.SF - 2 * Constants.LDR;
         int rdd = Constants.CodeRate_LoRA + 4;
@@ -859,6 +779,8 @@ public class SymbolGeneration {
             byte p5 = bitReduce((byte)codeword, new int[]{6,4,3,2});
 
             switch (rdd){
+                case 4:
+                    break;
                 case 5:
                 case 6:
                     nibbles[i] = codewords[i] % 16;
@@ -889,6 +811,8 @@ public class SymbolGeneration {
             int crNow = i < Constants.SF - 2 ? 4 : Constants.CodeRate_LoRA; // Adjust coding rate based on position
 
             switch (crNow) {
+                case 0:
+                    break;
                 case 1:
                     codewords[i] = (byte) ((p4 << 4) | nibble);
                     break;
@@ -936,7 +860,7 @@ public class SymbolGeneration {
     }
 
     private static int[] diag_interleave(byte[] codewords, int rdd) {
-        int tmp[][] = Utils.nibbleToBinaryBooleanArray_right(codewords,8);
+        int tmp[][] = Utils.nibbleToBinaryBooleanArray_right(codewords,rdd);
 
         int rows = tmp.length;
         int columns = tmp[0].length;
