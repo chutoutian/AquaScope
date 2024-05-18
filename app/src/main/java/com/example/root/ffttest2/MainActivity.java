@@ -846,11 +846,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //Constants.sw2.setVisibility(View.GONE);
         // Constants.sw3.setVisibility(View.GONE);
-        Constants.sw4.setVisibility(View.GONE);
+        //Constants.sw4.setVisibility(View.GONE);
         //Constants.sw5.setVisibility(View.GONE);
         Constants.sw6.setVisibility(View.GONE);
         Constants.sw7.setVisibility(View.GONE);
-        Constants.sw8.setVisibility(View.GONE);
+        //Constants.sw8.setVisibility(View.GONE);
         Constants.sw9.setVisibility(View.GONE);
 
         Constants.et2.setVisibility(View.GONE);
@@ -974,8 +974,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
-                editor.putBoolean("send_data", isChecked);
-                Constants.SEND_DATA  = isChecked;
+                editor.putBoolean("gap", isChecked);
+                Constants.ADD_GAP  = isChecked;
+                Constants.updateChirp_Parameters();
                 editor.commit();
             }
         });

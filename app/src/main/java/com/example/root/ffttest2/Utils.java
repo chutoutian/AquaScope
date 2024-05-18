@@ -1695,22 +1695,23 @@ public class Utils {
                 {
                     if (Constants.SF == 7)
                     {
-                        timeout = 20;
-                        len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*200;
+                        timeout = 25;
+                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*220;
                     }
                     else if (Constants.SF == 5 || Constants.SF == 6)
                     {
-                        len = ChirpSamples + Constants.ChirpGap +Constants.Ns_lora * 300;
+                        timeout = 20;
+                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 300;
                     }
                     else if (Constants.SF == 4)
                     {
-                        len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*400;
+                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*350;
                     }
                 }
             }
         }
-        else if (sigType.equals(Constants.SignalType.DataChirp))
-        { // collect just chirp for channel estimation
+        else if (sigType.equals(Constants.SignalType.DataChirp))// collect just chirp for channel estimation
+        {
             MAX_WINDOWS = 2; //
             timeout = 15;
             len = ChirpSamples+Constants.ChirpGap+Constants.fs;
@@ -1733,7 +1734,7 @@ public class Utils {
                 {
                     if (Constants.SF == 7)
                     {
-                        sounding_signal=new double[30*Constants.RecorderStepSize];
+                        sounding_signal=new double[35*Constants.RecorderStepSize];
                     }
                     else if (Constants.SF == 6)
                     {
@@ -1743,6 +1744,11 @@ public class Utils {
                     {
                         sounding_signal=new double[15*Constants.RecorderStepSize];
                     }
+                    else if (Constants.SF == 4)
+                    {
+                        sounding_signal = new double[8 * Constants.RecorderStepSize];
+                    }
+
                 }
                 else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
                 {

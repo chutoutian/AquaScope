@@ -108,9 +108,9 @@ public class Constants {
     public static Modulation scheme = Modulation.LoRa;
     public static boolean CRC = false; // CRC = 1 if CRC Check is enabled else 0
 
-    public static int SF = 7; //  (7-12)
+    public static int SF = 5; //  now support SF = 4-7
 
-    public static int Sample_Lora = 128;
+    public static int Sample_Lora = 32;
 
     public static int CodeRate_LoRA = 4; // (code rate = 4/8 (1:4/5 2:4/6 3:4/7 4:4/8))
     public static int LDR = 0;
@@ -127,7 +127,7 @@ public class Constants {
 
     public static int FS = 48000; // sampling rate 1Mhz which should be changed to fs = 48000hz
 
-    public static int Ns_lora = 1536;
+    public static int Ns_lora = 768;
 
     public static int EmbeddindBytes = 80;
 
@@ -564,6 +564,8 @@ public class Constants {
     static int fbackTime = 200; // milliseconds
     static boolean DecodeData = false;
     static boolean SEND_DATA = true;
+
+    static boolean ADD_GAP = true;
     static int SendPad = 100;
     static int data_symreps = 1;
     static int chanest_symreps = 7;
@@ -704,8 +706,8 @@ public class Constants {
         Constants.feedbackPreamble=prefs.getBoolean("feed_pre", Constants.feedbackPreamble);
         sw7.setChecked(Constants.feedbackPreamble);
 
-        Constants.SEND_DATA=prefs.getBoolean("send_data", Constants.SEND_DATA);
-        sw8.setChecked(Constants.SEND_DATA);
+        Constants.ADD_GAP=prefs.getBoolean("gap", Constants.ADD_GAP);
+        sw8.setChecked(Constants.ADD_GAP);
 
         Constants.FLIP_SYMBOL=prefs.getBoolean("flip_symbol", Constants.FLIP_SYMBOL);
         sw9.setChecked(Constants.FLIP_SYMBOL);
@@ -725,7 +727,7 @@ public class Constants {
         et6.setText(Constants.BW+"");
         //Constants.FC=prefs.getInt("FC",Constants.FC);
         et7.setText(Constants.FC+"");
-        //Constants.SF =prefs.getInt("SF",Constants.SF);  //this code of line is used to remember the last setting
+        Constants.SF =prefs.getInt("SF",Constants.SF);  //this code of line is used to remember the last setting
         et8.setText(Constants.SF +"");
 
         Constants.mattempts=prefs.getInt("mattempts",Constants.mattempts);
@@ -767,20 +769,23 @@ public class Constants {
         preambleStartFreq = f_range[0];
         preambleEndFreq = f_range[1];
 
-        //Constants.codeRate=CodeRate.valueOf(prefs.getString("code_rate", Constants.codeRate.toString()));
-        if (Constants.CodeRate_LoRA == 0) {
+        Constants.codeRate=CodeRate.valueOf(prefs.getString("code_rate", Constants.codeRate.toString()));
+        if (Constants.codeRate == Constants.CodeRate.None) {
+            Constants.CodeRate_LoRA = 0;
             Constants.spinner.setSelection(0);
         }
-        else if (Constants.CodeRate_LoRA == 4) {
+        else if (Constants.codeRate == Constants.CodeRate.C4_8) {
+            Constants.CodeRate_LoRA = 4;
             Constants.spinner.setSelection(1);
         }
-        else if (Constants.CodeRate_LoRA == 2) {
+        else if (Constants.codeRate == Constants.CodeRate.C4_6) {
+            Constants.CodeRate_LoRA = 2;
             Constants.spinner.setSelection(2);
         }
 
         //String s =prefs.getString("Tx protocol",Constants.scheme.toString());
        //Log.e("snr",Constants.snr_method+"");
-        if (Constants.scheme== Modulation.LoRa) {
+        if (Constants.scheme == Modulation.LoRa) {
             Constants.spinner2.setSelection(0);
         }
         else if (Constants.scheme== Constants.Modulation.OFDM_freq_adapt) {
@@ -854,25 +859,25 @@ public class Constants {
 
     public static void updateChirp_Parameters()
     {
-        if (BW > 0)
+        Offset_Freq = BW / 2;
+
+        Sample_Lora = (int)Math.pow(2,Constants.SF);
+        Ns_lora = (int)Math.round(FS / (double)BW * Sample_Lora);
+        carrier = new double[2][Ns_lora];
+        if (Constants.ADD_GAP)
         {
-            Offset_Freq = BW / 2;
-
-            Sample_Lora = (int)Math.pow(2,Constants.SF);
-            Ns_lora = (int)Math.round(FS / (double)BW * Sample_Lora );
-            carrier = new double[2][Ns_lora];
-
-            double[] t = new double[Ns_lora];
-            for (int i = 0; i<t.length; i++){
-                t[i] = i / (double)Constants.FS ;
-            }
-            for (int i = 0; i< t.length; i++)
-            {
-                carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
-                carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
-            }
+            Gap = (int)(Ns_lora * 0.05);
         }
 
+        double[] t = new double[Ns_lora];
+        for (int i = 0; i<t.length; i++){
+            t[i] = i / (double)Constants.FS ;
+        }
+        for (int i = 0; i< t.length; i++)
+        {
+            carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
+            carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
+        }
     }
     public static void updateNbins() {
         if (Constants.Ns == 960) {

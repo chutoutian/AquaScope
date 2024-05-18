@@ -149,7 +149,7 @@ public class SymbolGeneration {
         if (preamble) {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
-        siglen += Constants.Ns_lora * 4;
+        siglen += (Constants.Ns_lora + Constants.Gap) * 8;
         short[] txsig = new short[siglen];
 
         int counter = 0;
@@ -189,7 +189,9 @@ public class SymbolGeneration {
             txsig[counter++] = s;
         }
         counter += Constants.Gap;
-        for (int i = 0; i < sym.length; i++) {
+
+
+        for (int i = 0; i < sym.length / 2; i++) {
             symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
             // test
             //symbol = Utils.GeneratePreamble_LoRa(true, 0);
@@ -198,6 +200,40 @@ public class SymbolGeneration {
             }
             counter += Constants.Gap;
         }
+
+
+        for (Short s : preamble_up_1) {
+            txsig[counter++] = s;
+        }
+        counter += Constants.Gap;
+
+        for (Short s : preamble_up_2) {
+            txsig[counter++] = s;
+        }
+        counter += Constants.Gap;
+
+        for (Short s : preamble_down_1) {
+            txsig[counter++] = s;
+        }
+        counter += Constants.Gap;
+
+        for (Short s : preamble_down_2) {
+            txsig[counter++] = s;
+        }
+        counter += Constants.Gap;
+
+        for (int i = sym.length / 2; i < sym.length; i++) {
+            symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
+            // test
+            //symbol = Utils.GeneratePreamble_LoRa(true, 0);
+            for (Short s : symbol) {
+                txsig[counter++] = s;
+            }
+            counter += Constants.Gap;
+        }
+
+
+
         return txsig;
     }
     public static short[] generateDataSymbols(short[] bits, int[] valid_carrier,

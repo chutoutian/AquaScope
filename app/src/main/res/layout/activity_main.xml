@@ -897,9 +897,9 @@
         android:id="@+id/switch4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:text="IMU"
         android:visibility="gone"
-        android:enabled="false"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/switch1" />
 
@@ -983,7 +983,7 @@
         android:id="@+id/switch8"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Data"
+        android:text="Gap"
         android:visibility="gone"
         app:layout_constraintStart_toEndOf="@+id/switch7"
         app:layout_constraintTop_toBottomOf="@+id/switch6" />
