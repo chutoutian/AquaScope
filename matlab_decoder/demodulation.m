@@ -1,7 +1,7 @@
 FS = 48000; % sampling frequency in Hz
 BW = 2000;
 FC = 2500;
-SF = 7;
+SF = 5;
 CR = 4;
 M = 2^SF;
 Ns = M / BW * FS;
@@ -23,7 +23,7 @@ end
 
 
 
-dirName = 'raw_data/SF_7_BW_2_FC_25_pool';
+dirName = 'raw_data/SF_5_BW_2_FC_25_pool';
 files = dir(fullfile(dirName, 'Bob-Rx_Raw_Symbols-*.txt'));
 numFiles = length(files);
 
@@ -37,24 +37,25 @@ numsym = calc_sym_num(80,CR,SF);
 symbol_error_rate = [];
 
 embedding_error_rate = [];
+
+
+
+
 for fileIdx = 1:numFiles
     pks = [];
-    tos = [];
+    time_offset_math = [];
     
     for k = 0
         fileName = fullfile(dirName, files(fileIdx).name);
-        fprintf('Processing file: %s\n', fileName);
      
         raw_symbol = load(fileName)';
-        %[raw_symbol, FC] = audioread('chirp_sound/apple watch ultra sf7 to lz.wav') ;
         
         raw_symbol = raw_symbol(start+1+k:start+k+ (numsym+4) * Ns)/32676.0;
         %crosscorrelation_plot(raw_symbol(100*Ns+1:104*Ns),raw_symbol(100*Ns+1:101*Ns))
-        sound_file_name =sprintf('chirp_sound/chirpSound_%d_SF_%d_BW_%d.wav',fileIdx,SF,BW);
+        %sound_file_name =sprintf('chirp_sound/chirpSound_%d_SF_%d_BW_%d.wav',fileIdx,SF,BW);
         
-        audiowrite(sound_file_name, raw_symbol, FS, 'BitsPerSample', 16);
+        %audiowrite(sound_file_name, raw_symbol, FS, 'BitsPerSample', 16);
         t = (0:1/FS:(length(raw_symbol)-1)/FS)';
-        %draw_spectrum(raw_symbol,FS);
         %%%%%%%% downversion
         %raw_symbol = BPassFilter(raw_symbol,2.5e3,1e3,FS);
         %raw_symbol = BPassFilter(raw_symbol,2.5e3,1e3,FS);
@@ -93,7 +94,7 @@ for fileIdx = 1:numFiles
             [max_value,max_index] = max(ft_);
             pk = pk + max_value;
             %index = mod(floor(max_index / 10),M) ;
-            index = mod(max_index / 10,M) ;
+            index = mod(max_index / 10,M);
             bin_index_ori = [bin_index_ori; index];
         end
         
@@ -111,35 +112,28 @@ for fileIdx = 1:numFiles
             [max_value,max_index] = max(ft_);
             pk = pk + max_value;
             %index = mod(floor(max_index / 10),M);
-            index = mod(max_index / 10,M) ;
+            index = mod(max_index / 10,M);
             bin_index_ori = [bin_index_ori; index];
         end
         pks = [pks; pk];
         
         [cfo,to] = synchronization(SF,bin_index_ori(2),bin_index_ori(4));
-        tau = abs(round(to * Ns / M)) ;
-        tos = [tos; abs(round(to * Ns / M))];
+        tau = abs(round(to * Ns / M));
+        time_offset_math = [tos; tau];
         %tau = 0;
         raw_symbol_shift = load(fileName)' ;
         raw_symbol_shift = raw_symbol_shift(start+1+k+tau:start+k+tau+ (numsym+4) * Ns)/32767.0;
-        %raw_symbol_shift = BPassFilter(raw_symbol_shift,2.5e3,1e3,FS);
-        %raw_symbol_shift = BPassFilter(raw_symbol_shift,2.5e3,1e3,FS);
-        %t = (tau:length(raw_symbol)+tau-1/FS)';
         real_chirp = raw_symbol_shift .* cos(2*pi* FC * t);
         imag_chirp = raw_symbol_shift .* sin(2*pi *FC *t);
         real_cs = BPassFilter(real_chirp,center_freq,offset_freq,FS);
         imag_cs = BPassFilter(imag_chirp,center_freq,offset_freq,FS);
-        %real_cs = lowpass(real_chirp,2e3,FS);
-        %imag_cs = lowpass(imag_chirp,2e3,FS);
         
         downversion_symbol = real_cs - 1j*imag_cs;
-        %draw_spectrum(downversion_symbol,FS)
         %%%%%%%% downsample  
-        %received_symbol_sampled_bw = resample(downversion_symbol, 4000,48000);
         received_symbol_sampled_2bw = resample(downversion_symbol, 2 * BW, 48000);
         
         
-        for i = 5:numsym+4
+        for i = 5:numsym +4
             segment = received_symbol_sampled_2bw((i-1) * 2 * M + 1 :i *2 * M);
             fft_output = abs(fft(segment .* uc_1, 2 * M * 10));
             %figure
@@ -161,10 +155,12 @@ for fileIdx = 1:numFiles
             bin_index_ori = [bin_index_ori; index];
         end
         bin_index_ori;
-           
-        diff_bin_index = bin_index_ori(5:length(bin_index_ori)) - gt_transmitted_bytes;
-        %figure
-        %plot(diff)
+        diff_bin_index = mod(bin_index_ori(5:length(bin_index_ori))  - gt_transmitted_bytes,M);
+        diff_bin_index = min(diff_bin_index, M-diff_bin_index);
+        %figure;
+        %plot(diff_bin_index);
+        %filename = sprintf('figures/diff_to_gt_%d_%d.jpg',fileIdx,SF);
+        %saveas(gcf, filename, 'jpg');
     
         diff_num = nnz(bin_index_ori(5:length(bin_index_ori)) - gt_transmitted_bytes);
         symbol_error_rate = [symbol_error_rate; diff_num];

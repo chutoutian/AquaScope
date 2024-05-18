@@ -14,7 +14,7 @@ function draw_spectrum(signal, Fs,window,overlap)
     title('Spectrogram of the Downversioned Signal');
     xlabel('Time (s)');
     ylabel('Frequency (kHz)');
-    ylim([0 20]);  % Set frequency limits to show -1 kHz to 1 kHz
+    ylim([-2 2]);  % Set frequency limits to show -1 kHz to 1 kHz
     colorbar;
     clim([-100 0]);  % Adjust based on your signal's dynamics for visibility
 end

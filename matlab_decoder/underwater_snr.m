@@ -28,7 +28,6 @@ for fileIdx = 1:numFiles
         
         
         raw_symbol = raw_symbol(start+1:start+ FS/2)/32676.0;
-        %draw_spectrum(raw_symbol,FS,128,120);
         draw_spectrum(raw_symbol,FS,128,120);
         sound_file_name =sprintf('chirp_sound/chirp_%d.wav',fileIdx);
         % Compute the FFT of the noise data
@@ -52,6 +51,8 @@ for fileIdx = 1:numFiles
         xlabel('Frequency (Hz)');
         ylabel('Power (dB)');
         xlim([0 6000]); % Limit the x-axis to the positive frequencies
+        filename = sprintf('figures/chirp_%d.jpg',fileIdx);
+        saveas(gcf, filename, 'jpg');
         grid on;
         
         audiowrite(sound_file_name, raw_symbol, FS, 'BitsPerSample', 16);

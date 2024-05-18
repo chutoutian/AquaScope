@@ -24,5 +24,16 @@ function y = BPassFilter(data, centerFre, offsetFre, sampFre)
         end
     end
     y = filter(h,1,data);
+
+    %figure;
+    %stem(h);
+    %title('Impulse Response of the Bandpass Filter');
+    %xlabel('Sample Number');
+    %ylabel('Amplitude');
+
+    % Visualize the frequency response
+    %figure;
+    %freqz(h, 1, 1024, sampFre);
+    %title('Frequency Response of the Bandpass Filter');
 end
 

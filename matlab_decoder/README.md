@@ -1,12 +1,7 @@
 
 # Matlab code
-Real time underwater imaging application using Android studio. The project was originally built with Android Studio Arctic Fox 2022.3.1 Patch 1, and has been tested on Samsung Galaxy S9 phones.
+Matlab codes for processing the raw data in an offline manner.
 
-Press the "Send" button at the bottom in the air and then dip into water. When change the parameters in the interface, I would suggest to restart the app at the receiver or wait for several seconds.
-
-Add additional 5% samples for each symbol and add 4 preambles (up-up-down-down) at both the beginning and the middle of the packet (can be further optimized)
-
-The folder ./matlab_decoder contains offline processing codes for the received raw data. For details, please refer to README.md in ./matlab_decoder
 
 | System component               | main files and APIs                                                                                                                 |
 |--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|

@@ -6,7 +6,7 @@ Press the "Send" button at the bottom in the air and then dip into water. When c
 
 Add additional 5% samples for each symbol and add 4 preambles (up-up-down-down) at both the beginning and the middle of the packet (can be further optimized)
 
-The folder ./matlab_decoder contains offline processing codes for the received raw data. For details, please refer to README.md in ./matlab_decoder
+The folder 'matlab_decoder' contains offline processing codes for the received raw data. For details, please refer to README.md in 'matlab_decoder'
 
 | System component               | main files and APIs                                                                                                                 |
 |--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
