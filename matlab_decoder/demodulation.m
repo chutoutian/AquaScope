@@ -119,7 +119,7 @@ for fileIdx = 1:numFiles
         
         [cfo,to] = synchronization(SF,bin_index_ori(2),bin_index_ori(4));
         tau = abs(round(to * Ns / M));
-        time_offset_math = [tos; tau];
+        time_offset_math = [time_offset_math; tau];
         %tau = 0;
         raw_symbol_shift = load(fileName)' ;
         raw_symbol_shift = raw_symbol_shift(start+1+k+tau:start+k+tau+ (numsym+4) * Ns)/32767.0;
