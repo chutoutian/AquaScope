@@ -5,12 +5,14 @@ Real time underwater imaging application using Android studio. The project was o
 When change the parameters in the interface, please restart the app at the receiver or wait for several seconds.
 
 
-| System component                            | Link to code |
-|---------------------------------------------| ----------- |
-| Protocol sequence logic                     | [Code](OceanRealDemo/app/src/main/java/com/example/root/ffttest2/SendChirpAsyncTask.java)       |
-| Preamble generation (Alice)                 | [Code](smartphone/OceanRealDemo/app/src/main/java/com/example/root/ffttest2/SymbolGeneration.java)    |
-| Encoding data packet (Alice)                | [Code](smartphone/OceanRealDemo/app/src/main/java/com/example/root/ffttest2/SymbolGeneration.java)    |
-| Demodulating and Decoding data packet (Bob) | [Code](smartphone/OceanRealDemo/app/src/main/java/com/example/root/ffttest2/Decoder.java)       |
+| System component               | main files and APIs                                                                                                                                                                                                          |
+|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Protocol sequence logic        | SendChirpAsyncTask.java/work                                                                                                                                                                                                 |
+| Preamble generation (Alice)    | SymbolGeneration.java/generateDataSymbols_LoRa (convert encoded data to symbol)                                                                                                                                              |
+| Encoding data packet (Alice)   | SymbolGeneration.java/encode_LoRa (encode data)                                                                                                                                                                              |
+| Demodulating data packet (Bob) | Decoder.java/demodulate (demodulate the received packet)                                                                                                                                                                     |
+| Decoding packet (Bob)          | Decoder.java/decoding (decode the demodulated symbols)                                                                                                                                                                       |
+| Other key components           | Utils.java/waitForData (listen for the signal which includes getting the signals from the audio buffer and do the cross correlation to detect the preamble)<br/> Utils.java/waitForData/GenerateChirp_LoRa (generate chirps) |
 
 | PHY Parameters | Explanations                                                                                                                                                                                                                             |
 |----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
