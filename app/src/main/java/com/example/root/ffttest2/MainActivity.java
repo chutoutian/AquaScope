@@ -95,6 +95,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Module mEncoder2 = null;
     private Module mEncoder3 = null;
 
+    private Module mDecoder1 = null;
+    private Module mDecoder2 = null;
+    private Module mDecoder3 = null;
+
     private int currentIndex = 0;
     private String mImagename = "test1.jpg";
     private String defaultModelName = "lite_optimized_seg_240p.ptl";
@@ -379,9 +383,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             resizeImage();
                         } else if (currentModelName.equals("VQGANEncode")) {
-                            mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_scripted_optimized.ptl"));
-                            mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_scripted_optimized.ptl"));
-                            mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_scripted_optimized.ptl"));
+                            mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+                            mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+                            mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
