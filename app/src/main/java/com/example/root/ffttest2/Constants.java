@@ -3,6 +3,7 @@ package com.example.root.ffttest2;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
@@ -245,7 +246,8 @@ public class Constants {
     public static int DATA_LEN = 32;
     public static int mattempts=1;
     public static long ts;
-    public static Button startButton,clearButton,stopButton;
+    public static Button startButton,clearButton,stopButton,sendButton;
+    public static Drawable defaultBackground;
     public static float volume=0.6f;
     public static TextView tv1,tv2,tv3,tv4, debugPane,tv5,tv6,tv7,tv8,tv9,tv10,tv13,tv14,tv15,tv16,tv17,tv18,tv19,tv20,tv21,msgview;
     public static ImageView imgview, imgfish;

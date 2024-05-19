@@ -6,15 +6,21 @@ import android.app.Activity;
 import android.app.UiAutomation;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Button;
+import android.graphics.drawable.Drawable;
 
 import java.util.Arrays;
 
 public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
     Activity av;
     int num_measurements = 0;
-    public SendChirpAsyncTask(Activity activity, int num_measurements) {
+    Button button;
+    Drawable defaultBackground;
+    public SendChirpAsyncTask(Activity activity, int num_measurements, Button button, Drawable defaultBackground) {
         this.av = activity;
         this.num_measurements = num_measurements;
+        this.button = button;
+        this.defaultBackground = defaultBackground;
     }
 
     @Override
@@ -74,6 +80,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         Constants._OfflineRecorder = null;
         Constants.user  = Constants.User.Bob;
         MainActivity.startMethod(av);
+
+        button.setBackground(defaultBackground);
     }
 
     @Override

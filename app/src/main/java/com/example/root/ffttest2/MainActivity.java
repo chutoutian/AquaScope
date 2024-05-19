@@ -41,6 +41,10 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
+
 
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventListener;
@@ -689,6 +693,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.spinner = (Spinner) findViewById(R.id.spinner);
         Constants.spinner2 = (Spinner) findViewById(R.id.spinner2);
         Constants.spinner3 = (Spinner) findViewById(R.id.spinner3);
+        Constants.sendButton = (Button) findViewById(R.id.sendbutton);
 
         ArrayList<String> arrayList = new ArrayList<>();
         arrayList.add("None");
@@ -1588,13 +1593,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     public void onstart(View v) {
-        try {
-            Thread.sleep(Constants.Send_Delay);
-        }
-        catch (Exception e) {
-            Utils.log(e.getMessage());
-        }
-        startWrapper();
+        // Beitong: Change the button color to RED after it is pressed. Save the default background for recover the button color after sending chirp.
+        Constants.defaultBackground = v.getBackground();
+        v.setBackgroundColor(Color.RED);
+        // Beitong: Recommended by ChatGPT, in this way it will not block the UI Thread
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startWrapper();
+            }
+        }, Constants.Send_Delay);
+
+//        try {
+//            Thread.sleep(Constants.Send_Delay);
+//        }
+//        catch (Exception e) {
+//            Utils.log(e.getMessage());
+//        }
+//        startWrapper();
     }
 
     public static void startMethod(Activity av) {
@@ -1609,7 +1625,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts);
+        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground);
         Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
