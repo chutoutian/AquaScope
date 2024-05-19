@@ -128,6 +128,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private Random random = new Random();
     private boolean isShouldRandom = false;
+    private int recover_round = 1;
+
 
     public static String assetFilePath(Context context, String assetName) throws IOException {
         File file = new File(context.getFilesDir(), assetName);
@@ -414,6 +416,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             });
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                        } else if (currentModelName.equals("transformer_optimized.ptl")) {
+                            mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText(String.valueOf(compressImageSize));
+                                    heightEditText.setText(String.valueOf(compressImageSize));
+                                }
+                            });
+                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
+
                         } else {
                             mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
                         }
@@ -594,6 +607,59 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
+                }
+            });
+        }
+        else if (currentModelName.equals("transformer_optimized.ptl")) {
+            long[] gt = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
+            long[] data = new long[] {425,320,854,388,264,972,965,188,713,1019,515,936,184,253,589,928,1000,810,710,213,610,720,381,628,856,854,646,92,247,642,558,835,784,601,400,907,297,813,902,611,937,970,462,810,571,417,308,546,633,432,323,168,469,865,1012,658,725,544,873,41,868,548,737,393};
+            Tensor inputTensor = Tensor.fromBlob(data, new long[]{1, 64});
+            Tensor inputTensor2 = Tensor.fromBlob(data, new long[]{1, 64});
+            Log.d("tbt", "shape: " + Arrays.toString(inputTensor.shape()));
+            final long startTime = SystemClock.elapsedRealtime();
+            for (int p = 0; p < recover_round; p++) {
+                IValue result = mModule.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
+                if (result.isTuple()) {
+                    // Get the tuple and extract the tensors
+                    IValue[] outputs = result.toTuple();
+                    Tensor prediction_tensor = outputs[0].toTensor();
+                    Tensor target = outputs[1].toTensor();
+                    long[] prediction = prediction_tensor.getDataAsLongArray();
+                    int differenceCount = 0;
+                    int differenceCount_gt = 0;
+                    for (int i = 0; i < gt.length; i++) {
+                        if (data[i] != gt[i]) {
+                            differenceCount++;
+                        }
+                    }
+                    for (int i = 0; i < gt.length; i++) {
+                        if (prediction[i] != gt[i]) {
+                            differenceCount_gt++;
+                        }
+                    }
+//                    Log.d("tbt", "input: " + Arrays.toString(data));
+                    Log.d("tbt", "gt: " + Arrays.toString(gt));
+//
+                    Log.d("tbt", "result: " + Arrays.toString(prediction));
+                    Log.d("tbt", "difference count before recovery: " + differenceCount);
+                    Log.d("tbt", "difference count after recovery: " + differenceCount_gt);
+
+                    Log.d("tbt", "result length: " + prediction.length);
+                    inputTensor = Tensor.fromBlob(prediction, new long[]{1, 64});
+                    inputTensor2 = Tensor.fromBlob(prediction, new long[]{1, 64});;
+                }
+            }
+            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+            Log.d("tbt", "inference time (ms): " + inferenceTime);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
+                    mButtonSegment.setEnabled(true);
+                    mButtonSegment.setText(getString(R.string.segment));
+                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+                    inferenceTimeTextView.setText(inferenceTime + " ms");
                 }
             });
         }
