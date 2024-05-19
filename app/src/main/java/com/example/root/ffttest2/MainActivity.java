@@ -69,6 +69,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Random;
 
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
@@ -124,6 +125,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private TextView fishExistTextView;
     private static final int CLASSNUM = 2;
     private int compressImageSize = 128;
+
+    private Random random = new Random();
+    private boolean isShouldRandom = false;
 
     public static String assetFilePath(Context context, String assetName) throws IOException {
         File file = new File(context.getFilesDir(), assetName);
@@ -231,6 +235,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         }
         ptlFiles.add("VQGANEncode");
+        ptlFiles.add("VQGANDecode");
+
         return ptlFiles.toArray(new String[0]);
     }
 
@@ -395,6 +401,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             });
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                        } else if (currentModelName.equals("VQGANDecode")) {
+                            mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+                            mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+                            mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText(String.valueOf(compressImageSize));
+                                    heightEditText.setText(String.valueOf(compressImageSize));
+                                }
+                            });
+
+                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else {
                             mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
                         }
@@ -512,6 +531,65 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
+                    mButtonSegment.setEnabled(true);
+                    mButtonSegment.setText(getString(R.string.segment));
+                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+                    inferenceTimeTextView.setText(inferenceTime+" ms");
+                }
+            });
+        }
+        else if (currentModelName.equals("VQGANDecode")) {
+
+            // default workable indices
+            long[] indices = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
+            // randomly generate indices every two clicks
+            if (isShouldRandom == true) {
+                for (int i = 0; i < indices.length; i++) {
+                    indices[i] = random.nextInt(1024);
+                }
+                isShouldRandom = false;
+            } else {
+                isShouldRandom = true;
+            }
+
+            final long startTime = SystemClock.elapsedRealtime();
+            Tensor inputTensor = Tensor.fromBlob(indices, new long[]{64});
+            Tensor outTensors = mDecoder1.forward(IValue.from(inputTensor)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+            final float[] embedding_res = outTensors.getDataAsFloatArray();
+
+            outTensors = mDecoder2.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+            outTensors = mDecoder3.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+            Log.d("tbt",  "inference time (ms): " + inferenceTime);
+
+            final byte[] rgbData = outTensors.getDataAsUnsignedByteArray();
+            int[] argbPixels = new int[compressImageSize * compressImageSize]; // Array to hold ARGB pixel data.
+            int pixelIndex = 0;
+            int argbIndex = 0;
+            for (int y = 0; y < compressImageSize; y++) {
+                for (int x = 0; x < compressImageSize; x++) {
+                    int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                    int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                    int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+//                    Log.d("tbt", "r " + rgbData[pixelIndex-3] + " g " + rgbData[pixelIndex-2] + " b " + rgbData[pixelIndex-1]);
+                    // Combine these into an ARGB color with full opacity.
+                    int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                    argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                }
+            }
+            mBitmap = Bitmap.createBitmap(argbPixels, compressImageSize, compressImageSize, Bitmap.Config.ARGB_8888);
+
+            Log.d("tbt", "result length: " + rgbData.length );
+
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+//                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
+                    mImageView.setImageBitmap(mBitmap);
                     mButtonSegment.setEnabled(true);
                     mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
