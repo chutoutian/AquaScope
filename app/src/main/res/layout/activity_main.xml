@@ -141,13 +141,15 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/msg" />
 
+
     <ImageView
         android:id="@+id/imageView_fish"
         android:layout_width="match_parent"
         android:layout_height="200dp"
+        android:layout_marginTop="16dp"
         android:contentDescription="@string/image_view"
-        app:layout_constraintTop_toBottomOf="@+id/textView13" />
-
+        app:layout_constraintTop_toBottomOf="@+id/spinner4"
+        tools:layout_editor_absoluteX="0dp" />
 
     <TextView
         android:id="@+id/fishExist"
@@ -306,410 +308,410 @@
 
 
 
-    <GridLayout
-        android:id="@+id/scrollView2"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:columnCount="4"
-        android:fillViewport="true"
-        android:rowCount="4"
-        android:scrollbars="vertical"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/my_image_view">
+<!--    <GridLayout-->
+<!--        android:id="@+id/scrollView2"-->
+<!--        android:layout_width="fill_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:columnCount="4"-->
+<!--        android:fillViewport="true"-->
+<!--        android:rowCount="4"-->
+<!--        android:scrollbars="vertical"-->
+<!--        android:visibility="gone"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toBottomOf="@+id/my_image_view">-->
 
-        <ImageView
-            android:id="@+id/imageView"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            app:srcCompat="@drawable/i1" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            app:srcCompat="@drawable/i1" />-->
 
-        <ImageView
-            android:id="@+id/imageView2"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i2" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView2"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i2" />-->
 
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i3" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView3"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i3" />-->
 
-        <ImageView
-            android:id="@+id/imageView4"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i4" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView4"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i4" />-->
 
-        <TextView
-            android:id="@+id/sym1"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Ascend" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym1"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Ascend" />-->
 
-        <TextView
-            android:id="@+id/sym2"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Descend"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym2"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Descend"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym3"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Something's wrong"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym3"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Something's wrong"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym4"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Are you okay?"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym4"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Are you okay?"-->
+<!--            android:visibility="gone" />-->
 
-        <ImageView
-            android:id="@+id/imageView5"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i5" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView5"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i5" />-->
 
-        <ImageView
-            android:id="@+id/imageView6"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i6" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView6"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i6" />-->
 
-        <ImageView
-            android:id="@+id/imageView7"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i7" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView7"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i7" />-->
 
-        <ImageView
-            android:id="@+id/imageView8"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i8" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView8"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i8" />-->
 
-        <TextView
-            android:id="@+id/sym5"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Okay"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym5"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Okay"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym6"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Stop!"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym6"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Stop!"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym7"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Turn around"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym7"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Turn around"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym8"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Which way?"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym8"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Which way?"-->
+<!--            android:visibility="gone" />-->
 
-        <ImageView
-            android:id="@+id/imageView9"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i9" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView9"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i9" />-->
 
-        <ImageView
-            android:id="@+id/imageView10"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i10" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView10"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i10" />-->
 
-        <ImageView
-            android:id="@+id/imageView11"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i11" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView11"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i11" />-->
 
-        <ImageView
-            android:id="@+id/imageView12"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i12" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView12"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i12" />-->
 
-        <TextView
-            android:id="@+id/sym9"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Boat"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym9"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Boat"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym10"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Go to buddy"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym10"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Go to buddy"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym11"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Hold on!"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym11"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Hold on!"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym12"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Who's leading?"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym12"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Who's leading?"-->
+<!--            android:visibility="gone" />-->
 
-        <ImageView
-            android:id="@+id/imageView13"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i13" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView13"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i13" />-->
 
-        <ImageView
-            android:id="@+id/imageView14"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i14" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView14"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i14" />-->
 
-        <ImageView
-            android:id="@+id/imageView15"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i15" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView15"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i15" />-->
 
-        <ImageView
-            android:id="@+id/imageView16"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i16" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView16"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i16" />-->
 
-        <TextView
-            android:id="@+id/sym13"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Level off"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym13"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Level off"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym14"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Relax"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym14"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Relax"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym15"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Give me air!"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym15"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Give me air!"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym16"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Out of air!"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym16"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Out of air!"-->
+<!--            android:visibility="gone" />-->
 
-        <ImageView
-            android:id="@+id/imageView17"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i17" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView17"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i17" />-->
 
-        <ImageView
-            android:id="@+id/imageView18"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i18" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView18"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i18" />-->
 
-        <ImageView
-            android:id="@+id/imageView19"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i19" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView19"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i19" />-->
 
-        <ImageView
-            android:id="@+id/imageView20"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i20" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView20"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i20" />-->
 
-        <TextView
-            android:id="@+id/sym17"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Help!"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym17"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Help!"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym18"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="I don't know"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym18"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="I don't know"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym19"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Danger over there"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym19"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Danger over there"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym20"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="I'm cold"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym20"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="I'm cold"-->
+<!--            android:visibility="gone" />-->
 
-        <ImageView
-            android:id="@+id/imageView21"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i21" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView21"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i21" />-->
 
-        <ImageView
-            android:id="@+id/imageView22"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i22" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView22"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i22" />-->
 
-        <ImageView
-            android:id="@+id/imageView23"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i23" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView23"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i23" />-->
 
-        <ImageView
-            android:id="@+id/imageView24"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/i24" />
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView24"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/i24" />-->
 
-        <TextView
-            android:id="@+id/sym21"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Look"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym21"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Look"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym22"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Think"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym22"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Think"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym23"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Ear is blocked"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym23"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Ear is blocked"-->
+<!--            android:visibility="gone" />-->
 
-        <TextView
-            android:id="@+id/sym24"
-            android:layout_width="80dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Cut the line"
-            android:visibility="gone" />
+<!--        <TextView-->
+<!--            android:id="@+id/sym24"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:text="Cut the line"-->
+<!--            android:visibility="gone" />-->
 
-        <ImageView
-            android:id="@+id/imageView25"
-            android:layout_width="80dp"
-            android:layout_height="90dp"
-            android:layout_margin="5dp"
-            android:visibility="gone"
-            app:srcCompat="@drawable/music_foreground"
-            tools:ignore="VectorDrawableCompat" />
-    </GridLayout>
+<!--        <ImageView-->
+<!--            android:id="@+id/imageView25"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="90dp"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:visibility="gone"-->
+<!--            app:srcCompat="@drawable/music_foreground"-->
+<!--            tools:ignore="VectorDrawableCompat" />-->
+<!--    </GridLayout>-->
 
 
     <androidx.core.widget.NestedScrollView
@@ -1264,6 +1266,23 @@
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <TextView
+        android:id="@+id/textView24"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="ExpMode"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView13" />
+
+    <Spinner
+        android:id="@+id/spinner4"
+        android:layout_width="206dp"
+        android:layout_height="30dp"
+        app:layout_constraintBottom_toBottomOf="@+id/textView24"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/textView24" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
