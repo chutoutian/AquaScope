@@ -32,92 +32,9 @@ public class Modulation {
         return mod_dat;
     }
 
-    public static double[][] cssmod(short[] bits)// Generate data symbols
-    {
-        int bit_num = bits.length;
-
-        int[] symbols = new int[bit_num / Constants.SF];
-
-        for (int i = 0; i < symbols.length; i++) {
-            int symbol = 0;
-            for (int j = 0; j < Constants.SF; j++) {
-                symbol |= (bits[i *Constants.SF + j] << (Constants.SF - j - 1));
-            }
-            symbols[i] = symbol;
-        }
 
 
 
-        ArrayList<Complex> dataList = new ArrayList<>();
-        for (int symbol : symbols) {
-            Complex[] chirp = Utils.chirp(true, Constants.SF, Constants.BW, Constants.FS, symbol, 0, 0, 1); // Assuming this method exists and returns Complex[]
-            dataList.addAll(Arrays.asList(chirp));
-        }
-
-        // Convert ArrayList back to array
-        Complex[] data = new Complex[dataList.size()];
-        data = dataList.toArray(data);
-
-        double[][] mod_dat = new double[2][data.length];
-        for (int i = 0; i < data.length; i++){
-            mod_dat[0][i] = data[i].getReal();
-            mod_dat[1][i] = data[i].getImaginary();
-        }
-
-        return mod_dat;
-    }
-
-
-
-    public static double[][] qpskmod(short[] bits) {
-        int bit_num = bits.length / 2;
-        int remainingBit = bits.length % 2; // Check if there's an odd number of bits
-
-        // Initialize the size of the modulated data considering the remaining bit
-        int dataSize = remainingBit == 0 ? bit_num : bit_num + 1;
-        double[][] mod_dat = new double[2][dataSize];
-
-        for (int i = 0; i < bit_num; i++) {
-            int bit1 = bits[2 * i];
-            int bit2 = bits[2 * i + 1];
-
-            if (bit1 == 0 && bit2 == 0) {
-                mod_dat[0][i] = 1; // Real part
-                mod_dat[1][i] = 1; // Imaginary part
-            } else if (bit1 == 0 && bit2 == 1) {
-                mod_dat[0][i ] = -1; // Real part
-                mod_dat[1][i ] = 1; // Imaginary part
-            } else if (bit1 == 1 && bit2 == 0) {
-                mod_dat[0][i ] = 1; // Real part
-                mod_dat[1][i ] = -1; // Imaginary part
-            } else if (bit1 == 1 && bit2 == 1) {
-                mod_dat[0][i ] = -1; // Real part
-                mod_dat[1][i ] = -1; // Imaginary part
-            }
-        }
-
-        // Handle the last single bit if there is one
-        if (remainingBit == 1) {
-            mod_dat[0][dataSize - 1] = bits[bits.length - 1] == 0 ? 1 : -1;
-            mod_dat[1][dataSize - 1] = 0; // Set the imaginary part to 0
-        }
-
-        return mod_dat;
-    }
-
-
-    public static short[] pskdemod(double[][] fft_spectrum, int [] valid_subcarrier) {
-        if (fft_spectrum[0].length == (Constants.subcarrier_number_chanest)) {
-            int[] valid_subcarrer2 = new int[valid_subcarrier.length];
-            for (int i = 0; i < valid_subcarrer2.length; i++) {
-                valid_subcarrer2[i] = valid_subcarrier[i]-Constants.nbin1_chanest;
-            }
-            return pskdemod_helper(fft_spectrum, valid_subcarrer2);
-        }
-        else {
-            return pskdemod_helper(fft_spectrum, valid_subcarrier);
-        }
-    }
 
     public static double[] phase(double[][] vals) {
         double[] out = new double[vals[0].length];
@@ -151,59 +68,7 @@ public class Modulation {
         return bits;
     }
 
-    public static short[] differential_decoding(short[] initialCode, short[] encodedCode){
-        short[] decodedCode = new short[initialCode.length];
 
-        // Assuming the first code in the sequence is directly the initial code
-        // and each subsequent code is differentially encoded based on the previous code.
-        for (int i = 0; i < encodedCode.length; i++) {
-            // If encoded bit is 1, flip the bit from the initial/previous code, otherwise keep it the same.
-            decodedCode[i] = (encodedCode[i] == 1) ? (short)(1 - initialCode[i]) : initialCode[i];
-        }
-
-        return decodedCode;
-    }
-
-    public static short[][] qpskDemodulateDifferential(double[][][] symbols, int[] valid_bins) {
-        int numbins = valid_bins[1] - valid_bins[0] + 1;
-        int numSymbols = symbols.length - 1; // The number of symbols
-
-        short[][] bits = new short[numSymbols][numbins * 2]; // QPSK has twice as many bits as BPSK
-
-        for (int i = 0; i < numSymbols; i++) {
-            double[][] symbol1 = symbols[i + 1];
-            double[][] symbol2 = symbols[i];
-            double[][] divVal = Utils.dividenative(symbol1,symbol2);
-
-            double[] phase = phase(divVal);
-
-            int counter = 0;
-            for (int j = valid_bins[0]; j <= valid_bins[1]; j++) {
-                boolean b1 = phase[j] >= -Math.PI / 4 && phase[j] < Math.PI / 4;
-                boolean b2 = phase[j] >= Math.PI / 4 && phase[j] < 3 * Math.PI / 4;
-                boolean b3 = phase[j] >= -3 * Math.PI / 4 && phase[j] < -Math.PI / 4;
-                boolean b4 = phase[j] >= 3 * Math.PI / 4 || phase[j] < -3 * Math.PI / 4;
-
-                if (b1) {
-                    bits[i][counter] = 0;
-                    bits[i][counter + 1] = 0;
-                } else if (b2) {
-                    bits[i][counter] = 0;
-                    bits[i][counter + 1] = 1;
-                } else if (b3) {
-                    bits[i][counter] = 1;
-                    bits[i][counter + 1] = 0;
-                } else if (b4) {
-                    bits[i][counter] = 1;
-                    bits[i][counter + 1] = 1;
-                }
-
-                counter += 2;
-            }
-        }
-
-        return bits;
-    }
 
     public static short[] pskdemod_helper(double[][] fft_spectrum, int [] valid_subcarrier) {
         int num_valid = valid_subcarrier.length;

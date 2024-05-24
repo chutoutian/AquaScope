@@ -41,43 +41,10 @@ public class Utils {
         System.loadLibrary("native-lib");
     }
 
-    public static byte[] convertImageToByteArray(Context mContext, int drawableId) {
-        // Load the image as a Bitmap
-        Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), drawableId);
 
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        //bitmap.recycle();
-        return stream.toByteArray();
-    }
 
 
     // Convert a Bitmap to a binary string
-    public static String convertBitmapToBitString(Bitmap bitmap) {
-        StringBuilder bitString = new StringBuilder();
-
-        // Loop over each pixel in the bitmap
-        for (int y = 0; y < bitmap.getHeight(); y++) {
-            for (int x = 0; x < bitmap.getWidth(); x++) {
-                // Get the pixel's ARGB value
-                int pixel = bitmap.getPixel(x, y);
-
-                // Extract color components
-                int alpha = (pixel >> 24) & 0xff; // Alpha component
-                int red = (pixel >> 16) & 0xff;   // Red component
-                int green = (pixel >> 8) & 0xff;  // Green component
-                int blue = pixel & 0xff;          // Blue component
-
-                // Convert each color component to a binary string and concatenate
-                bitString.append(String.format("%8s", Integer.toBinaryString(alpha)).replace(' ', '0'));
-                bitString.append(String.format("%8s", Integer.toBinaryString(red)).replace(' ', '0'));
-                bitString.append(String.format("%8s", Integer.toBinaryString(green)).replace(' ', '0'));
-                bitString.append(String.format("%8s", Integer.toBinaryString(blue)).replace(' ', '0'));
-            }
-        }
-
-        return bitString.toString();
-    }
 
 
     public static String convertByteArrayToBitString(byte[] byteArray) {
@@ -172,52 +139,10 @@ public class Utils {
         return decimalValues;
     }
 
-    public static short[][] symbolsToBits(int[] symbols){
-        short[][] bits = new short[symbols.length][Constants.SF];
-        for (int i = 0; i< symbols.length; i++)
-        {
-            int symbol = symbols[i];
-            for (int j = 0; j< Constants.SF; j++)
-            {
-                int bitPosition = Constants.SF - j - 1;
-                bits[i][j] = (short)((symbol >> bitPosition) & 1);
-            }
-        }
-        return bits;
-    }
 
 
 
-    public static short[] symbolsToBits(int symbols){
-        short[] bits = new short[Constants.SF];
-        for (int j = 0; j< Constants.SF; j++)
-        {
-            int bitPosition = Constants.SF - j - 1;
-            bits[j] = (short)((symbols >> bitPosition) & 1);
-        }
-        return bits;
-    }
 
-    public static int BitsToSymbols(short[] bits)
-    {
-        int symbol = 0;
-        for (int j = 0; j < Constants.SF; j++) {
-            symbol |= (bits[j] << (Constants.SF - j - 1));
-        }
-        return symbol;
-    }
-
-    public static int gray_coding(int symbols)
-    {
-        int num = symbols;
-        // The Gray code is obtained by XORing the number with itself shifted right by one bit.
-        int gray = num ^ (num >>> 1);
-
-        // Since the result must fit in a byte, we ensure it's within the byte range.
-        // This is a simplistic approach and works well if you know the input range is suitable.
-
-        return gray;
-    }
 
 
     public static double[][] downsample(double[][] original, int q, int p) {
@@ -387,28 +312,17 @@ public class Utils {
     public static double[] synchronization2(double up_index, double down_index)
     {
         double compensate_index = 0.0;
-        if (Constants.SF == 7)
+        int sf = Constants.SF;
+        if (sf >= 3 && sf <= 7)
         {
-            compensate_index = 64.0;
-        }
-        else if (Constants.SF == 6)
-        {
-            compensate_index = 32.0;
-        }
-        else if (Constants.SF == 5)
-        {
-            compensate_index = 16.0;
-        }
-        else if (Constants.SF == 4)
-        {
-            compensate_index = 8.0;
+            compensate_index = Math.pow(2,sf - 1);
         }
         double up_shift = (up_index > compensate_index) ? up_index - Constants.Sample_Lora : up_index ;
         double down_shift = (down_index > compensate_index) ? down_index - Constants.Sample_Lora : down_index;
 
-        double CFO = (double)(up_shift + down_shift) / 2;
+        double CFO = (up_shift + down_shift) / 2;
 
-        double TO = (double) (down_shift - up_shift) / 2 ;
+        double TO =  (down_shift - up_shift) / 2;
 
         return new double[]{CFO, TO};
     }
@@ -694,70 +608,6 @@ public class Utils {
         });
     }
 
-//    public static boolean isSoundingSignal(Activity av, double[] rec) {
-//        long t1 = System.currentTimeMillis();
-//
-//        int start_point = ChannelEstimate.xcorr_helper(rec);
-//        Log.e("issounding",start_point+"");
-//
-////        Log.e("xcorr", "runtime " + (System.currentTimeMillis() - t1) + "");
-//
-//        int rx_preamble_start = start_point;
-//        int rx_preamble_end = rx_preamble_start + (int) (((Constants.preambleTime / 1000.0) * Constants.fs)) - 1;
-////        int rx_preamble_len = (rx_preamble_end - rx_preamble_start) + 1;
-////        Utils.log("preamble "+rec.length+","+rx_preamble_start+","+rx_preamble_end+","+rx_preamble_len);
-//
-//        if (rx_preamble_end - 1 > rec.length || rx_preamble_start < 0) {
-//            Utils.log("Error extracting preamble from sounding signal " + rx_preamble_start + "," + rx_preamble_end);
-////            return Constants.valid_carrier_default;
-//            return false;
-//        }
-//        double[] rx_preamble = Utils.segment(rec, rx_preamble_start, rx_preamble_end);
-////        double[] rx_preamble_db = Utils.mag2db(Utils.fftnative_double(rx_preamble, rx_preamble.length));
-//
-//        ////////////////////////////////////////////////////////////////////////////////////
-//
-////        int rx_sym_start = rx_preamble_end + Constants.ChirpGap + 1 + (Constants.Cp * Constants.chanest_symreps);
-//        int rx_sym_start = rx_preamble_end + Constants.ChirpGap + 1;
-//        int rx_sym_end = rx_sym_start + (Constants.Ns * Constants.chanest_symreps) - 1;
-//        int rx_sym_len = (rx_sym_end - rx_sym_start) + 1;
-//
-//        if (rx_sym_end - 1 > rec.length || rx_sym_start < 0) {
-//            Utils.log("Error extracting preamble from sounding signal");
-////            return Constants.valid_carrier_default;
-//            return false;
-//        }
-//        Log.e(LOG, "sym " + rec.length + "," + rx_sym_start + "," + rx_sym_end + "," + rx_sym_len);
-//        double[] rx_symbols = Utils.segment(rec, rx_sym_start, rx_sym_end);
-//        rx_symbols = Utils.div(rx_symbols,30000);
-//
-//        double[] spec_symbol = Utils.fftnative_double(rx_symbols, rx_symbols.length);
-//
-////        int freqSpacing = Constants.fs/Constants.Ns;
-////        int[] fseq = Utils.linspace(Constants.f_range[0],freqSpacing,Constants.f_range[1]);
-//
-//        double[] snrs = new double[Constants.valid_carrier_preamble.length];
-//
-//        int scounter=0;
-//        Log.e("issounding",Constants.valid_carrier_preamble.length+"");
-//        for (Integer bin : Constants.valid_carrier_preamble) {
-//            Log.e("issounding",bin+","+snrs.length);
-//            double signal = spec_symbol[bin];
-//            double noise = Utils.mean(Utils.segment(spec_symbol,bin+2,bin+5));
-//            double snr = signal-noise;
-//            Log.e("issounding",signal+","+noise);
-//            snrs[scounter++]=snr;
-//        }
-//
-//        double msnr = Utils.mean(snrs);
-//        Log.e("issounding",msnr+"");
-//
-//        if (msnr < 15) {
-//            return false;
-//        }
-//
-//        return true;
-//    }
 
     public static double[] sum(double[] a, double[] b) {
         double[] out = new double[a.length];
@@ -1613,46 +1463,6 @@ public class Utils {
                 filename + ".txt");
     }
 
-    public static void listen_to_chirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber)
-    {
-        String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
-        Constants._OfflineRecorder = new OfflineRecorder(
-                MainActivity.av, Constants.fs, filename);
-        Constants._OfflineRecorder.start2();
-
-        int MAX_WINDOWS = 3;
-        int time_out =30;
-
-
-
-        double[] sounding_signal = new double[]{};
-        sounding_signal = new double[MAX_WINDOWS * Constants.RecorderStepSize];
-        int sounding_signal_counter = 0;
-        for (int i = 0; i < time_out; i++) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
-            if (i < MAX_WINDOWS)
-            {
-                for (int j = 0; j < rec.length; j++) {
-                    sounding_signal[sounding_signal_counter++] = rec[j];
-                }
-            }
-        }
-        Constants._OfflineRecorder.halt2();
-
-
-        StringBuilder noiseBuilder = new StringBuilder();
-        for (int j = 0; j < sounding_signal.length; j++) {
-            noiseBuilder.append(sounding_signal[j]);
-            noiseBuilder.append(",");
-        }
-        String raw_noise_signal = noiseBuilder.toString();
-        if (raw_noise_signal.endsWith(",")) {
-            raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
-        }
-
-        FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
-                filename + ".txt");
-    }
     public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Log.e("fifo",filename);
@@ -1707,10 +1517,14 @@ public class Utils {
                     {
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*350;
                     }
+                    else if (Constants.SF == 3)
+                    {
+                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*450;
+                    }
                 }
             }
         }
-        else if (sigType.equals(Constants.SignalType.DataChirp))// collect just chirp for channel estimation
+        else if (sigType.equals(Constants.SignalType.DataChirp))// just collect chirp for channel estimation
         {
             MAX_WINDOWS = 2; //
             timeout = 15;
@@ -1724,7 +1538,7 @@ public class Utils {
         ArrayList<Double> valueHistory = new ArrayList<>();
         ArrayList<Double> idxHistory = new ArrayList<>();
         int synclag = 12000;
-        double[] sounding_signal = new double[]{};
+        double[] sounding_signal = new double[]{}; // sounding_signal should be larger than the transmitted signal
 
         if(Constants.ImagingFish)
         {
@@ -1744,7 +1558,7 @@ public class Utils {
                     {
                         sounding_signal=new double[15*Constants.RecorderStepSize];
                     }
-                    else if (Constants.SF == 4)
+                    else if (Constants.SF == 4 ||Constants.SF == 3 )
                     {
                         sounding_signal = new double[8 * Constants.RecorderStepSize];
                     }
@@ -1868,14 +1682,7 @@ public class Utils {
 
         if (valid_signal) {
             //return Utils.filter(sounding_signal);
-            if (Constants.scheme == Constants.Modulation.LoRa || sigType.equals(Constants.SignalType.DataChirp))
-            {
-                return sounding_signal;
-            }
-            else
-            {
-                return Utils.filter(sounding_signal);
-            }
+            return sounding_signal;
 
         }
         return null;

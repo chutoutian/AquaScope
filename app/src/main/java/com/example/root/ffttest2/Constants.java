@@ -121,6 +121,8 @@ public class Constants {
 
     public static int Gap = 0;
 
+    public static int Preamble_Num = 2;
+
     public static int Center_Freq = 0;
 
     public static int Offset_Freq = 1000;
