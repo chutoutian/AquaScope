@@ -248,6 +248,15 @@ public class Utils {
 
     public static double[][] downversion(double[] data)
     {
+        // check raw data is correct => pass
+//        StringBuilder data_strBuilder = new StringBuilder();
+//        for (int j = 0; j < 20; j++) {
+//            data_strBuilder.append(data[j]);
+//            data_strBuilder.append(",");
+//        }
+//        String data_str = data_strBuilder.toString();
+//        Utils.log("raw data first 10 => " + data_str);
+
         double[] t = new double[data.length];
         for (int i = 0; i<t.length; i++){
             t[i] = i / (double)Constants.FS ;
@@ -268,11 +277,23 @@ public class Utils {
 
 
         }
+
+        // check downversion_chirp is correct => Pass
+        StringBuilder downversion_chirpBuilder = new StringBuilder();
+        for (int j = 0; j < 20; j++) {
+            downversion_chirpBuilder.append(downversion_chirp[0][j]);
+            downversion_chirpBuilder.append(",");
+            downversion_chirpBuilder.append(downversion_chirp[1][j]);
+            downversion_chirpBuilder.append(",");
+        }
+        String downversion_chirp_str = downversion_chirpBuilder.toString();
+        Utils.log("downversion_chirp first 10 => " + downversion_chirp_str);
+
         // low-filter 4k filter
         //downversion_chirp[0] = filter(downversion_chirp[0]);
         //downversion_chirp[1] = filter(downversion_chirp[1]);
         downversion_chirp[0] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
-        downversion_chirp[1] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+        downversion_chirp[1] = bpass_filter(downversion_chirp[1],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
 
         return downversion_chirp;
 

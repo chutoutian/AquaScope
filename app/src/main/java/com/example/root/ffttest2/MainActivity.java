@@ -87,18 +87,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     static boolean started=false;
 
 
-    private ImageView mImageView;
+    private static ImageView mImageView;
     private Button mButtonSegment;
     private ProgressBar mProgressBar;
     private Bitmap mBitmap = null;
     private Module mModule = null;
-    private Module mEncoder1 = null;
-    private Module mEncoder2 = null;
-    private Module mEncoder3 = null;
-
-    private Module mDecoder1 = null;
-    private Module mDecoder2 = null;
-    private Module mDecoder3 = null;
+//    private Module mEncoder1 = null;
+//    private Module mEncoder2 = null;
+//    private Module mEncoder3 = null;
+//
+//    private Module mDecoder1 = null;
+//    private Module mDecoder2 = null;
+//    private Module mDecoder3 = null;
 
     private int currentIndex = 0;
     private String mImagename = "test1.jpg";
@@ -263,6 +263,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             allFiles = assetManager.list("");
             imageFiles = filterJpgFiles(allFiles);
             ptlFiles = filterPtlFiles(allFiles);
+// preload bitmaps
+            if (Constants.didLoadTestImages == false) {
+                String[] testEnd2EndImageFiles = getAssets().list("sendTestImages");
+                for (String file : testEnd2EndImageFiles) {
+                    try {
+                        int targetSize = compressImageSize;
+                        Bitmap tempMBitmap = BitmapFactory.decodeStream(getAssets().open(file));
+                        int sourceWidth = tempMBitmap.getWidth();
+                        int sourceHeight = tempMBitmap.getHeight();
+                        int s = Math.min(sourceWidth, sourceHeight);
+                        float r = (float)targetSize / s;
+                        int widthAfterScaled = Math.round(r * sourceWidth);
+                        int heightAfterScaled = Math.round(r * sourceHeight);
+                        tempMBitmap = Bitmap.createScaledBitmap(tempMBitmap, widthAfterScaled, heightAfterScaled, true);
+
+                        // Calculate the coordinates to center crop the scaled bitmap
+                        int x = (int)Math.round((widthAfterScaled - targetSize) / 2);
+                        int y = (int)Math.round((heightAfterScaled - targetSize) / 2);
+                        // Create a new bitmap and draw the center-cropped region
+                        Bitmap resultBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(resultBitmap);
+                        canvas.drawBitmap(tempMBitmap, -x, -y, null);
+                        tempMBitmap = resultBitmap;
+                        Constants.testEnd2EndImageBitmaps.add(tempMBitmap);
+                    } catch (java.io.IOException e) {
+                        e.printStackTrace();
+                        continue;
+                    }
+                }
+                Log.d("tbt", "Length of bitmapList: " + Constants.testEnd2EndImageBitmaps.size());
+                Constants.didLoadTestImages = true;
+            }
 
             Log.d("ImageSegmentation", "Image Files: " + Arrays.toString(imageFiles));
             Log.d("ImageSegmentation", "Ptl Files: " + Arrays.toString(ptlFiles));
@@ -391,9 +423,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             resizeImage();
                         } else if (currentModelName.equals("VQGANEncode")) {
-                            mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-                            mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-                            mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+                            if (Constants.mEncoder1 == null) {
+                                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+                            }
+                            if (Constants.mEncoder2 == null) {
+                                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+                            }
+                            if (Constants.mEncoder3 == null) {
+                                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+                            }
+                            Log.d("tbt", "finish load encoders");
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -404,9 +443,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else if (currentModelName.equals("VQGANDecode")) {
-                            mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-                            mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-                            mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+                            if (Constants.mDecoder1 == null){
+                                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+                            }
+                            if (Constants.mDecoder2 == null) {
+                                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+                            }
+                            if (Constants.mDecoder3 == null) {
+                                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+                            }
+
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -528,15 +574,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
             final long startTime = SystemClock.elapsedRealtime();
             // run model
-            Tensor outTensors = mEncoder1.forward(IValue.from(inputTensor)).toTensor();
+            Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
 //            final float[] intResult = outTensors.getDataAsFloatArray();
 //            Log.d("tbt", Arrays.toString(intResult));
-            outTensors = mEncoder2.forward(IValue.from(outTensors)).toTensor();
-            outTensors = mEncoder3.forward(IValue.from(outTensors)).toTensor();
+            outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
+            outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
             final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
             Log.d("tbt",  "inference time (ms): " + inferenceTime);
             final long[] results = outTensors.getDataAsLongArray();
-            Constants.SegFish = results;
+//            Constants.SegFish = results;
 
             Log.d("tbt", "result: " + Arrays.toString(results));
             Log.d("tbt", "result length: " + results.length );
@@ -567,13 +613,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             final long startTime = SystemClock.elapsedRealtime();
             Tensor inputTensor = Tensor.fromBlob(indices, new long[]{64});
-            Tensor outTensors = mDecoder1.forward(IValue.from(inputTensor)).toTensor();
+            Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
             final float[] embedding_res = outTensors.getDataAsFloatArray();
 
-            outTensors = mDecoder2.forward(IValue.from(outTensors)).toTensor();
+            outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
-            outTensors = mDecoder3.forward(IValue.from(outTensors)).toTensor();
+            outTensors = Constants.mDecoder3.forward(IValue.from(outTensors)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
             final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
             Log.d("tbt",  "inference time (ms): " + inferenceTime);
@@ -841,6 +887,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.spinner = (Spinner) findViewById(R.id.spinner);
         Constants.spinner2 = (Spinner) findViewById(R.id.spinner2);
         Constants.spinner3 = (Spinner) findViewById(R.id.spinner3);
+        Constants.spinner4 = (Spinner) findViewById(R.id.spinner4);
         Constants.sendButton = (Button) findViewById(R.id.sendbutton);
 
         ArrayList<String> arrayList = new ArrayList<>();
@@ -940,6 +987,68 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Constants.Ns = Integer.parseInt(arrayList3.get(position));
                 editor.commit();
                 Constants.updateNbins();
+            }
+            @Override
+            public void onNothingSelected(AdapterView <?> parent) {
+            }
+        });
+
+        ArrayList<String> arrayList4 = new ArrayList<>();
+        arrayList4.add("testExp");
+        arrayList4.add("end2endTest");
+        arrayList4.add("end2endCam");
+
+        ArrayAdapter<String> arrayAdapter4 = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, arrayList4);
+        arrayAdapter4.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Constants.spinner4.setAdapter(arrayAdapter4);
+        Constants.spinner4.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
+                editor.putInt("expMode", Constants.Experiment.valueOf(arrayList4.get(position)).ordinal());
+                // trigger setup, need to clean the code
+                if (arrayList4.get(position) == "end2endTest") {
+                    try {
+                        if (Constants.mEncoder1 == null) {
+                            Log.d("tbt", "check encoder");
+                            Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+                        }
+                        if (Constants.mEncoder2 == null) {
+                            Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+                        }
+                        if (Constants.mEncoder3 == null) {
+                            Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+                        }
+
+                        // later we can separate encoder and decoder users
+                        if (Constants.mDecoder1 == null){
+                            Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+                        }
+                        if (Constants.mDecoder2 == null) {
+                            Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+                        }
+                        if (Constants.mDecoder3 == null) {
+                            Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+                        }
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                widthEditText.setText(String.valueOf(compressImageSize));
+                                heightEditText.setText(String.valueOf(compressImageSize));
+                            }
+                        });
+
+                        displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                    } catch (IOException e) {
+                        Log.e("ImageSegmentation", "Error reading assets", e);
+                        finish();
+                    }
+                }
+                Constants.expMode = Constants.Experiment.valueOf(arrayList4.get(position));
+                Log.d("tbt", arrayList4.get(position));
+                editor.commit();
             }
             @Override
             public void onNothingSelected(AdapterView <?> parent) {
@@ -1585,82 +1694,82 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        ImageView iv1=(ImageView)findViewById(R.id.imageView);
-        ImageView iv2=(ImageView)findViewById(R.id.imageView2);
-        ImageView iv3=(ImageView)findViewById(R.id.imageView3);
-        ImageView iv4=(ImageView)findViewById(R.id.imageView4);
-        ImageView iv5=(ImageView)findViewById(R.id.imageView5);
-        ImageView iv6=(ImageView)findViewById(R.id.imageView6);
-        ImageView iv7=(ImageView)findViewById(R.id.imageView7);
-        ImageView iv8=(ImageView)findViewById(R.id.imageView8);
-        ImageView iv9=(ImageView)findViewById(R.id.imageView9);
-        ImageView iv10=(ImageView)findViewById(R.id.imageView10);
-        ImageView iv11=(ImageView)findViewById(R.id.imageView11);
-        ImageView iv12=(ImageView)findViewById(R.id.imageView12);
-        ImageView iv13=(ImageView)findViewById(R.id.imageView13);
-        ImageView iv14=(ImageView)findViewById(R.id.imageView14);
-        ImageView iv15=(ImageView)findViewById(R.id.imageView15);
-        ImageView iv16=(ImageView)findViewById(R.id.imageView16);
-        ImageView iv17=(ImageView)findViewById(R.id.imageView17);
-        ImageView iv18=(ImageView)findViewById(R.id.imageView18);
-        ImageView iv19=(ImageView)findViewById(R.id.imageView19);
-        ImageView iv20=(ImageView)findViewById(R.id.imageView20);
-        ImageView iv21=(ImageView)findViewById(R.id.imageView21);
-        ImageView iv22=(ImageView)findViewById(R.id.imageView22);
-        ImageView iv23=(ImageView)findViewById(R.id.imageView23);
-        ImageView iv24=(ImageView)findViewById(R.id.imageView24);
-        ImageView iv25=(ImageView)findViewById(R.id.imageView25);
+//        ImageView iv1=(ImageView)findViewById(R.id.imageView);
+//        ImageView iv2=(ImageView)findViewById(R.id.imageView2);
+//        ImageView iv3=(ImageView)findViewById(R.id.imageView3);
+//        ImageView iv4=(ImageView)findViewById(R.id.imageView4);
+//        ImageView iv5=(ImageView)findViewById(R.id.imageView5);
+//        ImageView iv6=(ImageView)findViewById(R.id.imageView6);
+//        ImageView iv7=(ImageView)findViewById(R.id.imageView7);
+//        ImageView iv8=(ImageView)findViewById(R.id.imageView8);
+//        ImageView iv9=(ImageView)findViewById(R.id.imageView9);
+//        ImageView iv10=(ImageView)findViewById(R.id.imageView10);
+//        ImageView iv11=(ImageView)findViewById(R.id.imageView11);
+//        ImageView iv12=(ImageView)findViewById(R.id.imageView12);
+//        ImageView iv13=(ImageView)findViewById(R.id.imageView13);
+//        ImageView iv14=(ImageView)findViewById(R.id.imageView14);
+//        ImageView iv15=(ImageView)findViewById(R.id.imageView15);
+//        ImageView iv16=(ImageView)findViewById(R.id.imageView16);
+//        ImageView iv17=(ImageView)findViewById(R.id.imageView17);
+//        ImageView iv18=(ImageView)findViewById(R.id.imageView18);
+//        ImageView iv19=(ImageView)findViewById(R.id.imageView19);
+//        ImageView iv20=(ImageView)findViewById(R.id.imageView20);
+//        ImageView iv21=(ImageView)findViewById(R.id.imageView21);
+//        ImageView iv22=(ImageView)findViewById(R.id.imageView22);
+//        ImageView iv23=(ImageView)findViewById(R.id.imageView23);
+//        ImageView iv24=(ImageView)findViewById(R.id.imageView24);
+//        ImageView iv25=(ImageView)findViewById(R.id.imageView25);
         Constants.vv = (View)findViewById(R.id.myview);
-
-        if (!Constants.SPEECH_IN) {
-            iv25.setVisibility(View.GONE);
-        }
-
-        iv1.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=1;startWrapper(); }});
-        iv2.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=2;startWrapper(); }});
-        iv3.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=3;startWrapper(); }});
-        iv4.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=4;startWrapper(); }});
-        iv5.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=5;startWrapper(); }});
-        iv6.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=6;startWrapper(); }});
-        iv7.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=7;startWrapper(); }});
-        iv8.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=8;startWrapper(); }});
-        iv9.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=9;startWrapper(); }});
-        iv10.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=10;startWrapper(); }});
-        iv11.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=11;startWrapper(); }});
-        iv12.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=12;startWrapper(); }});
-        iv13.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=13;startWrapper(); }});
-        iv14.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=14;startWrapper(); }});
-        iv15.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=15;startWrapper(); }});
-        iv16.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=16;startWrapper(); }});
-        iv17.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=17;startWrapper(); }});
-        iv18.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=18;startWrapper(); }});
-        iv19.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=19;startWrapper(); }});
-        iv20.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=20;startWrapper(); }});
-        iv21.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=21;startWrapper(); }});
-        iv22.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=22;startWrapper(); }});
-        iv23.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=23;startWrapper(); }});
-        iv24.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=24;startWrapper(); }});
-
-        iv25.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent
-                        = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,
-                        Locale.getDefault());
-                intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
-
-                try {
-                    startActivityForResult(intent, 1);
-                }
-                catch (Exception e) {
-                    Toast.makeText(MainActivity.this, " " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+//
+//        if (!Constants.SPEECH_IN) {
+//            iv25.setVisibility(View.GONE);
+//        }
+//
+//        iv1.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=1;startWrapper(); }});
+//        iv2.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=2;startWrapper(); }});
+//        iv3.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=3;startWrapper(); }});
+//        iv4.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=4;startWrapper(); }});
+//        iv5.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=5;startWrapper(); }});
+//        iv6.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=6;startWrapper(); }});
+//        iv7.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=7;startWrapper(); }});
+//        iv8.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=8;startWrapper(); }});
+//        iv9.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=9;startWrapper(); }});
+//        iv10.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=10;startWrapper(); }});
+//        iv11.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=11;startWrapper(); }});
+//        iv12.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=12;startWrapper(); }});
+//        iv13.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=13;startWrapper(); }});
+//        iv14.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=14;startWrapper(); }});
+//        iv15.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=15;startWrapper(); }});
+//        iv16.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=16;startWrapper(); }});
+//        iv17.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=17;startWrapper(); }});
+//        iv18.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=18;startWrapper(); }});
+//        iv19.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=19;startWrapper(); }});
+//        iv20.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=20;startWrapper(); }});
+//        iv21.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=21;startWrapper(); }});
+//        iv22.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=22;startWrapper(); }});
+//        iv23.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=23;startWrapper(); }});
+//        iv24.setOnClickListener(new View.OnClickListener() {public void onClick(View view) { Constants.messageID=24;startWrapper(); }});
+//
+//        iv25.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Intent intent
+//                        = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+//                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+//                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+//                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,
+//                        Locale.getDefault());
+//                intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to text");
+//
+//                try {
+//                    startActivityForResult(intent, 1);
+//                }
+//                catch (Exception e) {
+//                    Toast.makeText(MainActivity.this, " " + e.getMessage(),
+//                            Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
     }
 
     @Override
@@ -1773,7 +1882,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground);
+        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps,mImageView);
         Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
