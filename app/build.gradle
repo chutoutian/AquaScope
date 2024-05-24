@@ -5,7 +5,7 @@ android {
     defaultConfig {
         multiDexEnabled true
         applicationId "com.example.root.ffttest2"
-        minSdkVersion 28
+        minSdkVersion 24
         targetSdkVersion 31
         buildToolsVersion "29.0.0"
         versionCode 1
