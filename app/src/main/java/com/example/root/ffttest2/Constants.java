@@ -21,14 +21,48 @@ import androidx.core.widget.NestedScrollView;
 import com.jjoe64.graphview.GraphView;
 
 import org.apache.commons.math3.analysis.function.Constant;
+import org.pytorch.Module;
 
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.ArrayList;
+
 
 public class Constants {
+
+    // ****************************** Start of Codec Related Global Variables ******************************
+    public enum Experiment {
+        testExp, // for doing all test and experiment
+        end2endTest, // for sending test image
+        end2endCam // for sending image captured by camera
+        // add more mode if needed
+    }
+
+    public static Experiment expMode = Experiment.testExp; // store current expMode
+    public static ArrayList<Bitmap> testEnd2EndImageBitmaps = new ArrayList<>(); // store bitmap of all test images (bypass access assets in class other than the main class)
+    public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
+    ;
+    public static int end2endTestDelay = 3000; // sending delay between two test images (leave time for propagation and decode)
+    public static int end2endCamDelay = 3000; // sending delay between two captured images/ camera capture time interval (leave time for propagation and decode)
+
+    // later maybe we can add a wrapper to merge these parts to one model
+    public static Module mEncoder1 = null; // encoder part 1
+    public static Module mEncoder2 = null; // encoder part 2
+    public static Module mEncoder3 = null; // encoder part 3
+
+    public static Module mDecoder1 = null; // decoder part 1
+    public static Module mDecoder2 = null; // decoder part 2
+    public static Module mDecoder3 = null; // decoder part 3
+
+    public static long[] encode_sequence; // encoder final output (64 long integer)
+
+    public static int compressImageSize = 128; // rescale image for encoding
+
+    // ****************************** End of Codec Related Global Variables ******************************
+
     public enum EqMethod {
         Freq,
         Time
@@ -241,7 +275,7 @@ public class Constants {
     //public static int maxbits=5;
     public static int exp_num=5;
     public static int SNR_THRESH = 10; //unused
-    public static Spinner spinner,spinner2,spinner3;
+    public static Spinner spinner,spinner2,spinner3,spinner4;
     public static CodeRate codeRate = CodeRate.None;
     public static int DATA_LEN = 32;
     public static int mattempts=1;
