@@ -93,7 +93,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         Constants.user  = Constants.User.Bob;
         MainActivity.startMethod(av);
 
-        button.setBackground(defaultBackground);
+        if (defaultBackground != null) { // otherwise the button will be transparent
+            button.setBackground(defaultBackground);
+        }
     }
 
     @Override
