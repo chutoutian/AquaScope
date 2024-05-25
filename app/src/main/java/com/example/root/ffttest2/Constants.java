@@ -45,7 +45,7 @@ public class Constants {
     public static ArrayList<Bitmap> testEnd2EndImageBitmaps = new ArrayList<>(); // store bitmap of all test images (bypass access assets in class other than the main class)
     public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
     ;
-    public static int end2endTestDelay = 3000; // sending delay between two test images (leave time for propagation and decode)
+    public static int end2endTestDelay = 5000; // sending delay between two test images (leave time for propagation and decode)
     public static int end2endCamDelay = 3000; // sending delay between two captured images/ camera capture time interval (leave time for propagation and decode)
 
     // later maybe we can add a wrapper to merge these parts to one model

@@ -292,8 +292,11 @@ public class Utils {
         // low-filter 4k filter
         //downversion_chirp[0] = filter(downversion_chirp[0]);
         //downversion_chirp[1] = filter(downversion_chirp[1]);
-        downversion_chirp[0] = bpass_filter(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
-        downversion_chirp[1] = bpass_filter(downversion_chirp[1],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+        Utils.log("length of data before bpass =>" + downversion_chirp[0].length);
+        downversion_chirp[0] = bpass_filter2(downversion_chirp[0],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
+        Utils.log("length of data after bpass =>" + downversion_chirp[0].length);
+
+        downversion_chirp[1] = bpass_filter2(downversion_chirp[1],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
 
         return downversion_chirp;
 
@@ -390,6 +393,60 @@ public class Utils {
         }
 
         return h;
+    }
+
+
+    // written by chatgpt: simulate the bpass filter in matlab code base
+    public static double[] bpass_filter2(double[] data, double centerFre, double offsetFre, double sampFre) {
+        double Ap = 0.82;
+        double As = 45;
+        double Wp1 = 2 * Math.PI * (centerFre - offsetFre) / sampFre;
+        double Wp2 = 2 * Math.PI * (centerFre + offsetFre) / sampFre;
+
+        int N = (int) Math.ceil(3.6 * sampFre / offsetFre);
+        int M = N - 1;
+        M = M % 2 + M;
+
+        // here temp is to convert matlab and java index
+        double[] h = new double[M + 1];
+        for (int k = 0; k <= M; k++) {
+            double temp = k + 1;
+            if (temp - 1 - 0.5 * M == 0) {
+                h[k] = Wp2 / Math.PI - Wp1 / Math.PI;
+            } else {
+                h[k] = Wp2 * Math.sin(Wp2 * (temp - 1 - 0.5 * M)) / (Math.PI * (Wp2 * (temp - 1 - 0.5 * M)))
+                        - Wp1 * Math.sin(Wp1 * (temp - 1 - 0.5 * M)) / (Math.PI * (Wp1 * (temp - 1 - 0.5 * M)));
+            }
+        }
+        // print filter
+        StringBuilder filter_strBuilder = new StringBuilder();
+        for (int j = 0; j < M+1; j++) {
+            filter_strBuilder.append(h[j]);
+            filter_strBuilder.append(",");
+        }
+        String filter_str = filter_strBuilder.toString();
+        Utils.log("my filter => " + filter_str);
+
+
+
+        return applyFilter(h, data);
+    }
+
+    private static double[] applyFilter(double[] h, double[] data) {
+        int filterLength = h.length;
+        int dataLength = data.length;
+        double[] result = new double[dataLength];
+
+        for (int i = 0; i < dataLength; i++) {
+            result[i] = 0;
+            for (int j = 0; j < filterLength; j++) {
+                if (i - j >= 0) {
+                    result[i] += h[j] * data[i - j];
+                }
+            }
+        }
+
+        return result;
     }
 
     public static Complex[] chirp1(boolean isUpChirp, double T, int bw, int fs, int symbol)

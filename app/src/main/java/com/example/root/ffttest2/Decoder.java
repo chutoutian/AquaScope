@@ -179,14 +179,16 @@ public class Decoder {
         double[][] downversion_preamble = Utils.downversion(data_remove_preamble);
         //double[][] data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,(Constants.Ns_lora + Constants.Gap));
 
-        // check downversion_preamble
-//        StringBuilder downversion_preambleBuilder = new StringBuilder();
-//        for (int j = 0; j < 20; j++) {
-//            downversion_preambleBuilder.append(downversion_preamble[0][j]);
-//            downversion_preambleBuilder.append(",");
-//        }
-//        String downversion_preamble_str = downversion_preambleBuilder.toString();
-//        Utils.log("downversion first 10 => " + downversion_preamble_str);
+//         check downversion_preamble
+        StringBuilder downversion_preambleBuilder = new StringBuilder();
+        for (int j = 0; j < 20; j++) {
+            downversion_preambleBuilder.append(downversion_preamble[0][j]);
+            downversion_preambleBuilder.append(",");
+            downversion_preambleBuilder.append(downversion_preamble[1][j]);
+            downversion_preambleBuilder.append(",");
+        }
+        String downversion_preamble_str = downversion_preambleBuilder.toString();
+        Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
 
         double[] index_count_test = new double[4];
         //double[] pks = new double[4];
@@ -217,6 +219,8 @@ public class Decoder {
         }
         // frequency and time synchronization
         double[] off_set = Utils.synchronization2(index_count_test[1], index_count_test[3]);
+        Utils.log("first index  =>" + index_count_test[1]);
+        Utils.log("second index  =>" + index_count_test[3]);
         Utils.log("cfo =>" + off_set[0]);
         Utils.log("to =>" + off_set[1]);
 
