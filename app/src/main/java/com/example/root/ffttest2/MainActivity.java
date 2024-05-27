@@ -88,6 +88,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     private static ImageView mImageView;
+    private static ImageView mImageView2;
+
     private Button mButtonSegment;
     private ProgressBar mProgressBar;
     private Bitmap mBitmap = null;
@@ -304,6 +306,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         mImageView = findViewById(R.id.imageView_fish);
+        mImageView2 = findViewById(R.id.imageView_fish2);
+
 
         // Resize:
         // Create widgets for image resize feature (width edit text box, height edit text box and resize button)
@@ -463,7 +467,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else if (currentModelName.equals("transformer_optimized.ptl")) {
-                            mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
+                            if (Constants.mTransformer == null) {
+                                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+                            }
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -663,8 +669,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Tensor inputTensor2 = Tensor.fromBlob(data, new long[]{1, 64});
             Log.d("tbt", "shape: " + Arrays.toString(inputTensor.shape()));
             final long startTime = SystemClock.elapsedRealtime();
-            for (int p = 0; p < recover_round; p++) {
-                IValue result = mModule.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
+            for (int p = 0; p < Constants.recover_round; p++) {
+                IValue result = Constants.mTransformer.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
                 if (result.isTuple()) {
                     // Get the tuple and extract the tensors
                     IValue[] outputs = result.toTuple();
@@ -1030,6 +1036,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         }
                         if (Constants.mDecoder3 == null) {
                             Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+                        }
+
+                        if (Constants.mTransformer == null) {
+                            Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
                         }
 
                         runOnUiThread(new Runnable() {
@@ -1882,7 +1892,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps,mImageView);
+        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps,mImageView, mImageView2);
         Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 

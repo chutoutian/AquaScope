@@ -160,17 +160,17 @@ public class Decoder {
         int numsyms = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes);
 
         // write into files
-        StringBuilder rxRawSymbolBuilder = new StringBuilder();
-        for (int j = 0; j < data.length; j++) {
-            rxRawSymbolBuilder.append(data[j]);
-            rxRawSymbolBuilder.append(",");
-        }
-        String rx_raw_symbol = rxRawSymbolBuilder.toString();
-        if (rx_raw_symbol.endsWith(",")) {
-            rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
-                Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
+//        StringBuilder rxRawSymbolBuilder = new StringBuilder();
+//        for (int j = 0; j < data.length; j++) {
+//            rxRawSymbolBuilder.append(data[j]);
+//            rxRawSymbolBuilder.append(",");
+//        }
+//        String rx_raw_symbol = rxRawSymbolBuilder.toString();
+//        if (rx_raw_symbol.endsWith(",")) {
+//            rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
+//        }
+//        FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
+//                Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
 
 
         //
@@ -427,17 +427,17 @@ public class Decoder {
     {
         //received_data = Utils.filter(received_data);
         // save data before time domain equalization
-        StringBuilder before_equqlization_rx_preambleBuilder = new StringBuilder();
-        for (int j = 0; j < received_data.length; j++) {
-            before_equqlization_rx_preambleBuilder.append(received_data[j]);
-            before_equqlization_rx_preambleBuilder.append(",");
-        }
-        String before_equalization_rx_str = before_equqlization_rx_preambleBuilder.toString();
-        if (before_equalization_rx_str.endsWith(",")) {
-            before_equalization_rx_str = before_equalization_rx_str.substring(0, before_equalization_rx_str.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, before_equalization_rx_str + "",
-                Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
+//        StringBuilder before_equqlization_rx_preambleBuilder = new StringBuilder();
+//        for (int j = 0; j < received_data.length; j++) {
+//            before_equqlization_rx_preambleBuilder.append(received_data[j]);
+//            before_equqlization_rx_preambleBuilder.append(",");
+//        }
+//        String before_equalization_rx_str = before_equqlization_rx_preambleBuilder.toString();
+//        if (before_equalization_rx_str.endsWith(",")) {
+//            before_equalization_rx_str = before_equalization_rx_str.substring(0, before_equalization_rx_str.length() - 1);
+//        }
+//        FileOperations.writetofile(MainActivity.av, before_equalization_rx_str + "",
+//                Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
 
         // add time equalization
         int gtIdx = 0;

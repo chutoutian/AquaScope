@@ -45,7 +45,7 @@ public class Constants {
     public static ArrayList<Bitmap> testEnd2EndImageBitmaps = new ArrayList<>(); // store bitmap of all test images (bypass access assets in class other than the main class)
     public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
     ;
-    public static int end2endTestDelay = 5000; // sending delay between two test images (leave time for propagation and decode)
+    public static int end2endTestDelay = 7000; // sending delay between two test images (leave time for propagation and decode)
     public static int end2endCamDelay = 3000; // sending delay between two captured images/ camera capture time interval (leave time for propagation and decode)
 
     // later maybe we can add a wrapper to merge these parts to one model
@@ -56,6 +56,10 @@ public class Constants {
     public static Module mDecoder1 = null; // decoder part 1
     public static Module mDecoder2 = null; // decoder part 2
     public static Module mDecoder3 = null; // decoder part 3
+
+    public static Module mTransformer = null; // recover transformer
+
+    public static int recover_round = 1;
 
     public static long[] encode_sequence; // encoder final output (64 long integer)
 
