@@ -523,7 +523,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 }
             }
             else if (Constants.user.equals(Constants.User.Bob)){
-                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0);
+                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0); // sync, when the receiver is receiving the sound (after detecting sound) and processing the sound (demodulate, decode), all other signal will be ignored
                 if (chirp_signal != null)
                 {
                     StringBuilder noiseBuilder = new StringBuilder();

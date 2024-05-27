@@ -1588,7 +1588,7 @@ public class Utils {
                     }
                     else if (Constants.SF == 5 || Constants.SF == 6)
                     {
-                        timeout = 120;
+                        timeout = 20;
                         len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 300;
                     }
                     else if (Constants.SF == 4)
@@ -1662,22 +1662,24 @@ public class Utils {
         boolean valid_signal = false;
 //        boolean getOneMoreFlag = false;
         int sounding_signal_counter=0;
-        for (int i = 0; i < N; i++) {
+//        for (int i = 0; i < N; i++) { // actually here we can replace it with while true
+        int window_count = 0;
+        while (true) {
             Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
-            Log.e("received signal ", "rec " + rec);
+//            Log.e("received signal ", "rec " + rec);
             if (sigType.equals(Constants.SignalType.Sounding)||
                     sigType.equals(Constants.SignalType.Feedback)||
                     sigType.equals(Constants.SignalType.DataRx) || sigType.equals(Constants.SignalType.DataChirp)) {
 //                Log.e("fifo","loop "+i);
 
-                if (i<MAX_WINDOWS) {
+                if (window_count<MAX_WINDOWS) {
                     sampleHistory.add(rec);
-                    continue;
+//                    continue;
                 }
                 else {
-                    if (numWindowsLeft==0) {
-                        double[] out = null;
+                    if (numWindowsLeft==0) { // do xcorr, signal finder
+                        double[] out = null; // will be reset, so out's size will not explode
                         out = Utils.concat(sampleHistory.get(sampleHistory.size() - 1 ), rec);
                         //out = Utils.concat_array_list(sampleHistory,MAX_WINDOWS-1,rec);
 
@@ -1690,9 +1692,8 @@ public class Utils {
                             Utils.log("xcorr_out" + xcorr_out[0] + ' ' +  xcorr_out[1]);
                         }
 
-
                         long t1 = System.currentTimeMillis();
-                        Utils.log(String.format("Listening........ (%.2f, %d)",xcorr_out[2],i));
+                        Utils.log(String.format("Listening........ (%.2f, %d)",xcorr_out[2],window_count));
 
                         sampleHistory.add(rec);
                         valueHistory.add(xcorr_out[0]);
@@ -1749,12 +1750,14 @@ public class Utils {
                         }
                     }
 
-                    if(sampleHistory.size() >= 6){
+                    if(sampleHistory.size() >= 6){ // here make sure it will not explode
                         sampleHistory.remove(0);
                         valueHistory.remove(0);
                         idxHistory.remove(0);
                     }
                 }
+                window_count = window_count + 1;
+
             }
         }
 
