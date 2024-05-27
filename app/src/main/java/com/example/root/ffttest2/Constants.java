@@ -116,7 +116,8 @@ public class Constants {
         Rx_Symbols,
         Rx_Embedding,
         Battery_Level,
-        Timestamp
+        Timestamp,
+        Before_Equalization_Rx_Raw_Symbols
     }
     public enum EstSignalType {
         Chirp,
