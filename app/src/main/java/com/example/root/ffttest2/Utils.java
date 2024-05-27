@@ -1583,20 +1583,22 @@ public class Utils {
                 {
                     if (Constants.SF == 7)
                     {
-                        timeout = 25;
+                        timeout = 120;
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*220;
                     }
                     else if (Constants.SF == 5 || Constants.SF == 6)
                     {
-                        timeout = 20;
+                        timeout = 120;
                         len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 300;
                     }
                     else if (Constants.SF == 4)
                     {
+                        timeout = 120;
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*350;
                     }
                     else if (Constants.SF == 3)
                     {
+                        timeout = 120;
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*450;
                     }
                 }
