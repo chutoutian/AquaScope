@@ -547,7 +547,7 @@ public class Utils {
             symbol[0][i] = chirp[i].getReal();
             symbol[1][i] = chirp[i].getImaginary();
         }
-        double[][] results_double = timesnative(symbol,Constants.carrier);
+        double[][] results_double = timesnative(symbol,Constants.carrier); // result[0] is cos(a)cos(b) - sin(a)sin(b) = cos(a+b)
         short[] results_real = new short[results_double[0].length];
         for (int i =0 ; i<results_real.length;i++)
         {

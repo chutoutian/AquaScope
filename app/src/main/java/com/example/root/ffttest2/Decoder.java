@@ -15,7 +15,7 @@ import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 
 public class Decoder {
-    public static void decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
+    public static long[]  decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
 
         // write the raw data into file
         StringBuilder rxRawSymbolBuilder = new StringBuilder();
@@ -148,6 +148,7 @@ public class Decoder {
 
             }
         });
+        return embedding;
     }
 
     public static int[] demodulate(double[] data, int m_attempt)

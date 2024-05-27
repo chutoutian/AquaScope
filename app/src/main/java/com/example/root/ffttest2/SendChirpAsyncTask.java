@@ -319,7 +319,38 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0);
                 }
                 if (data_signal!=null) {
-                    Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
+                    long[] embeddings = Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
+                    // decode
+                    final long startTime = SystemClock.elapsedRealtime();
+                    Tensor inputTensor = Tensor.fromBlob(embeddings, new long[]{64});
+                    Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                    final float[] embedding_res = outTensors.getDataAsFloatArray();
+
+                    outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                    outTensors = Constants.mDecoder3.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                    final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+                    Log.d("tbt",  "inference time (ms): " + inferenceTime);
+
+                    final byte[] rgbData = outTensors.getDataAsUnsignedByteArray();
+                    int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                    int pixelIndex = 0;
+                    int argbIndex = 0;
+                    for (int y = 0; y < Constants.compressImageSize; y++) {
+                        for (int x = 0; x < Constants.compressImageSize; x++) {
+                            int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                            int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                            int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+//                    Log.d("tbt", "r " + rgbData[pixelIndex-3] + " g " + rgbData[pixelIndex-2] + " b " + rgbData[pixelIndex-1]);
+                            // Combine these into an ARGB color with full opacity.
+                            int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                            argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                        }
+                    }
+                    Bitmap tempMBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+                    mImageView.setImageBitmap(tempMBitmap);
                 }
                 return 0;
             }
