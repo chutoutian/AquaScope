@@ -11,24 +11,26 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import androidx.camera.view.PreviewView;
 import androidx.core.widget.NestedScrollView;
+import androidx.camera.lifecycle.ProcessCameraProvider;
 
 import com.jjoe64.graphview.GraphView;
 
-import org.apache.commons.math3.analysis.function.Constant;
 import org.pytorch.Module;
 
-import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.ArrayList;
+import com.google.common.util.concurrent.ListenableFuture;
 
 
 public class Constants {
@@ -65,6 +67,11 @@ public class Constants {
 
     public static int compressImageSize = 128; // rescale image for encoding
 
+    public static Button cameraCaptureBtn;
+    public static FrameLayout frameLayout;
+    public static PreviewView preview;
+    public static ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    public static Bitmap currentCameraCapture;
     // ****************************** End of Codec Related Global Variables ******************************
 
     public enum EqMethod {

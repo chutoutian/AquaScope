@@ -109,7 +109,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         Constants.WaitForBerTime = Constants.WaitForBerTimeDefault + Constants.SyncLag;
         Constants.WaitForPerTime = Constants.WaitForPerTimeDefault + Constants.SyncLag;
 
-        Constants.SEND_DATA=true;
+        Constants.SEND_DATA = true;
         Constants.WaitForDataTime = Constants.WaitForPerTime;
         Constants.AdaptationMethod = 3;
 
@@ -129,21 +129,20 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         //}
         if (Constants.expMode == Constants.Experiment.testExp) {
             for (int i = 0; i < num_measurements; i++) {
-                Log.e("timer","work "+i);
+                Log.e("timer", "work " + i);
                 int flag = 0;
-                if (i == num_measurements-1) {
+                if (i == num_measurements - 1) {
                     flag = work(i, true);
                 } else {
                     flag = work(i, false);
                 }
-                updateTimer((i+1)+"");
+                updateTimer((i + 1) + "");
                 if (flag == -1) {
                     updateTimer("-1");
                     break;
                 }
             }
-        }
-        else if (Constants.expMode == Constants.Experiment.end2endTest){
+        } else if (Constants.expMode == Constants.Experiment.end2endTest) {
             if (Constants.user.equals(Constants.User.Alice)) {
                 // step 1 read out file path in testImages
                 // passed as arguments
@@ -198,10 +197,60 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 work(0, true);
             }
             // step 2-3 save results
+        } else if (Constants.expMode == Constants.Experiment.end2endCam) {
+            if (Constants.user.equals(Constants.User.Alice)) {
+                // step 1 read out file path in testImages
+                // passed as arguments
+                // step 2 for each image
+                // a special set up for samsung s6 edge.
+                // s21 can directly use mImageView.setImageBitmap(mBitmap);
+                mImageView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mImageView.setImageBitmap(Constants.currentCameraCapture);
+                    }
+                });
+                // step 2-1 encode
+                Log.d("tbt", "start to process bit maps");
+                float[] mu = {0.0f, 0.0f, 0.0f};
+                float[] std = {1.0f, 1.0f, 1.0f};
+                final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(Constants.currentCameraCapture,
+                        mu, std);
+
+                // Convert the PyTorch tensor to a float array
+                float[] tempArray = tempInputTensor.getDataAsFloatArray();
+
+                // Apply the operation x = 2 * x - 1 to the float array
+                for (int i = 0; i < tempArray.length; i++) {
+                    tempArray[i] = 2.0f * tempArray[i] - 1.0f;
+                }
+
+                // Convert the float array back to a PyTorch tensor
+                Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
+                final long startTime = SystemClock.elapsedRealtime();
+                // run model
+                Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
+                outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
+                outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+                final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+                final long[] results = outTensors.getDataAsLongArray();
+                Constants.encode_sequence = results;
+                Log.d("tbt", "result: " + Arrays.toString(results));
+                Utils.log("send embedding: " + Arrays.toString(results));
+                // step 2-2 send
+                work(0, true);
+                try {
+                    Thread.sleep(Constants.end2endTestDelay);
+                } catch (Exception e) {
+                    Log.e("asdf", e.toString());
+                }
+
+            }
+            else if (Constants.user.equals(Constants.User.Bob)) {
+            Log.d("tbt", "enter Bob");
+            work(0, true);
         }
-        else if (Constants.expMode == Constants.Experiment.end2endCam) {
-            Log.d("tbt", "not implemented end2endCam");
-        }
+    }
         return null;
     }
 

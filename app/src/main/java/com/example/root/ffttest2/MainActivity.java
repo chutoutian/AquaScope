@@ -56,6 +56,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.core.content.ContextCompat;
 
 import com.jjoe64.graphview.GraphView;
 
@@ -72,6 +74,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ExecutionException;
 
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
@@ -80,7 +83,7 @@ import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
-    String[] perms = new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+    String[] perms = new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
 
     private static SensorManager sensorManager;
     private Sensor accelerometer;
@@ -336,7 +339,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         mImageView = findViewById(R.id.imageView_fish);
         mImageView2 = findViewById(R.id.imageView_fish2);
+        Constants.frameLayout = findViewById(R.id.frameLayout);
+        Constants.preview = findViewById(R.id.previewView);
+        Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);
+        Constants.cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        Constants.cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = Constants.cameraProviderFuture.get();
+                CameraHelper.bindCamera(cameraProvider, this, mImageView2);
+            } catch (ExecutionException | InterruptedException e) {
+                // No errors need to be handled for this Future.
+                // This should never be reached.
+            }
+        }, ContextCompat.getMainExecutor(this));
 
+        //        CameraHelper.startCamera(this, Constants.cameraTextureView, mImageView2);
+        Constants.cameraCaptureBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CameraHelper.takePicture2();
+            }
+        });
 
         // Resize:
         // Create widgets for image resize feature (width edit text box, height edit text box and resize button)
@@ -1934,9 +1957,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-        String formattedNow = now.format(formatter);
+        String formattedNow = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+            formattedNow = now.format(formatter);
+        } else {
+            formattedNow = "not_available";
+        }
 
         Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
         Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
