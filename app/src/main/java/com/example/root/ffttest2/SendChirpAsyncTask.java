@@ -199,11 +199,6 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             // step 2-3 save results
         } else if (Constants.expMode == Constants.Experiment.end2endCam) {
             if (Constants.user.equals(Constants.User.Alice)) {
-                // step 1 read out file path in testImages
-                // passed as arguments
-                // step 2 for each image
-                // a special set up for samsung s6 edge.
-                // s21 can directly use mImageView.setImageBitmap(mBitmap);
                 mImageView.post(new Runnable() {
                     @Override
                     public void run() {
@@ -211,6 +206,11 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     }
                 });
                 // step 2-1 encode
+                // sender t1 - encode image
+                Constants.Sender_Latency_Str = ""; // clean up the time
+                Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + TaskID + "\n"; // TaskID is the time of this sendchirpasync task
+                final long startTime = SystemClock.elapsedRealtime();
+
                 Log.d("tbt", "start to process bit maps");
                 float[] mu = {0.0f, 0.0f, 0.0f};
                 float[] std = {1.0f, 1.0f, 1.0f};
@@ -227,14 +227,19 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 // Convert the float array back to a PyTorch tensor
                 Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
-                final long startTime = SystemClock.elapsedRealtime();
                 // run model
                 Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
                 outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
                 outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
-                final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
                 final long[] results = outTensors.getDataAsLongArray();
                 Constants.encode_sequence = results;
+
+                // sender t1 - encode image
+                final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+                Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender encode image (ms): " + inferenceTime + "\n";
+                Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
+
                 Log.d("tbt", "result: " + Arrays.toString(results));
                 Utils.log("send embedding: " + Arrays.toString(results));
                 // step 2-2 send
@@ -418,7 +423,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 if (Constants.SEND_DATA) {
                     if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+
                         sendData(valid_bins, m_attempt);
+
                     }
                     if (skipSleep == false) {
                         try {
@@ -642,6 +649,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                  Constants.SignalType sigType) {
 
 //        byte[] embedding_bytes = Utils.Embedding2Bytes(Constants.SegFish);
+        // sender t2 - encode image
+        final long startTime_encoding_signal = SystemClock.elapsedRealtime();
+
         byte[] embedding_bytes_test;
         if (Constants.expMode == Constants.Experiment.testExp) {
             embedding_bytes_test = new byte[]{31, 69, 72, -112, -19, -104, 60, -51, -84, -72, -112, 95, 45, -33, -118, 43, 33, 8, 111, -96, 127, 57, 37, -8, -39, -74, -91, 25, 54, -85, -123, 114, -84, -44, 92, 42, -21, -49, 90, 67, -59, 37, -103, 52, -30, -100, 50, -34, 30, 98, -22, 124, -95, -74, 97, -122, -38, 20, -45, 67, -66, 93, 117, -102, -19, 117, 118, 31, -48, -106, 125, 50, 84, 20, 40, 125, -30, 79, 22, -55};
@@ -660,8 +670,24 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             {
                 encoded_byte += (encoded_symbol[i] + ",");
             }
+
+            // sender t2 - encode image
+            final long inferenceTime_encoding_signal = SystemClock.elapsedRealtime() - startTime_encoding_signal;
+            Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender encode signal (ms): " + inferenceTime_encoding_signal + "\n";
+            Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
             Utils.log("encoded_symbol =>"+encoded_byte);
+
+            // sender t3 - generate signal
+            final long startTime_generate_signal = SystemClock.elapsedRealtime();
+
             txsig = SymbolGeneration.generateDataSymbols_LoRa(encoded_symbol,true,m_attempt);
+
+            // sender t3 - generate signal
+            final long inferenceTime_generate_signal = SystemClock.elapsedRealtime() - startTime_generate_signal;
+            Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender generate signal (ms): " + inferenceTime_generate_signal + "\n";
+            Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
         }
         else if (Constants.scheme == Constants.Modulation.OFDM_freq_all || Constants.scheme == Constants.Modulation.OFDM_freq_adapt)
         {
@@ -670,15 +696,25 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         }
 
 
-
+        // write send signal to txt
         FileOperations.writetofile(MainActivity.av, txsig,
                 Utils.genName(sigType, m_attempt) + ".txt");
+
+        // sender t4 - send signal
+        final long startTime_send_signal = SystemClock.elapsedRealtime();
 
         Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs , 0, txsig.length, false); // this is where I leave to solve Mar. 19.
         Constants.sp1.play(Constants.volume);
 
         int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
         sleep(sleepTime + Constants.SendPad);
+
+        // sender t4 - send signal
+        final long inferenceTime_send_signal = SystemClock.elapsedRealtime() - startTime_send_signal;
+        Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender send signal (ms): " + inferenceTime_send_signal + "\n";
+        Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+        FileOperations.writetofile(MainActivity.av, Constants.Sender_Latency_Str,
+                Utils.genName(Constants.SignalType.Latency_Sender, m_attempt) + ".txt");
     }
 
     public static int[] generateBins(int bin1, int bin2) {

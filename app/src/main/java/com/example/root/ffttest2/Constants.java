@@ -72,6 +72,7 @@ public class Constants {
     public static PreviewView preview;
     public static ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     public static Bitmap currentCameraCapture;
+    public static String Sender_Latency_Str = "";
     // ****************************** End of Codec Related Global Variables ******************************
 
     public enum EqMethod {
@@ -128,7 +129,9 @@ public class Constants {
         Rx_Embedding,
         Battery_Level,
         Timestamp,
-        Before_Equalization_Rx_Raw_Symbols
+        Before_Equalization_Rx_Raw_Symbols,
+        Latency_Sender,
+        Latency_Receiver
     }
     public enum EstSignalType {
         Chirp,
