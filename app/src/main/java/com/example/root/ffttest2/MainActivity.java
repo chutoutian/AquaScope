@@ -70,6 +70,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
@@ -301,6 +303,33 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Log.d("ImageSegmentation", "Image Files: " + Arrays.toString(imageFiles));
             Log.d("ImageSegmentation", "Ptl Files: " + Arrays.toString(ptlFiles));
 
+
+            if (Constants.mEncoder1 == null) {
+                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+            }
+            if (Constants.mEncoder2 == null) {
+                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+            }
+            if (Constants.mEncoder3 == null) {
+                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+            }
+
+            // later we can separate encoder and decoder users
+            if (Constants.mDecoder1 == null){
+                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+            }
+            if (Constants.mDecoder2 == null) {
+                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+            }
+            if (Constants.mDecoder3 == null) {
+                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+            }
+
+            if (Constants.mTransformer == null) {
+                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+            }
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -427,15 +456,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             resizeImage();
                         } else if (currentModelName.equals("VQGANEncode")) {
-                            if (Constants.mEncoder1 == null) {
-                                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-                            }
-                            if (Constants.mEncoder2 == null) {
-                                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-                            }
-                            if (Constants.mEncoder3 == null) {
-                                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-                            }
+//                            if (Constants.mEncoder1 == null) {
+//                                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+//                            }
+//                            if (Constants.mEncoder2 == null) {
+//                                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+//                            }
+//                            if (Constants.mEncoder3 == null) {
+//                                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+//                            }
                             Log.d("tbt", "finish load encoders");
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -447,15 +476,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else if (currentModelName.equals("VQGANDecode")) {
-                            if (Constants.mDecoder1 == null){
-                                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-                            }
-                            if (Constants.mDecoder2 == null) {
-                                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-                            }
-                            if (Constants.mDecoder3 == null) {
-                                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-                            }
+//                            if (Constants.mDecoder1 == null){
+//                                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+//                            }
+//                            if (Constants.mDecoder2 == null) {
+//                                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+//                            }
+//                            if (Constants.mDecoder3 == null) {
+//                                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+//                            }
 
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -467,9 +496,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else if (currentModelName.equals("transformer_optimized.ptl")) {
-                            if (Constants.mTransformer == null) {
-                                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
-                            }
+//                            if (Constants.mTransformer == null) {
+//                                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+//                            }
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -867,10 +896,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                 }
             }
-            if (audioGranted && writeGranted) {
-                Constants.user  = Constants.User.Bob;
-                startMethod(this);
-            }
+            // remove to solve double sendchirpasynctask
+//            if (audioGranted && writeGranted) {
+//                Constants.user  = Constants.User.Bob;
+//                if (started == false) {
+//                    Utils.log("start startmethod from on permission granted");
+//                    startMethod(this);
+//                }
+//            }
         }
     }
 
@@ -1016,31 +1049,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // trigger setup, need to clean the code
                 if (arrayList4.get(position) == "end2endTest") {
                     try {
-                        if (Constants.mEncoder1 == null) {
-                            Log.d("tbt", "check encoder");
-                            Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-                        }
-                        if (Constants.mEncoder2 == null) {
-                            Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-                        }
-                        if (Constants.mEncoder3 == null) {
-                            Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-                        }
-
-                        // later we can separate encoder and decoder users
-                        if (Constants.mDecoder1 == null){
-                            Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-                        }
-                        if (Constants.mDecoder2 == null) {
-                            Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-                        }
-                        if (Constants.mDecoder3 == null) {
-                            Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-                        }
-
-                        if (Constants.mTransformer == null) {
-                            Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
-                        }
+//                        if (Constants.mEncoder1 == null) {
+//                            Log.d("tbt", "check encoder");
+//                            Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+//                        }
+//                        if (Constants.mEncoder2 == null) {
+//                            Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+//                        }
+//                        if (Constants.mEncoder3 == null) {
+//                            Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+//                        }
+//
+//                        // later we can separate encoder and decoder users
+//                        if (Constants.mDecoder1 == null){
+//                            Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+//                        }
+//                        if (Constants.mDecoder2 == null) {
+//                            Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+//                        }
+//                        if (Constants.mDecoder3 == null) {
+//                            Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+//                        }
+//
+//                        if (Constants.mTransformer == null) {
+//                            Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+//                        }
 
                         runOnUiThread(new Runnable() {
                             @Override
@@ -1051,7 +1084,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         });
 
                         displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         Log.e("ImageSegmentation", "Error reading assets", e);
                         finish();
                     }
@@ -1284,18 +1317,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        Constants.sw12.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (!isChecked) {
-                    stopMethod();
-                }
-                else {
-                    Constants.user  = Constants.User.Bob;
-                    startMethod(av);
-                }
-            }
-        });
+//        Constants.sw12.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                if (!isChecked) {
+//                    stopMethod();
+//                }
+//                else {
+//                    Constants.user  = Constants.User.Bob;
+//
+//                    startMethod(av);
+//                }
+//            }
+//        });
 
         Constants.et1.addTextChangedListener(new TextWatcher() {
             @Override
@@ -1821,13 +1855,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
         FullScreencall();
 
-        if (Constants.sw12.isChecked() &&
-            ActivityCompat.checkSelfPermission(av, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(av, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-            !started) {
-            Constants.user  = Constants.User.Bob;
+        Constants.user  = Constants.User.Bob;
+        if (started == false) {
+            Utils.log("start startmethod from onResume");
             startMethod(this);
         }
+//        if (Constants.sw12.isChecked() &&
+//            ActivityCompat.checkSelfPermission(av, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+//            ActivityCompat.checkSelfPermission(av, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+//            !started) {
+//            Constants.user  = Constants.User.Bob;
+//            Utils.log("start startmethod from Constants.sw12.isChecked() ");
+//
+//            startMethod(this);
+//        }
     }
 
     @Override
@@ -1856,6 +1897,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public static void startWrapper() {
         Constants.user = Constants.User.Alice;
         stopMethod();
+        Utils.log("start startmethod from startWrapper");
         startMethod(av);
     }
 
@@ -1892,19 +1934,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps,mImageView, mImageView2);
-        Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        if (Constants.task == null) {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+            String formattedNow = now.format(formatter);
+
+            Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
+            Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
     }
 
     public void onstop(View v) {
         stopMethod();
         Constants.user  = Constants.User.Bob;
+        Utils.log("start startmethod from onstop");
         startMethod(av);
     }
 
     public static void stopMethod() {
         if (Constants.task != null) {
             Constants.task.cancel(true);
+            Constants.task = null;
         }
         if (Constants.timer!=null) {
             Constants.timer.cancel();

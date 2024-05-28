@@ -27,7 +27,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
     ArrayList<Bitmap> testEnd2EndImageBitmaps;
     ImageView mImageView;
     ImageView mImageView2;
-    public SendChirpAsyncTask(Activity activity, int num_measurements, Button button, Drawable defaultBackground, ArrayList<Bitmap> testEnd2EndImageBitmaps, ImageView mImageView, ImageView mImageView2) {
+    String TaskID; // task create time
+    public SendChirpAsyncTask(Activity activity, int num_measurements, Button button, Drawable defaultBackground, ArrayList<Bitmap> testEnd2EndImageBitmaps, ImageView mImageView, ImageView mImageView2, String TaskID) {
         this.av = activity;
         this.num_measurements = num_measurements;
         this.button = button;
@@ -35,6 +36,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         this.testEnd2EndImageBitmaps = testEnd2EndImageBitmaps;
         this.mImageView = mImageView;
         this.mImageView2 = mImageView2;
+        this.TaskID = TaskID;
     }
 
     @Override
@@ -259,7 +261,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
                     sleep(sig_len+Constants.SendPad);
 
-                    feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber);
+                    feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber, TaskID);
                     chirpLoopNumber++;
                     if (chirpLoopNumber >= 3 || !Constants.work) {
                         return -1;
@@ -290,7 +292,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 int[] valid_bins = null;
                 double[] sounding_signal = null;
                 do {
-                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber);
+                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber, TaskID);
                     if (sounding_signal == null) {
                         return -1;
                     }
@@ -318,7 +320,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 double[] data_signal = null;
                 if (Constants.SEND_DATA) {
-                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0);
+                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0, TaskID);
                 }
                 if (data_signal!=null) {
                     long[] embeddings = Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
@@ -384,7 +386,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 double[] data_signal = null;
                 if (Constants.SEND_DATA) {
                     // need new packet detection algorithms
-                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0);
+                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0, TaskID);
                 }
                 if (data_signal!=null) {
                     if (Constants.scheme == Constants.Modulation.LoRa)
@@ -504,7 +506,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             }
         }
         else if (Constants.scheme == Constants.Modulation.Noise) {
-            Utils.listen_to_noise(Constants.SignalType.DataNoise,m_attempt,0);
+            Utils.listen_to_noise(Constants.SignalType.DataNoise,m_attempt,0,TaskID);
             av.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -523,7 +525,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 }
             }
             else if (Constants.user.equals(Constants.User.Bob)){
-                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0); // sync, when the receiver is receiving the sound (after detecting sound) and processing the sound (demodulate, decode), all other signal will be ignored
+                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0, TaskID); // sync, when the receiver is receiving the sound (after detecting sound) and processing the sound (demodulate, decode), all other signal will be ignored
                 if (chirp_signal != null)
                 {
                     StringBuilder noiseBuilder = new StringBuilder();

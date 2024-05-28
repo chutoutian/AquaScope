@@ -340,7 +340,7 @@ public class Constants {
     public static HashSet<Integer> pilots;
 
     public static boolean FLIP_SYMBOL = false;
-    public static boolean stereo = false;
+    public static boolean stereo = false; // set recording to stereo
     public static LinkedList<String>acc;
     public static LinkedList<String>gyro;
     public static boolean sensorFlag=false;

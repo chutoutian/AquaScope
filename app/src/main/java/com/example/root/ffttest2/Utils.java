@@ -1358,7 +1358,7 @@ public class Utils {
         }
         return flipped;
     }
-    public static double[] waitForChirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+    public static double[] waitForChirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Log.e("fifo",filename);
 
@@ -1412,7 +1412,7 @@ public class Utils {
 //        boolean getOneMoreFlag = false;
         int sounding_signal_counter=0;
         for (int i = 0; i < N; i++) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(i), TaskID));
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
 
             if (sigType.equals(Constants.SignalType.Sounding)||
@@ -1501,7 +1501,7 @@ public class Utils {
         return null;
     }
 
-    public static void listen_to_noise(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+    public static void listen_to_noise(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
 
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Constants._OfflineRecorder = new OfflineRecorder(
@@ -1517,7 +1517,7 @@ public class Utils {
         sounding_signal = new double[MAX_WINDOWS * Constants.RecorderStepSize];
         int sounding_signal_counter = 0;
         for (int i = 0; i < timeout; i++) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(i), TaskID));
             if (i < MAX_WINDOWS) {
                 for (int j = 0; j < rec.length; j++) {
                     sounding_signal[sounding_signal_counter++] = rec[j];
@@ -1541,7 +1541,7 @@ public class Utils {
                 filename + ".txt");
     }
 
-    public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+    public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Log.e("fifo",filename);
 
@@ -1665,7 +1665,7 @@ public class Utils {
 //        for (int i = 0; i < N; i++) { // actually here we can replace it with while true
         int window_count = 0;
         while (true) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(window_count), TaskID));
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
 //            Log.e("received signal ", "rec " + rec);
             if (sigType.equals(Constants.SignalType.Sounding)||
@@ -1720,7 +1720,8 @@ public class Utils {
                                 }
 
                                 Log.e("copy", "copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
-                            } else {
+                            }
+                            else {
                                 Log.e("copy","good! "+filt.length+","+xcorr_out[1]+","+filt.length);
                                 Utils.log("good");
                                 int counter=0;
