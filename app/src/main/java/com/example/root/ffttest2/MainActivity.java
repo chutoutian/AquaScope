@@ -1934,14 +1934,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        if (Constants.task == null) {
-            LocalDateTime now = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-            String formattedNow = now.format(formatter);
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        String formattedNow = now.format(formatter);
 
-            Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
-            Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
+        Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
+        Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void onstop(View v) {
