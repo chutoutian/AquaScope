@@ -452,6 +452,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         long[] prediction = new long[embeddings.length];
 
                         // recover
+                        // receiver t5 transformer recover
+                        final long startTime_transformer_recover = SystemClock.elapsedRealtime();
+
                         Tensor inputTensorTransformer = Tensor.fromBlob(embeddings, new long[]{1, 64});
                         Tensor inputTensorTransformer2 = Tensor.fromBlob(embeddings, new long[]{1, 64});
 
@@ -479,10 +482,20 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                 inputTensorTransformer2 = Tensor.fromBlob(prediction, new long[]{1, 64});
                             }
                         }
+
+                        // receiver t5 transformer recover
+                        final long inferenceTime_transformer_recover = SystemClock.elapsedRealtime() - startTime_transformer_recover;
+                        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver transformer recover (ms): " + inferenceTime_transformer_recover + "\n";
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
                         final long inferenceTimeTransformer = SystemClock.elapsedRealtime() - startTimeTransformer;
                         Utils.log("transformer inference time (ms): " + inferenceTimeTransformer);
                         // decode 1
                         final long startTime = SystemClock.elapsedRealtime();
+
+                        // receiver t6 decode image 1 (before recover)
+                        final long startTime_decode_image = SystemClock.elapsedRealtime();
+
                         Tensor inputTensor = Tensor.fromBlob(embeddings, new long[]{64});
                         Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
@@ -510,6 +523,12 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             }
                         }
                         Bitmap tempMBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+
+                        // receiver t6 decode image 1 (before recover)
+                        final long inferenceTime_decode_image = SystemClock.elapsedRealtime() - startTime_decode_image;
+                        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image (before recover) (ms): " + inferenceTime_decode_image + "\n";
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
                         mImageView.post(new Runnable() {
                             @Override
                             public void run() {
@@ -518,6 +537,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         });
 
                         // decode 2
+                        // receiver t7 decode image 2 (after recover)
+                        final long startTime_decode_image2 = SystemClock.elapsedRealtime();
+
                         inputTensor = Tensor.fromBlob(prediction, new long[]{64});
                         outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
@@ -542,6 +564,15 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             }
                         }
                         Bitmap tempMBitmap2 = Bitmap.createBitmap(argbPixels2, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+
+                        // receiver t7 decode image 2 (after recover)
+                        final long inferenceTime_decode_image2 = SystemClock.elapsedRealtime() - startTime_decode_image2;
+                        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image2 (after recover) (ms): " + inferenceTime_decode_image2 + "\n";
+
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+                        FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
+                                Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
+
                         mImageView2.post(new Runnable() {
                             @Override
                             public void run() {
@@ -697,8 +728,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
 
         // write send signal to txt
-        FileOperations.writetofile(MainActivity.av, txsig,
-                Utils.genName(sigType, m_attempt) + ".txt");
+//        FileOperations.writetofile(MainActivity.av, txsig,
+//                Utils.genName(sigType, m_attempt) + ".txt");
 
         // sender t4 - send signal
         final long startTime_send_signal = SystemClock.elapsedRealtime();

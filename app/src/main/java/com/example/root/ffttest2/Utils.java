@@ -16,11 +16,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
 import android.os.BatteryManager;
 
 import androidx.core.app.NotificationCompat;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1555,6 +1558,7 @@ public class Utils {
         double timeout = 0;
         int len = 0;
         int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+        long startTime_receive_signal = 0;
         if (sigType.equals(Constants.SignalType.DataRx)) {
             MAX_WINDOWS = 2; //
             if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
@@ -1700,6 +1704,20 @@ public class Utils {
                         idxHistory.add(xcorr_out[1]);
 
                         if (xcorr_out[0] != -1) {
+                            // init the Receiver_Latency_Str
+                            Constants.Receiver_Latency_Str = "";
+                            String formattedNow = "";
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                LocalDateTime now = LocalDateTime.now();
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+                                formattedNow = now.format(formatter);
+                            } else {
+                                formattedNow = "not_available";
+                            }
+                            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + formattedNow + "\n";
+                            // receiver t1 - receive signal
+                            startTime_receive_signal = SystemClock.elapsedRealtime();
+
                             if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
                                 Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
                                 //Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
@@ -1766,6 +1784,11 @@ public class Utils {
 
         if (valid_signal) {
             //return Utils.filter(sounding_signal);
+            // receiver t1 - receive signal
+            final long inferenceTime_receive_signal = SystemClock.elapsedRealtime() - startTime_receive_signal;
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
+            Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
             return sounding_signal;
 
         }

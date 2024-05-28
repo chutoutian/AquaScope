@@ -3,6 +3,7 @@ package com.example.root.ffttest2;
 import android.app.Activity;
 import android.app.UiAutomation;
 import android.graphics.Bitmap;
+import android.os.SystemClock;
 import android.util.Log;
 
 import java.io.BufferedWriter;
@@ -330,8 +331,8 @@ public class Decoder {
         if (all_symbol_cfo.endsWith(",")) {
             all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
         }
-        FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
-                Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
+//        FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
+//                Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
 
 
         return detected_index_cfo;
@@ -440,6 +441,9 @@ public class Decoder {
 //                Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
 
         // add time equalization
+        // receiver t2 time domain equalization (part of demodulate)
+        final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
+
         int gtIdx = 0;
         int Ns = 960;
         int tapNum = 480;
@@ -461,21 +465,36 @@ public class Decoder {
             Matrix tx = timeEqualizerRecover(dataBad, g);
             received_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
             Utils.log("Equalizer estimation success.");
-            StringBuilder gBuilder = new StringBuilder();
-            for (int j = 0; j < 20; j++) {
-                gBuilder.append(g.get(j,0));
-                gBuilder.append(",");
-            }
-            String g_string = gBuilder.toString();
-            Utils.log(g_string);
+//            StringBuilder gBuilder = new StringBuilder();
+//            for (int j = 0; j < 20; j++) {
+//                gBuilder.append(g.get(j,0));
+//                gBuilder.append(",");
+//            }
+//            String g_string = gBuilder.toString();
+//            Utils.log(g_string);
 
         } else {
             Utils.log("Equalizer estimation failed.");
         }
+        // receiver t2 time domain equalization
+        final long inferenceTime_time_domain_equalization = SystemClock.elapsedRealtime() - startTime_time_domain_equalization;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver time domain equalization (ms): " + inferenceTime_time_domain_equalization + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
         // end add time equalization
 
+        // receiver t3 demodulate
+        final long startTime_demodulate = SystemClock.elapsedRealtime();
+
         int[] symbol = demodulate(received_data,m_attempt);
+
+        // receiver t3 demodulate
+        final long inferenceTime_demodulate = SystemClock.elapsedRealtime() - startTime_demodulate;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver demodulate (ms): " + inferenceTime_demodulate + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        // receiver t4 decode signal
+        final long startTime_decode_signal = SystemClock.elapsedRealtime();
 
         int[] symbol_remove_preamble = Utils.segment(symbol,4,symbol.length-1);
         // gray coding
@@ -508,6 +527,13 @@ public class Decoder {
 
 
         long[] embedding = Utils.Bytes2Embedding(data);
+
+        // receiver t4 decode signal
+        final long inferenceTime_decode_signal = SystemClock.elapsedRealtime() - startTime_decode_signal;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode signal (ms): " + inferenceTime_decode_signal + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+
         String all_embedding = "";
         for (int i = 0 ; i < embedding.length; i++)
         {
@@ -517,8 +543,8 @@ public class Decoder {
         if (all_embedding.endsWith(",")) {
             all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
         }
-        FileOperations.writetofile(MainActivity.av, all_embedding + "",
-                Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
+//        FileOperations.writetofile(MainActivity.av, all_embedding + "",
+//                Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
 
         String finalMessage = "Embedding received #" + m_attempt;
         av.runOnUiThread(new Runnable() {
