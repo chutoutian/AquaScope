@@ -16,6 +16,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Scanner;
+import android.graphics.Bitmap;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class FileOperations {
     public static double[] readrawasset(Context context, int id, int normalizer) {
@@ -117,6 +120,58 @@ public class FileOperations {
                 filename.contains("Alice")&&filename.contains("Feedback")&&filename.contains("bottom")) {
             Utils.log("finish writing " + filename);
         }
+    }
+
+    public static void writetofile(Activity av, short[] buff, String filename) {
+        new Thread() {
+            public void run() {
+                try {
+                    String dir = av.getExternalFilesDir(null).toString();
+                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
+
+                } catch (Exception e) {
+                    Log.e("asdf", e.toString());
+                }
+            }
+        }.run();
+    }
+
+    public static void saveBitmapToFile(Activity av, Bitmap bitmap, String fileName) {
+        // Create a file in the external storage directory
+        new Thread() {
+            public void run() {
+                try {
+                    String dir = av.getExternalFilesDir(null).toString();
+                    String _ExternalFilesDir = dir+"/"+Utils.getDirName();
+                    File directory = new File(_ExternalFilesDir);
+                    if (!directory.exists()) {
+                        directory.mkdirs();  // Create directory if it does not exist
+                    }
+
+                    // Create the file
+                    File file = new File(directory, fileName);
+                    FileOutputStream fos = null;
+                    try {
+                        fos = new FileOutputStream(file);
+                        // Compress the bitmap and save to the file
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            if (fos != null) {
+                                fos.close();
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                } catch (Exception e) {
+                    Log.e("asdf", e.toString());
+                }
+            }
+        }.run();
     }
 
     public static void appendtofile(String _ExternalFilesDir, short[] buff, String filename) {
@@ -399,19 +454,7 @@ public class FileOperations {
         return ar;
     }
 
-    public static void writetofile(Activity av, short[] buff, String filename) {
-        new Thread() {
-            public void run() {
-                try {
-                    String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
 
-                } catch (Exception e) {
-                    Log.e("asdf", e.toString());
-                }
-            }
-        }.run();
-    }
 
     public static void appendtofile(Activity av, short[] buff, String filename) {
         Log.e("fifo","append to "+filename+","+Constants.ts);

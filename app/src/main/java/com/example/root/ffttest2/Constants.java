@@ -102,6 +102,7 @@ public class Constants {
 
     // ****************************** End of Codec Related Global Variables ******************************
 
+
     public enum EqMethod {
         Freq,
         Time
@@ -158,7 +159,12 @@ public class Constants {
         Timestamp,
         Before_Equalization_Rx_Raw_Symbols,
         Latency_Sender,
-        Latency_Receiver
+        Latency_Receiver,
+        Raw_Input_Bitmap,
+        Sent_Gt_Bitmap,
+        Received_Bitmap,
+        Recovered_Bitmap,
+        Send_Embedding_Sequence
     }
     public enum EstSignalType {
         Chirp,

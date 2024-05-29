@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int currentIndex = 0;
     private String mImagename = "test1.jpg";
     private String defaultModelName = "lite_optimized_seg_240p.ptl";
-    private String defaultServiceName = "Detect Fish";
+    private String defaultServiceName = "Seg Fish Low Res";
 
     private int defaultPosition = 0;
 

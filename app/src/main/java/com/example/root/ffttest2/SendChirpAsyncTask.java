@@ -158,6 +158,13 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             mImageView.setImageBitmap(mBitmap);
                         }
                     });
+
+                    // save the bitmap
+                    if (Constants.allowLog) {
+                        FileOperations.saveBitmapToFile(MainActivity.av, mBitmap, Utils.genName(Constants.SignalType.Raw_Input_Bitmap, 0) + ".png");
+                    }
+
+
                     // step 2-1 encode
                     Log.d("tbt", "start to process bit maps");
                     float[] mu = {0.0f, 0.0f, 0.0f};
@@ -185,6 +192,35 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     Constants.encode_sequence = results;
                     Log.d("tbt", "result: " + Arrays.toString(results));
                     Utils.log("send embedding: " + Arrays.toString(results));
+
+                    // save some results, this might introduce extra latency, but here we only use it to test the accuracy
+                    if (Constants.allowLog) {
+                        // save embedding sequence
+                        FileOperations.writetofile(MainActivity.av, results.toString(),
+                                Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
+
+                        // save VQGAN image ground truth
+                        Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+                        Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+                        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+                        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+                        final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+                        int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                        int pixelIndex = 0;
+                        int argbIndex = 0;
+                        for (int y = 0; y < Constants.compressImageSize; y++) {
+                            for (int x = 0; x < Constants.compressImageSize; x++) {
+                                int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                                int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                                int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+                                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                                argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                            }
+                        }
+                        Bitmap vqganGtBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+                        FileOperations.saveBitmapToFile(MainActivity.av, vqganGtBitmap, Utils.genName(Constants.SignalType.Sent_Gt_Bitmap, 0) + ".png");
+
+                    }
                     // step 2-2 send
                     work(0, true);
                     try {
@@ -207,6 +243,12 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         mImageView.setImageBitmap(Constants.currentCameraCapture);
                     }
                 });
+
+                // save input image
+                if (Constants.allowLog) {
+                    FileOperations.saveBitmapToFile(MainActivity.av, Constants.currentCameraCapture, Utils.genName(Constants.SignalType.Raw_Input_Bitmap, 0) + ".png");
+                }
+
                 // step 2-1 encode
                 // sender t1 - encode image
                 Constants.Sender_Latency_Str = ""; // clean up the time
@@ -244,6 +286,36 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 Log.d("tbt", "result: " + Arrays.toString(results));
                 Utils.log("send embedding: " + Arrays.toString(results));
+
+                // save some results, this might introduce extra latency, but here we only use it to test the accuracy
+                if (Constants.allowLog) {
+                    // save embedding sequence
+                    FileOperations.writetofile(MainActivity.av, results.toString(),
+                            Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
+
+                    // save VQGAN image ground truth
+                    Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+                    Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+                    outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+                    outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+                    final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+                    int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                    int pixelIndex = 0;
+                    int argbIndex = 0;
+                    for (int y = 0; y < Constants.compressImageSize; y++) {
+                        for (int x = 0; x < Constants.compressImageSize; x++) {
+                            int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                            int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                            int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+                            int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                            argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                        }
+                    }
+                    Bitmap vqganGtBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+                    FileOperations.saveBitmapToFile(MainActivity.av, vqganGtBitmap, Utils.genName(Constants.SignalType.Sent_Gt_Bitmap, 0) + ".png");
+
+                }
+
                 // step 2-2 send
                 work(0, true);
                 try {
@@ -574,6 +646,17 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
                         FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
                                 Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
+
+
+                        // save receive image before recover
+                        if (Constants.allowLog) {
+                            FileOperations.saveBitmapToFile(MainActivity.av, tempMBitmap, Utils.genName(Constants.SignalType.Received_Bitmap, 0) + ".png");
+                        }
+
+                        // save receive image after recover
+                        if (Constants.allowLog) {
+                            FileOperations.saveBitmapToFile(MainActivity.av, tempMBitmap2, Utils.genName(Constants.SignalType.Recovered_Bitmap, 0) + ".png");
+                        }
 
                         mImageView2.post(new Runnable() {
                             @Override
