@@ -164,7 +164,8 @@ public class Constants {
         Sent_Gt_Bitmap,
         Received_Bitmap,
         Recovered_Bitmap,
-        Send_Embedding_Sequence
+        Send_Embedding_Sequence,
+        Rx_Embedding_Recovered
     }
     public enum EstSignalType {
         Chirp,

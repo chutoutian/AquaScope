@@ -647,6 +647,11 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
                                 Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
 
+                        // save embedding sequence recovered
+                        if (Constants.allowLog) {
+                            FileOperations.writetofile(MainActivity.av, Arrays.toString(prediction),
+                                    Utils.genName(Constants.SignalType.Rx_Embedding_Recovered, 0) + ".txt");
+                        }
 
                         // save receive image before recover
                         if (Constants.allowLog) {

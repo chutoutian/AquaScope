@@ -101,7 +101,7 @@ public class Decoder {
         if (all_embedding.endsWith(",")) {
             all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
         }
-        FileOperations.writetofile(MainActivity.av, all_embedding + "",
+        FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
                 Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
 
         /***
@@ -547,7 +547,7 @@ public class Decoder {
             if (all_embedding.endsWith(",")) {
                 all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
             }
-            FileOperations.writetofile(MainActivity.av, all_embedding + "",
+            FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
                     Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
         }
 
