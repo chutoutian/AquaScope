@@ -164,25 +164,24 @@
             android:id="@+id/fishExist"
             android:layout_width="50dp"
             android:layout_height="17dp"
-            android:layout_marginStart="8dp"
             android:layout_marginBottom="16dp"
             app:layout_constraintBottom_toBottomOf="@+id/FishExistTitle"
-            app:layout_constraintStart_toEndOf="@+id/FishExistTitle" />
+            app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
 
         <TextView
             android:id="@+id/FishExistTitle"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
             android:text="Fish?"
-            app:layout_constraintBottom_toBottomOf="@+id/fishCountTitle"
-            app:layout_constraintStart_toEndOf="@+id/fishCount" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/fishCountTitle" />
 
         <TextView
             android:id="@+id/inferenceTime"
             android:layout_width="50dp"
             android:layout_height="17dp"
-            android:layout_marginStart="32dp"
+            android:layout_marginStart="8dp"
             android:layout_marginBottom="16dp"
             app:layout_constraintBottom_toBottomOf="@+id/inferenceTimeTitle"
             app:layout_constraintStart_toEndOf="@+id/inferenceTimeTitle" />
@@ -191,11 +190,8 @@
             android:id="@+id/inferenceTimeTitle"
             android:layout_width="100dp"
             android:layout_height="50dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginBottom="96dp"
-            android:text="Inference Time Used:"
-            app:layout_constraintBottom_toTopOf="@+id/modelSpinner"
-            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="16dp"
+            android:text="Inference Time:"
             app:layout_constraintTop_toBottomOf="@+id/imageView_fish" />
 
         <Button
@@ -300,20 +296,17 @@
             android:id="@+id/fishCount"
             android:layout_width="50dp"
             android:layout_height="17dp"
-            android:layout_marginStart="8dp"
             android:layout_marginBottom="16dp"
             app:layout_constraintBottom_toBottomOf="@+id/fishCountTitle"
-            app:layout_constraintStart_toEndOf="@+id/fishCountTitle" />
+            app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
 
         <TextView
             android:id="@+id/fishCountTitle"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginTop="8dp"
             android:text="Fish \nCount:"
-            app:layout_constraintBottom_toTopOf="@+id/modelSpinner"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintTop_toBottomOf="@+id/inferenceTimeTitle" />
 
 
         <!--    <GridLayout-->
