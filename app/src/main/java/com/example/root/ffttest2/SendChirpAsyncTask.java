@@ -113,8 +113,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         Constants.WaitForDataTime = Constants.WaitForPerTime;
         Constants.AdaptationMethod = 3;
 
-        //FileOperations.writetofile(MainActivity.av, Constants.SNR_THRESH2+"\n"+Constants.FreAdaptScaleFactor+"\n"+Constants.SNR_THRESH2_2,
-        //        Utils.genName(Constants.SignalType.AdaptParams,0)+".txt");
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, Constants.SNR_THRESH2 + "\n" + Constants.FreAdaptScaleFactor + "\n" + Constants.SNR_THRESH2_2,
+                    Utils.genName(Constants.SignalType.AdaptParams, 0) + ".txt");
+        }
 
         setupTimer();
 
@@ -580,9 +582,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             }
                         });
                         // finish
-
-                        FileOperations.writetofile(MainActivity.av, Constants.SF+"\n"+Constants.BW+"\n"+Constants.CodeRate_LoRA + "\n" + Constants.FC,
-                                        Utils.genName(Constants.SignalType.AdaptParams,0)+".txt");
+                        if (Constants.allowLog) {
+                            FileOperations.writetofile(MainActivity.av, Constants.SF + "\n" + Constants.BW + "\n" + Constants.CodeRate_LoRA + "\n" + Constants.FC,
+                                    Utils.genName(Constants.SignalType.AdaptParams, 0) + ".txt");
+                        }
                     }
                     else if (Constants.scheme == Constants.Modulation.OFDM_freq_all)
                     {
@@ -615,18 +618,21 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0, TaskID); // sync, when the receiver is receiving the sound (after detecting sound) and processing the sound (demodulate, decode), all other signal will be ignored
                 if (chirp_signal != null)
                 {
-                    StringBuilder noiseBuilder = new StringBuilder();
-                    for (int j = 0; j < chirp_signal.length; j++) {
-                        noiseBuilder.append(chirp_signal[j]);
-                        noiseBuilder.append(",");
+                    if (Constants.allowLog) {
+                        StringBuilder noiseBuilder = new StringBuilder();
+                        for (int j = 0; j < chirp_signal.length; j++) {
+                            noiseBuilder.append(chirp_signal[j]);
+                            noiseBuilder.append(",");
+                        }
+                        String raw_chirp_signal = noiseBuilder.toString();
+                        if (raw_chirp_signal.endsWith(",")) {
+                            raw_chirp_signal = raw_chirp_signal.substring(0, raw_chirp_signal.length() - 1);
+                        }
+                        Utils.log("raw_chirp =>" + raw_chirp_signal);
+
+                        FileOperations.writetofile(MainActivity.av, raw_chirp_signal + "",
+                                Utils.genName(Constants.SignalType.DataChirp, m_attempt, 0) + ".txt");
                     }
-                    String raw_chirp_signal = noiseBuilder.toString();
-                    if (raw_chirp_signal.endsWith(",")) {
-                        raw_chirp_signal = raw_chirp_signal.substring(0, raw_chirp_signal.length() - 1);
-                    }
-                    Utils.log("raw_chirp =>" + raw_chirp_signal);
-                    FileOperations.writetofile(MainActivity.av, raw_chirp_signal + "",
-                             Utils.genName(Constants.SignalType.DataChirp, m_attempt, 0) + ".txt");
                     av.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -728,8 +734,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
 
         // write send signal to txt
-//        FileOperations.writetofile(MainActivity.av, txsig,
-//                Utils.genName(sigType, m_attempt) + ".txt");
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, txsig,
+                    Utils.genName(sigType, m_attempt) + ".txt");
+        }
 
         // sender t4 - send signal
         final long startTime_send_signal = SystemClock.elapsedRealtime();

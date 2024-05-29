@@ -1,36 +1,29 @@
 package com.example.root.ffttest2;
 
 import android.app.Activity;
-import android.app.UiAutomation;
-import android.graphics.Bitmap;
 import android.os.SystemClock;
-import android.util.Log;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-
-import org.apache.commons.math3.complex.Complex;
 
 import Jama.Matrix;
 public class Decoder {
     public static long[]  decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
 
         // write the raw data into file
-        StringBuilder rxRawSymbolBuilder = new StringBuilder();
-        for (int j = 0; j < data.length; j++) {
-            rxRawSymbolBuilder.append(data[j]);
-            rxRawSymbolBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder rxRawSymbolBuilder = new StringBuilder();
+            for (int j = 0; j < data.length; j++) {
+                rxRawSymbolBuilder.append(data[j]);
+                rxRawSymbolBuilder.append(",");
+            }
+            String rx_raw_symbol = rxRawSymbolBuilder.toString();
+            if (rx_raw_symbol.endsWith(",")) {
+                rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
+                    Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
         }
-        String rx_raw_symbol = rxRawSymbolBuilder.toString();
-        if (rx_raw_symbol.endsWith(",")) {
-            rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
-                Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
+
 
         data = Utils.filter(data);
 
@@ -91,8 +84,10 @@ public class Decoder {
 
         // perform viterbi decoding
         String uncoded = Utils.decode(coded, Constants.cc[0],Constants.cc[1],Constants.cc[2]);
-        FileOperations.writetofile(MainActivity.av, uncoded + "",
-                Utils.genName(Constants.SignalType.RxBits, m_attempt) + ".txt");
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, uncoded + "",
+                    Utils.genName(Constants.SignalType.RxBits, m_attempt) + ".txt");
+        }
 
 
         byte[] received_bytes = Utils.convertBitStringToByteArray(uncoded);
@@ -161,17 +156,19 @@ public class Decoder {
         int numsyms = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes);
 
         // write into files
-//        StringBuilder rxRawSymbolBuilder = new StringBuilder();
-//        for (int j = 0; j < data.length; j++) {
-//            rxRawSymbolBuilder.append(data[j]);
-//            rxRawSymbolBuilder.append(",");
-//        }
-//        String rx_raw_symbol = rxRawSymbolBuilder.toString();
-//        if (rx_raw_symbol.endsWith(",")) {
-//            rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
-//        }
-//        FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
-//                Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
+        if (Constants.allowLog) {
+            StringBuilder rxRawSymbolBuilder = new StringBuilder();
+            for (int j = 0; j < data.length; j++) {
+                rxRawSymbolBuilder.append(data[j]);
+                rxRawSymbolBuilder.append(",");
+            }
+            String rx_raw_symbol = rxRawSymbolBuilder.toString();
+            if (rx_raw_symbol.endsWith(",")) {
+                rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
+                    Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
+        }
 
 
         //
@@ -183,15 +180,17 @@ public class Decoder {
         //double[][] data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,(Constants.Ns_lora + Constants.Gap));
 
 //         check downversion_preamble
-        StringBuilder downversion_preambleBuilder = new StringBuilder();
-        for (int j = 0; j < 20; j++) {
-            downversion_preambleBuilder.append(downversion_preamble[0][j]);
-            downversion_preambleBuilder.append(",");
-            downversion_preambleBuilder.append(downversion_preamble[1][j]);
-            downversion_preambleBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder downversion_preambleBuilder = new StringBuilder();
+            for (int j = 0; j < 20; j++) {
+                downversion_preambleBuilder.append(downversion_preamble[0][j]);
+                downversion_preambleBuilder.append(",");
+                downversion_preambleBuilder.append(downversion_preamble[1][j]);
+                downversion_preambleBuilder.append(",");
+            }
+            String downversion_preamble_str = downversion_preambleBuilder.toString();
+            Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
         }
-        String downversion_preamble_str = downversion_preambleBuilder.toString();
-        Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
 
         double[] index_count_test = new double[4];
         //double[] pks = new double[4];
@@ -322,17 +321,18 @@ public class Decoder {
 
 
         // write to file and display in log
-        String all_symbol_cfo = "";
-        for (int i = 0 ; i < detected_index_cfo.length; i++)
-        {
-            all_symbol_cfo += (detected_index_cfo[i] + ",");
+        if (Constants.allowLog) {
+            String all_symbol_cfo = "";
+            for (int i = 0; i < detected_index_cfo.length; i++) {
+                all_symbol_cfo += (detected_index_cfo[i] + ",");
+            }
+            Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
+            if (all_symbol_cfo.endsWith(",")) {
+                all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
+                    Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
         }
-        Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
-        if (all_symbol_cfo.endsWith(",")) {
-            all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
-        }
-//        FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
-//                Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
 
 
         return detected_index_cfo;
@@ -428,17 +428,19 @@ public class Decoder {
     {
         //received_data = Utils.filter(received_data);
         // save data before time domain equalization
-//        StringBuilder before_equqlization_rx_preambleBuilder = new StringBuilder();
-//        for (int j = 0; j < received_data.length; j++) {
-//            before_equqlization_rx_preambleBuilder.append(received_data[j]);
-//            before_equqlization_rx_preambleBuilder.append(",");
-//        }
-//        String before_equalization_rx_str = before_equqlization_rx_preambleBuilder.toString();
-//        if (before_equalization_rx_str.endsWith(",")) {
-//            before_equalization_rx_str = before_equalization_rx_str.substring(0, before_equalization_rx_str.length() - 1);
-//        }
-//        FileOperations.writetofile(MainActivity.av, before_equalization_rx_str + "",
-//                Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
+        if (Constants.allowLog) {
+            StringBuilder before_equqlization_rx_preambleBuilder = new StringBuilder();
+            for (int j = 0; j < received_data.length; j++) {
+                before_equqlization_rx_preambleBuilder.append(received_data[j]);
+                before_equqlization_rx_preambleBuilder.append(",");
+            }
+            String before_equalization_rx_str = before_equqlization_rx_preambleBuilder.toString();
+            if (before_equalization_rx_str.endsWith(",")) {
+                before_equalization_rx_str = before_equalization_rx_str.substring(0, before_equalization_rx_str.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, before_equalization_rx_str + "",
+                    Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
+        }
 
         // add time equalization
         // receiver t2 time domain equalization (part of demodulate)
@@ -465,13 +467,16 @@ public class Decoder {
             Matrix tx = timeEqualizerRecover(dataBad, g);
             received_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
             Utils.log("Equalizer estimation success.");
-//            StringBuilder gBuilder = new StringBuilder();
-//            for (int j = 0; j < 20; j++) {
-//                gBuilder.append(g.get(j,0));
-//                gBuilder.append(",");
-//            }
-//            String g_string = gBuilder.toString();
-//            Utils.log(g_string);
+
+            if (Constants.allowLog) {
+                StringBuilder gBuilder = new StringBuilder();
+                for (int j = 0; j < 20; j++) {
+                    gBuilder.append(g.get(j, 0));
+                    gBuilder.append(",");
+                }
+                String g_string = gBuilder.toString();
+                Utils.log("time equalization g => " + g_string);
+            }
 
         } else {
             Utils.log("Equalizer estimation failed.");
@@ -533,18 +538,18 @@ public class Decoder {
         Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode signal (ms): " + inferenceTime_decode_signal + "\n";
         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
-
-        String all_embedding = "";
-        for (int i = 0 ; i < embedding.length; i++)
-        {
-            all_embedding += (embedding[i] + ",");
+        if (Constants.allowLog) {
+            String all_embedding = "";
+            for (int i = 0; i < embedding.length; i++) {
+                all_embedding += (embedding[i] + ",");
+            }
+            Utils.log("all_embedding =>" + all_embedding);
+            if (all_embedding.endsWith(",")) {
+                all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, all_embedding + "",
+                    Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
         }
-        Utils.log("all_embedding =>" + all_embedding);
-        if (all_embedding.endsWith(",")) {
-            all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
-        }
-//        FileOperations.writetofile(MainActivity.av, all_embedding + "",
-//                Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
 
         String finalMessage = "Embedding received #" + m_attempt;
         av.runOnUiThread(new Runnable() {

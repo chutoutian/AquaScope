@@ -339,6 +339,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         mImageView = findViewById(R.id.imageView_fish);
         mImageView2 = findViewById(R.id.imageView_fish2);
+        Constants.logswitch = findViewById(R.id.logcontroller);
+        Constants.logswitch.setChecked(true); // set default to true which means we want to log
+        Constants.allowLog = true;
+
+        Constants.logswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Log Switch is ON");
+                    Constants.allowLog = true;
+                } else {
+                    Utils.log("Log Switch is OFF");
+                    Constants.allowLog = false;
+                }
+            }
+        });
+
         Constants.frameLayout = findViewById(R.id.frameLayout);
         Constants.preview = findViewById(R.id.previewView);
         Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);

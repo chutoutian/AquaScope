@@ -252,13 +252,15 @@ public class Utils {
     public static double[][] downversion(double[] data)
     {
         // check raw data is correct => pass
-//        StringBuilder data_strBuilder = new StringBuilder();
-//        for (int j = 0; j < 20; j++) {
-//            data_strBuilder.append(data[j]);
-//            data_strBuilder.append(",");
-//        }
-//        String data_str = data_strBuilder.toString();
-//        Utils.log("raw data first 10 => " + data_str);
+        if (Constants.allowLog) {
+            StringBuilder data_strBuilder = new StringBuilder();
+            for (int j = 0; j < 20; j++) {
+                data_strBuilder.append(data[j]);
+                data_strBuilder.append(",");
+            }
+            String data_str = data_strBuilder.toString();
+            Utils.log("raw data first 10 => " + data_str);
+        }
 
         double[] t = new double[data.length];
         for (int i = 0; i<t.length; i++){
@@ -282,15 +284,17 @@ public class Utils {
         }
 
         // check downversion_chirp is correct => Pass
-        StringBuilder downversion_chirpBuilder = new StringBuilder();
-        for (int j = 0; j < 20; j++) {
-            downversion_chirpBuilder.append(downversion_chirp[0][j]);
-            downversion_chirpBuilder.append(",");
-            downversion_chirpBuilder.append(downversion_chirp[1][j]);
-            downversion_chirpBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder downversion_chirpBuilder = new StringBuilder();
+            for (int j = 0; j < 20; j++) {
+                downversion_chirpBuilder.append(downversion_chirp[0][j]);
+                downversion_chirpBuilder.append(",");
+                downversion_chirpBuilder.append(downversion_chirp[1][j]);
+                downversion_chirpBuilder.append(",");
+            }
+            String downversion_chirp_str = downversion_chirpBuilder.toString();
+            Utils.log("downversion_chirp first 10 => " + downversion_chirp_str);
         }
-        String downversion_chirp_str = downversion_chirpBuilder.toString();
-        Utils.log("downversion_chirp first 10 => " + downversion_chirp_str);
 
         // low-filter 4k filter
         //downversion_chirp[0] = filter(downversion_chirp[0]);
@@ -422,13 +426,15 @@ public class Utils {
             }
         }
         // print filter
-        StringBuilder filter_strBuilder = new StringBuilder();
-        for (int j = 0; j < M+1; j++) {
-            filter_strBuilder.append(h[j]);
-            filter_strBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder filter_strBuilder = new StringBuilder();
+            for (int j = 0; j < M + 1; j++) {
+                filter_strBuilder.append(h[j]);
+                filter_strBuilder.append(",");
+            }
+            String filter_str = filter_strBuilder.toString();
+            Utils.log("bpass filter => " + filter_str);
         }
-        String filter_str = filter_strBuilder.toString();
-        Utils.log("my filter => " + filter_str);
 
 
 
@@ -676,19 +682,20 @@ public class Utils {
     }
 
     public static void log(String s) {
-        Log.e(Constants.LOG,s);
-        (MainActivity.av).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (Constants.debugPane.getText().toString().length() > 400){
-                    Constants.debugPane.setText("");
+        if (Constants.allowLog) {
+            Log.e(Constants.LOG, s);
+            (MainActivity.av).runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (Constants.debugPane.getText().toString().length() > 400) {
+                        Constants.debugPane.setText("");
+                    }
+                    Constants.debugPane.setText(Constants.debugPane.getText() + "\n" + s);
+                    scrollToBottom();
                 }
-                Constants.debugPane.setText(Constants.debugPane.getText()+"\n"+s);
-                scrollToBottom();
-            }
-        });
+            });
+        }
     }
-
 
     public static double[] sum(double[] a, double[] b) {
         double[] out = new double[a.length];
@@ -1529,19 +1536,20 @@ public class Utils {
         }
         Constants._OfflineRecorder.halt2();
 
+        if (Constants.allowLog) {
+            StringBuilder noiseBuilder = new StringBuilder();
+            for (int j = 0; j < sounding_signal.length; j++) {
+                noiseBuilder.append(sounding_signal[j]);
+                noiseBuilder.append(",");
+            }
+            String raw_noise_signal = noiseBuilder.toString();
+            if (raw_noise_signal.endsWith(",")) {
+                raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
+            }
 
-        StringBuilder noiseBuilder = new StringBuilder();
-        for (int j = 0; j < sounding_signal.length; j++) {
-            noiseBuilder.append(sounding_signal[j]);
-            noiseBuilder.append(",");
+            FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
+                    filename + ".txt");
         }
-        String raw_noise_signal = noiseBuilder.toString();
-        if (raw_noise_signal.endsWith(",")) {
-            raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
-        }
-
-        FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
-                filename + ".txt");
     }
 
     public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {

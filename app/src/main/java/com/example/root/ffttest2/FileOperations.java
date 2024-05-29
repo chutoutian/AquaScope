@@ -490,7 +490,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    writetofile(dir + "/" + Utils.getDirName(), buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());

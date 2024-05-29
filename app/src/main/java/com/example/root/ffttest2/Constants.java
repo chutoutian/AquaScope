@@ -75,6 +75,9 @@ public class Constants {
     public static String Sender_Latency_Str = "";
     public static String Receiver_Latency_Str = "";
 
+    public static Switch logswitch;
+    public static boolean allowLog;
+
     // ****************************** End of Codec Related Global Variables ******************************
 
     public enum EqMethod {
