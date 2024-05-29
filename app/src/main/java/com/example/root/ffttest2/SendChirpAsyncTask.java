@@ -196,7 +196,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     // save some results, this might introduce extra latency, but here we only use it to test the accuracy
                     if (Constants.allowLog) {
                         // save embedding sequence
-                        FileOperations.writetofile(MainActivity.av, results.toString(),
+                        FileOperations.writetofile(MainActivity.av, Arrays.toString(results),
                                 Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
 
                         // save VQGAN image ground truth
@@ -290,7 +290,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 // save some results, this might introduce extra latency, but here we only use it to test the accuracy
                 if (Constants.allowLog) {
                     // save embedding sequence
-                    FileOperations.writetofile(MainActivity.av, results.toString(),
+                    FileOperations.writetofile(MainActivity.av, Arrays.toString(results),
                             Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
 
                     // save VQGAN image ground truth
