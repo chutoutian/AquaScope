@@ -75,6 +75,7 @@ import java.util.Random;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutionException;
+import java.util.Set;
 
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
@@ -110,6 +111,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int currentIndex = 0;
     private String mImagename = "test1.jpg";
     private String defaultModelName = "lite_optimized_seg_240p.ptl";
+    private String defaultServiceName = "Detect Fish";
+
     private int defaultPosition = 0;
 
     private String[] allFiles;
@@ -401,7 +404,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             public void onClick(View v) {
                 mButtonSegment.setEnabled(false);
                 mProgressBar.setVisibility(ProgressBar.VISIBLE);
-                mButtonSegment.setText(getString(R.string.run_model));
+//                mButtonSegment.setText(getString(R.string.run_model));
 
                 //Thread thread = new Thread(MainActivity.this);
                 //thread.start();
@@ -432,13 +435,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // Load the initial model
         if (ptlFiles != null && ptlFiles.length > 0) {
+            // get all service names
+            Set<String> keySet = Constants.serviceNameToModelMap.keySet();
+            String[] allServiceNames = keySet.toArray(new String[0]);
+
             // Model Selector:
             modelSpinner = findViewById(R.id.modelSpinner);
-            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, ptlFiles);
+            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, allServiceNames);
             spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             modelSpinner.setAdapter(spinnerAdapter);
 
-            defaultPosition = findIndex(ptlFiles, defaultModelName);
+            defaultPosition = findIndex(allServiceNames, defaultServiceName);
             Log.d("ImageSegmentation", "default position of" + defaultModelName + " is " + defaultPosition);
 
             modelSpinner.setSelection(defaultPosition);
@@ -446,7 +453,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
                     // Load the selected model
-                    currentModelName = ptlFiles[position];
+                    currentModelName = Constants.serviceNameToModelMap.get(allServiceNames[position]);
                     try {
                         Log.d("ImageSegmentation", currentModelName);
                         if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
@@ -667,7 +674,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -726,7 +732,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mImageView.setImageBitmap(mBitmap);
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -779,7 +784,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime + " ms");
                 }
@@ -808,12 +812,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     fishCountTextView.setText(String.valueOf(Constants.NumFish));
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
             });
-        } else if (currentModelName.equals("lite_optimized_clf.ptl")) {
+        }
+        else if (currentModelName.equals("lite_optimized_clf.ptl")) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
             final float[] inputs = inputTensor.getDataAsFloatArray();
@@ -836,13 +840,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     fishExistTextView.setText(clf_res_postprocess(results[0]).toString());
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
             });
         }
-        else {
+        else if (currentModelName.equals("deepfish_scripted_optimized.ptl") || currentModelName.equals("lite_optimized_seg_240p.ptl")) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
             final float[] inputs = inputTensor.getDataAsFloatArray();
@@ -899,7 +902,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     mImageView.setImageBitmap(transferredBitmap);
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
 

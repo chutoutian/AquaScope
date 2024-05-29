@@ -30,6 +30,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import com.google.common.util.concurrent.ListenableFuture;
 
 
@@ -77,6 +80,25 @@ public class Constants {
 
     public static Switch logswitch;
     public static boolean allowLog;
+
+    public static List<String> modelIgnoreDisplayInSpinnerList = Arrays.asList("embedding_optimized.ptl",
+            "encoder_optimized.ptl",
+            "post_quant_conv_optimized.ptl",
+            "quant_conv_optimized.ptl",
+            "quantize_optimized.ptl",
+            "decoder.ptl");
+
+    public static Map<String, String> serviceNameToModelMap = new HashMap<String, String>() {{
+        put("Encode Image", "VQGANEncode");
+        put("Decode Image", "VQGANDecode");
+        put("Recover Image", "transformer_optimized.ptl");
+        put("Detect Fish", "lite_optimized_clf.ptl");
+        put("Count Fish", "lite_optimized_count_fish_224_224.ptl");
+        put("Seg Fish Low Res", "lite_optimized_seg_240p.ptl");
+        put("Seg Fish High Res", "deepfish_scripted_optimized.ptl");
+
+
+    }};
 
     // ****************************** End of Codec Related Global Variables ******************************
 
