@@ -165,7 +165,8 @@ public class Constants {
         Received_Bitmap,
         Recovered_Bitmap,
         Send_Embedding_Sequence,
-        Rx_Embedding_Recovered
+        Rx_Embedding_Recovered,
+        SNR_Raw_Data
     }
     public enum EstSignalType {
         Chirp,
@@ -764,6 +765,7 @@ public class Constants {
 //            Constants.gview3.setVisibility(View.VISIBLE);
 //        }
         Constants.gview.setVisibility(View.GONE);
+        Constants.gview2.setVisibility(View.VISIBLE);
 
         Constants.volume=prefs.getFloat("volume",Constants.volume);
         et1.setText(Constants.volume+"");

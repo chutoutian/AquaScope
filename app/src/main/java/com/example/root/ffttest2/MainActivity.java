@@ -952,7 +952,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     public void uiSetup() {
         Constants.gview = (GraphView) findViewById(R.id.graphProd);
-        Constants.gview2 = (GraphView) findViewById(R.id.graphProd2);
+        Constants.gview2 = (GraphView) findViewById(R.id.graphProd);
         Constants.gview3 = (GraphView) findViewById(R.id.graphProd3);
         Constants.sw1 = (Switch) findViewById(R.id.switch1);
         Constants.sw2 = (Switch) findViewById(R.id.switch2);

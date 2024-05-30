@@ -30,7 +30,11 @@ public class ChannelEstimate {
         double[] rx_symbols = Utils.segment(rec, rx_sym_start, rx_sym_end);
         rx_symbols = Utils.div(rx_symbols,30000);
 
-        plotRxSyms(av, rx_symbols);
+        if(Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, Arrays.toString(rx_symbols),
+                    Utils.genName(Constants.SignalType.SNR_Raw_Data, m_attempt) + ".txt");
+            plotRxSyms(av, rx_symbols);
+        }
 
         int freqSpacing = Constants.fs/Constants.Ns;
         int[] fseq = Utils.linspace(Constants.f_range[0],freqSpacing,Constants.f_range[1]);
@@ -59,8 +63,10 @@ public class ChannelEstimate {
 
         thresh=Constants.SNR_THRESH2;
 
-        FileOperations.writetofile(MainActivity.av, Constants.snr_method + "",
-                Utils.genName(Constants.SignalType.SNRMethod, m_attempt) + ".txt");
+        if(Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, Constants.snr_method + "",
+                    Utils.genName(Constants.SignalType.SNRMethod, m_attempt) + ".txt");
+        }
 
         int[] freqs = new int[]{-1,-1};
         int[] selected = null;
@@ -80,11 +86,12 @@ public class ChannelEstimate {
                 freqs[i] = fseq[selected[i]];
             }
         }
-
-        FileOperations.writetofile(MainActivity.av, Utils.trim(Arrays.toString(snrs)),
-                Utils.genName(Constants.SignalType.SNRs, m_attempt) + ".txt");
-        FileOperations.writetofile(MainActivity.av, freqs,
-                Utils.genName(Constants.SignalType.FreqEsts, m_attempt) + ".txt");
+        if(Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, Utils.trim(Arrays.toString(snrs)),
+                    Utils.genName(Constants.SignalType.SNRs, m_attempt) + ".txt");
+            FileOperations.writetofile(MainActivity.av, freqs,
+                    Utils.genName(Constants.SignalType.FreqEsts, m_attempt) + ".txt");
+        }
 
         return selected;
     }
