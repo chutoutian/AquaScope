@@ -16,11 +16,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
 import android.os.BatteryManager;
 
 import androidx.core.app.NotificationCompat;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -249,13 +252,15 @@ public class Utils {
     public static double[][] downversion(double[] data)
     {
         // check raw data is correct => pass
-//        StringBuilder data_strBuilder = new StringBuilder();
-//        for (int j = 0; j < 20; j++) {
-//            data_strBuilder.append(data[j]);
-//            data_strBuilder.append(",");
-//        }
-//        String data_str = data_strBuilder.toString();
-//        Utils.log("raw data first 10 => " + data_str);
+        if (Constants.allowLog) {
+            StringBuilder data_strBuilder = new StringBuilder();
+            for (int j = 0; j < 20; j++) {
+                data_strBuilder.append(data[j]);
+                data_strBuilder.append(",");
+            }
+            String data_str = data_strBuilder.toString();
+            Utils.log("raw data first 10 => " + data_str);
+        }
 
         double[] t = new double[data.length];
         for (int i = 0; i<t.length; i++){
@@ -279,15 +284,17 @@ public class Utils {
         }
 
         // check downversion_chirp is correct => Pass
-        StringBuilder downversion_chirpBuilder = new StringBuilder();
-        for (int j = 0; j < 20; j++) {
-            downversion_chirpBuilder.append(downversion_chirp[0][j]);
-            downversion_chirpBuilder.append(",");
-            downversion_chirpBuilder.append(downversion_chirp[1][j]);
-            downversion_chirpBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder downversion_chirpBuilder = new StringBuilder();
+            for (int j = 0; j < 20; j++) {
+                downversion_chirpBuilder.append(downversion_chirp[0][j]);
+                downversion_chirpBuilder.append(",");
+                downversion_chirpBuilder.append(downversion_chirp[1][j]);
+                downversion_chirpBuilder.append(",");
+            }
+            String downversion_chirp_str = downversion_chirpBuilder.toString();
+            Utils.log("downversion_chirp first 10 => " + downversion_chirp_str);
         }
-        String downversion_chirp_str = downversion_chirpBuilder.toString();
-        Utils.log("downversion_chirp first 10 => " + downversion_chirp_str);
 
         // low-filter 4k filter
         //downversion_chirp[0] = filter(downversion_chirp[0]);
@@ -419,13 +426,15 @@ public class Utils {
             }
         }
         // print filter
-        StringBuilder filter_strBuilder = new StringBuilder();
-        for (int j = 0; j < M+1; j++) {
-            filter_strBuilder.append(h[j]);
-            filter_strBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder filter_strBuilder = new StringBuilder();
+            for (int j = 0; j < M + 1; j++) {
+                filter_strBuilder.append(h[j]);
+                filter_strBuilder.append(",");
+            }
+            String filter_str = filter_strBuilder.toString();
+            Utils.log("bpass filter => " + filter_str);
         }
-        String filter_str = filter_strBuilder.toString();
-        Utils.log("my filter => " + filter_str);
 
 
 
@@ -547,7 +556,7 @@ public class Utils {
             symbol[0][i] = chirp[i].getReal();
             symbol[1][i] = chirp[i].getImaginary();
         }
-        double[][] results_double = timesnative(symbol,Constants.carrier);
+        double[][] results_double = timesnative(symbol,Constants.carrier); // result[0] is cos(a)cos(b) - sin(a)sin(b) = cos(a+b)
         short[] results_real = new short[results_double[0].length];
         for (int i =0 ; i<results_real.length;i++)
         {
@@ -673,19 +682,20 @@ public class Utils {
     }
 
     public static void log(String s) {
-        Log.e(Constants.LOG,s);
-        (MainActivity.av).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (Constants.debugPane.getText().toString().length() > 400){
-                    Constants.debugPane.setText("");
+        if (Constants.allowLog) {
+            Log.e(Constants.LOG, s);
+            (MainActivity.av).runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (Constants.debugPane.getText().toString().length() > 400) {
+                        Constants.debugPane.setText("");
+                    }
+                    Constants.debugPane.setText(Constants.debugPane.getText() + "\n" + s);
+                    scrollToBottom();
                 }
-                Constants.debugPane.setText(Constants.debugPane.getText()+"\n"+s);
-                scrollToBottom();
-            }
-        });
+            });
+        }
     }
-
 
     public static double[] sum(double[] a, double[] b) {
         double[] out = new double[a.length];
@@ -1358,7 +1368,7 @@ public class Utils {
         }
         return flipped;
     }
-    public static double[] waitForChirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+    public static double[] waitForChirp(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Log.e("fifo",filename);
 
@@ -1412,7 +1422,7 @@ public class Utils {
 //        boolean getOneMoreFlag = false;
         int sounding_signal_counter=0;
         for (int i = 0; i < N; i++) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(i), TaskID));
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
 
             if (sigType.equals(Constants.SignalType.Sounding)||
@@ -1501,7 +1511,7 @@ public class Utils {
         return null;
     }
 
-    public static void listen_to_noise(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+    public static void listen_to_noise(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
 
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Constants._OfflineRecorder = new OfflineRecorder(
@@ -1517,7 +1527,7 @@ public class Utils {
         sounding_signal = new double[MAX_WINDOWS * Constants.RecorderStepSize];
         int sounding_signal_counter = 0;
         for (int i = 0; i < timeout; i++) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(i), TaskID));
             if (i < MAX_WINDOWS) {
                 for (int j = 0; j < rec.length; j++) {
                     sounding_signal[sounding_signal_counter++] = rec[j];
@@ -1526,22 +1536,23 @@ public class Utils {
         }
         Constants._OfflineRecorder.halt2();
 
+        if (Constants.allowLog) {
+            StringBuilder noiseBuilder = new StringBuilder();
+            for (int j = 0; j < sounding_signal.length; j++) {
+                noiseBuilder.append(sounding_signal[j]);
+                noiseBuilder.append(",");
+            }
+            String raw_noise_signal = noiseBuilder.toString();
+            if (raw_noise_signal.endsWith(",")) {
+                raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
+            }
 
-        StringBuilder noiseBuilder = new StringBuilder();
-        for (int j = 0; j < sounding_signal.length; j++) {
-            noiseBuilder.append(sounding_signal[j]);
-            noiseBuilder.append(",");
+            FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
+                    filename + ".txt");
         }
-        String raw_noise_signal = noiseBuilder.toString();
-        if (raw_noise_signal.endsWith(",")) {
-            raw_noise_signal = raw_noise_signal.substring(0, raw_noise_signal.length() - 1);
-        }
-
-        FileOperations.writetofile(MainActivity.av, raw_noise_signal + "",
-                filename + ".txt");
     }
 
-    public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber) {
+    public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
         Log.e("fifo",filename);
 
@@ -1555,6 +1566,7 @@ public class Utils {
         double timeout = 0;
         int len = 0;
         int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+        long startTime_receive_signal = 0;
         if (sigType.equals(Constants.SignalType.DataRx)) {
             MAX_WINDOWS = 2; //
             if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
@@ -1583,7 +1595,7 @@ public class Utils {
                 {
                     if (Constants.SF == 7)
                     {
-                        timeout = 25;
+                        timeout = 120;
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*220;
                     }
                     else if (Constants.SF == 5 || Constants.SF == 6)
@@ -1593,10 +1605,12 @@ public class Utils {
                     }
                     else if (Constants.SF == 4)
                     {
+                        timeout = 120;
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*350;
                     }
                     else if (Constants.SF == 3)
                     {
+                        timeout = 120;
                         len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*450;
                     }
                 }
@@ -1660,22 +1674,24 @@ public class Utils {
         boolean valid_signal = false;
 //        boolean getOneMoreFlag = false;
         int sounding_signal_counter=0;
-        for (int i = 0; i < N; i++) {
-            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO());
+//        for (int i = 0; i < N; i++) { // actually here we can replace it with while true
+        int window_count = 0;
+        while (true) {
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(window_count), TaskID));
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
-            Log.e("received signal ", "rec " + rec);
+//            Log.e("received signal ", "rec " + rec);
             if (sigType.equals(Constants.SignalType.Sounding)||
                     sigType.equals(Constants.SignalType.Feedback)||
                     sigType.equals(Constants.SignalType.DataRx) || sigType.equals(Constants.SignalType.DataChirp)) {
 //                Log.e("fifo","loop "+i);
 
-                if (i<MAX_WINDOWS) {
+                if (window_count<MAX_WINDOWS) {
                     sampleHistory.add(rec);
-                    continue;
+//                    continue;
                 }
                 else {
-                    if (numWindowsLeft==0) {
-                        double[] out = null;
+                    if (numWindowsLeft==0) { // do xcorr, signal finder
+                        double[] out = null; // will be reset, so out's size will not explode
                         out = Utils.concat(sampleHistory.get(sampleHistory.size() - 1 ), rec);
                         //out = Utils.concat_array_list(sampleHistory,MAX_WINDOWS-1,rec);
 
@@ -1688,15 +1704,28 @@ public class Utils {
                             Utils.log("xcorr_out" + xcorr_out[0] + ' ' +  xcorr_out[1]);
                         }
 
-
                         long t1 = System.currentTimeMillis();
-                        Utils.log(String.format("Listening........ (%.2f, %d)",xcorr_out[2],i));
+                        Utils.log(String.format("Listening........ (%.2f, %d)",xcorr_out[2],window_count));
 
                         sampleHistory.add(rec);
                         valueHistory.add(xcorr_out[0]);
                         idxHistory.add(xcorr_out[1]);
 
                         if (xcorr_out[0] != -1) {
+                            // init the Receiver_Latency_Str
+                            Constants.Receiver_Latency_Str = "";
+                            String formattedNow = "";
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                LocalDateTime now = LocalDateTime.now();
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+                                formattedNow = now.format(formatter);
+                            } else {
+                                formattedNow = "not_available";
+                            }
+                            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + formattedNow + "\n";
+                            // receiver t1 - receive signal
+                            startTime_receive_signal = SystemClock.elapsedRealtime();
+
                             if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
                                 Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
                                 //Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
@@ -1717,7 +1746,8 @@ public class Utils {
                                 }
 
                                 Log.e("copy", "copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
-                            } else {
+                            }
+                            else {
                                 Log.e("copy","good! "+filt.length+","+xcorr_out[1]+","+filt.length);
                                 Utils.log("good");
                                 int counter=0;
@@ -1747,12 +1777,14 @@ public class Utils {
                         }
                     }
 
-                    if(sampleHistory.size() >= 6){
+                    if(sampleHistory.size() >= 6){ // here make sure it will not explode
                         sampleHistory.remove(0);
                         valueHistory.remove(0);
                         idxHistory.remove(0);
                     }
                 }
+                window_count = window_count + 1;
+
             }
         }
 
@@ -1760,6 +1792,11 @@ public class Utils {
 
         if (valid_signal) {
             //return Utils.filter(sounding_signal);
+            // receiver t1 - receive signal
+            final long inferenceTime_receive_signal = SystemClock.elapsedRealtime() - startTime_receive_signal;
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
+            Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
             return sounding_signal;
 
         }

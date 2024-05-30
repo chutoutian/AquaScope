@@ -126,8 +126,9 @@ public class OfflineRecorder extends Thread {
         return return_array;
     }
 
-    public short[] get_FIFO(){
+    public short[] get_FIFO(String fifoID, String TaskID){
 //        Log.e("fifo","get fifo");
+//        Utils.log("before " +read_pointer + " " +  save_FIFO.size() + " " + fifoID + " " + TaskID);
         while(read_pointer + Constants.RecorderStepSize > save_FIFO.size()) {
             try {
                 Thread.sleep(20);
@@ -136,10 +137,14 @@ public class OfflineRecorder extends Thread {
             }
         }
 //        Log.e("fifo","get fifo wait over");
+//        Utils.log("pass " +read_pointer + " " +  save_FIFO.size() + " " + fifoID + " " + TaskID);
+
 
         short[] return_array = new short[Constants.RecorderStepSize];
         FIFO_lock.lock();
         try{
+//            Utils.log("process " +read_pointer + " " +  save_FIFO.size() + " " + fifoID + " " + TaskID);
+
             for(int i =read_pointer; i < read_pointer + Constants.RecorderStepSize; i++){
                 return_array[i - read_pointer] = (short)  save_FIFO.get(i);
             }

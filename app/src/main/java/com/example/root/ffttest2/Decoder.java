@@ -1,34 +1,29 @@
 package com.example.root.ffttest2;
 
 import android.app.Activity;
-import android.app.UiAutomation;
-import android.graphics.Bitmap;
-import android.util.Log;
+import android.os.SystemClock;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.apache.commons.math3.complex.Complex;
-
+import Jama.Matrix;
 public class Decoder {
-    public static void decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
+    public static long[]  decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
 
         // write the raw data into file
-        StringBuilder rxRawSymbolBuilder = new StringBuilder();
-        for (int j = 0; j < data.length; j++) {
-            rxRawSymbolBuilder.append(data[j]);
-            rxRawSymbolBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder rxRawSymbolBuilder = new StringBuilder();
+            for (int j = 0; j < data.length; j++) {
+                rxRawSymbolBuilder.append(data[j]);
+                rxRawSymbolBuilder.append(",");
+            }
+            String rx_raw_symbol = rxRawSymbolBuilder.toString();
+            if (rx_raw_symbol.endsWith(",")) {
+                rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
+                    Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
         }
-        String rx_raw_symbol = rxRawSymbolBuilder.toString();
-        if (rx_raw_symbol.endsWith(",")) {
-            rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
-                Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
+
 
         data = Utils.filter(data);
 
@@ -89,8 +84,10 @@ public class Decoder {
 
         // perform viterbi decoding
         String uncoded = Utils.decode(coded, Constants.cc[0],Constants.cc[1],Constants.cc[2]);
-        FileOperations.writetofile(MainActivity.av, uncoded + "",
-                Utils.genName(Constants.SignalType.RxBits, m_attempt) + ".txt");
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, uncoded + "",
+                    Utils.genName(Constants.SignalType.RxBits, m_attempt) + ".txt");
+        }
 
 
         byte[] received_bytes = Utils.convertBitStringToByteArray(uncoded);
@@ -104,7 +101,7 @@ public class Decoder {
         if (all_embedding.endsWith(",")) {
             all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
         }
-        FileOperations.writetofile(MainActivity.av, all_embedding + "",
+        FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
                 Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
 
         /***
@@ -148,6 +145,7 @@ public class Decoder {
 
             }
         });
+        return embedding;
     }
 
     public static int[] demodulate(double[] data, int m_attempt)
@@ -158,17 +156,19 @@ public class Decoder {
         int numsyms = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes);
 
         // write into files
-        StringBuilder rxRawSymbolBuilder = new StringBuilder();
-        for (int j = 0; j < data.length; j++) {
-            rxRawSymbolBuilder.append(data[j]);
-            rxRawSymbolBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder rxRawSymbolBuilder = new StringBuilder();
+            for (int j = 0; j < data.length; j++) {
+                rxRawSymbolBuilder.append(data[j]);
+                rxRawSymbolBuilder.append("\n");
+            }
+            String rx_raw_symbol = rxRawSymbolBuilder.toString();
+//            if (rx_raw_symbol.endsWith(",")) {
+//                rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
+//            }
+            FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
+                    Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
         }
-        String rx_raw_symbol = rxRawSymbolBuilder.toString();
-        if (rx_raw_symbol.endsWith(",")) {
-            rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
-                Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
 
 
         //
@@ -180,15 +180,17 @@ public class Decoder {
         //double[][] data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,(Constants.Ns_lora + Constants.Gap));
 
 //         check downversion_preamble
-        StringBuilder downversion_preambleBuilder = new StringBuilder();
-        for (int j = 0; j < 20; j++) {
-            downversion_preambleBuilder.append(downversion_preamble[0][j]);
-            downversion_preambleBuilder.append(",");
-            downversion_preambleBuilder.append(downversion_preamble[1][j]);
-            downversion_preambleBuilder.append(",");
+        if (Constants.allowLog) {
+            StringBuilder downversion_preambleBuilder = new StringBuilder();
+            for (int j = 0; j < 20; j++) {
+                downversion_preambleBuilder.append(downversion_preamble[0][j]);
+                downversion_preambleBuilder.append(",");
+                downversion_preambleBuilder.append(downversion_preamble[1][j]);
+                downversion_preambleBuilder.append(",");
+            }
+            String downversion_preamble_str = downversion_preambleBuilder.toString();
+            Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
         }
-        String downversion_preamble_str = downversion_preambleBuilder.toString();
-        Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
 
         double[] index_count_test = new double[4];
         //double[] pks = new double[4];
@@ -225,7 +227,9 @@ public class Decoder {
         Utils.log("to =>" + off_set[1]);
 
         //Constants.CFO = off_set[0] * Constants.BW / Constants.Sample_Lora; confirmed
-        int time_offset = (int)Math.round(Math.abs(off_set[1]) * Constants.Ns_lora / Constants.Sample_Lora);
+//        int time_offset = (int)Math.round(Math.abs(off_set[1]) * Constants.Ns_lora / Constants.Sample_Lora); // remove abs
+        int time_offset = (int)Math.round(off_set[1] * Constants.Ns_lora / Constants.Sample_Lora);
+
         double[] data_remove_preamble_shift = Utils.segment(data,ptime+Constants.ChirpGap + 4* (Constants.Ns_lora + Constants.Gap) +time_offset,ptime+Constants.ChirpGap +time_offset+ (numsyms+4 + 4) * (Constants.Ns_lora+ Constants.Gap)-1);
         downversion_preamble = Utils.downversion(data_remove_preamble_shift);
         //data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,Constants.Ns_lora);
@@ -317,26 +321,185 @@ public class Decoder {
 
 
         // write to file and display in log
-        String all_symbol_cfo = "";
-        for (int i = 0 ; i < detected_index_cfo.length; i++)
-        {
-            all_symbol_cfo += (detected_index_cfo[i] + ",");
+        if (Constants.allowLog) {
+            String all_symbol_cfo = "";
+            for (int i = 0; i < detected_index_cfo.length; i++) {
+                all_symbol_cfo += (detected_index_cfo[i] + ",");
+            }
+            Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
+            if (all_symbol_cfo.endsWith(",")) {
+                all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
+                    Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
         }
-        Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
-        if (all_symbol_cfo.endsWith(",")) {
-            all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
-                Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
 
 
         return detected_index_cfo;
     }
 
+    public static Matrix timeEqualizerEstimation(Matrix tx, Matrix rx, int tapNum) {
+        double lambda = 1e-5;
+
+        int txRows = tx.getRowDimension();
+        int txCols = tx.getColumnDimension();
+        int rxRows = rx.getRowDimension();
+        int rxCols = rx.getColumnDimension();
+
+        Utils.log("txRows  " + txRows);
+        Utils.log("txCols  " + txCols);
+        Utils.log("rxRows  " + rxRows);
+        Utils.log("rxCols  " + rxCols);
+
+        if ((txCols + tapNum - 1) != rxRows) {
+            System.out.println("Warning: tx and rx different size");
+            return null;
+        }
+        if (tapNum > txCols) {
+            System.out.println("Tap number is too large");
+            return null;
+        }
+
+        int symbolsNum = txRows;
+        int P = txCols;
+        int L = tapNum;
+        Matrix M = new Matrix(P * symbolsNum, L);
+        Matrix Y = new Matrix(P * symbolsNum, 1);
+        int ii = 0;
+
+        for (int a = 0; a < symbolsNum; a++) {
+            for (int b = 0; b < P; b++) {
+                for (int k = 0; k < L; k++) {
+                    M.set(ii, k, rx.get(b + k, a));
+                }
+                ii++;
+            }
+        }
+
+        for (int i = 0; i < symbolsNum; i++) {
+            Matrix row = tx.getMatrix(i, i, 0, P - 1);
+            for (int j = 0; j < P; j++) {
+                Y.set(i * P + j, 0, row.get(0, j));
+            }
+        }
+
+        Matrix Mt = M.transpose();
+        Matrix MtM = Mt.times(M);
+        Matrix MtMPlusLambdaI = MtM.plus(Matrix.identity(L, L).times(lambda));
+        Matrix MtY = Mt.times(Y);
+        Matrix g = MtMPlusLambdaI.solve(MtY);
+
+        return g;
+    }
+
+    public static Matrix timeEqualizerRecover(Matrix rx, Matrix g) {
+        int L = g.getRowDimension();
+        int P = rx.getRowDimension() - L + 1;
+
+        double[] txArray = new double[P];
+
+        for (int i = 0; i < P; i++) {
+            double sum = 0.0;
+            for (int j = 0; j < L; j++) {
+                sum += rx.get(i + j, 0) * g.get(j, 0);
+            }
+            txArray[i] = sum;
+        }
+
+        Matrix tx = new Matrix(txArray, 1).transpose();
+        return tx;
+    }
+
+
+
+    public static double[] convertShortArrayToDoubleArray(short[] shortArray) {
+        // Create a new double array of the same length
+        double[] doubleArray = new double[shortArray.length];
+
+        // Copy each short value to the corresponding double element
+        for (int i = 0; i < shortArray.length; i++) {
+            doubleArray[i] = (double) shortArray[i];
+        }
+
+        return doubleArray;
+    }
+
     public static long[] decoding(Activity av, double[] received_data, int m_attempt)
     {
         //received_data = Utils.filter(received_data);
+        // save data before time domain equalization
+        if (Constants.allowLog) {
+            StringBuilder before_equqlization_rx_preambleBuilder = new StringBuilder();
+            for (int j = 0; j < received_data.length; j++) {
+                before_equqlization_rx_preambleBuilder.append(received_data[j]);
+                before_equqlization_rx_preambleBuilder.append("\n");
+            }
+            String before_equalization_rx_str = before_equqlization_rx_preambleBuilder.toString();
+//            if (before_equalization_rx_str.endsWith(",")) {
+//                before_equalization_rx_str = before_equalization_rx_str.substring(0, before_equalization_rx_str.length() - 1);
+//            }
+            FileOperations.writetofile(MainActivity.av, before_equalization_rx_str + "",
+                    Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
+        }
+
+        // add time equalization
+        // receiver t2 time domain equalization (part of demodulate)
+        final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
+
+        int gtIdx = 0;
+        int Ns = 960;
+        int tapNum = 480;
+        int offset = 100;
+        int pkgIdx = 1200;
+        int lenRx = Ns + tapNum - 1;
+        short[] preamble_sig = PreambleGen.preamble_s();
+        double[] sendingSignalArray = convertShortArrayToDoubleArray(preamble_sig);
+
+        Matrix sendingSignal = new Matrix(sendingSignalArray, 1).transpose();
+        Matrix dataBad = new Matrix(received_data, 1).transpose();
+
+        Matrix symbolTx = sendingSignal.getMatrix(gtIdx, gtIdx + Ns - 1, 0, 0).transpose(); // []
+        Matrix symbolRx = dataBad.getMatrix(pkgIdx - offset, pkgIdx + lenRx - offset - 1, 0, 0);
+
+        Matrix g = timeEqualizerEstimation(symbolTx, symbolRx, tapNum);
+        if (g != null) {
+            // Recover the transmitted signal
+            Matrix tx = timeEqualizerRecover(dataBad, g);
+            received_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
+            Utils.log("Equalizer estimation success.");
+
+            if (Constants.allowLog) {
+                StringBuilder gBuilder = new StringBuilder();
+                for (int j = 0; j < 20; j++) {
+                    gBuilder.append(g.get(j, 0));
+                    gBuilder.append(",");
+                }
+                String g_string = gBuilder.toString();
+                Utils.log("time equalization g => " + g_string);
+            }
+
+        } else {
+            Utils.log("Equalizer estimation failed.");
+        }
+        // receiver t2 time domain equalization
+        final long inferenceTime_time_domain_equalization = SystemClock.elapsedRealtime() - startTime_time_domain_equalization;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver time domain equalization (ms): " + inferenceTime_time_domain_equalization + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        // end add time equalization
+
+        // receiver t3 demodulate
+        final long startTime_demodulate = SystemClock.elapsedRealtime();
+
         int[] symbol = demodulate(received_data,m_attempt);
+
+        // receiver t3 demodulate
+        final long inferenceTime_demodulate = SystemClock.elapsedRealtime() - startTime_demodulate;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver demodulate (ms): " + inferenceTime_demodulate + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        // receiver t4 decode signal
+        final long startTime_decode_signal = SystemClock.elapsedRealtime();
 
         int[] symbol_remove_preamble = Utils.segment(symbol,4,symbol.length-1);
         // gray coding
@@ -369,17 +532,24 @@ public class Decoder {
 
 
         long[] embedding = Utils.Bytes2Embedding(data);
-        String all_embedding = "";
-        for (int i = 0 ; i < embedding.length; i++)
-        {
-            all_embedding += (embedding[i] + ",");
+
+        // receiver t4 decode signal
+        final long inferenceTime_decode_signal = SystemClock.elapsedRealtime() - startTime_decode_signal;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode signal (ms): " + inferenceTime_decode_signal + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        if (Constants.allowLog) {
+            String all_embedding = "";
+            for (int i = 0; i < embedding.length; i++) {
+                all_embedding += (embedding[i] + ",");
+            }
+            Utils.log("all_embedding =>" + all_embedding);
+            if (all_embedding.endsWith(",")) {
+                all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
+            }
+            FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
+                    Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
         }
-        Utils.log("all_embedding =>" + all_embedding);
-        if (all_embedding.endsWith(",")) {
-            all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, all_embedding + "",
-                Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
 
         String finalMessage = "Embedding received #" + m_attempt;
         av.runOnUiThread(new Runnable() {

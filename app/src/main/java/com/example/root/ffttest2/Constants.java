@@ -11,24 +11,29 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import androidx.camera.view.PreviewView;
 import androidx.core.widget.NestedScrollView;
+import androidx.camera.lifecycle.ProcessCameraProvider;
 
 import com.jjoe64.graphview.GraphView;
 
-import org.apache.commons.math3.analysis.function.Constant;
 import org.pytorch.Module;
 
-import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import com.google.common.util.concurrent.ListenableFuture;
 
 
 public class Constants {
@@ -45,7 +50,7 @@ public class Constants {
     public static ArrayList<Bitmap> testEnd2EndImageBitmaps = new ArrayList<>(); // store bitmap of all test images (bypass access assets in class other than the main class)
     public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
     ;
-    public static int end2endTestDelay = 5000; // sending delay between two test images (leave time for propagation and decode)
+    public static int end2endTestDelay = 7000; // sending delay between two test images (leave time for propagation and decode)
     public static int end2endCamDelay = 3000; // sending delay between two captured images/ camera capture time interval (leave time for propagation and decode)
 
     // later maybe we can add a wrapper to merge these parts to one model
@@ -57,11 +62,46 @@ public class Constants {
     public static Module mDecoder2 = null; // decoder part 2
     public static Module mDecoder3 = null; // decoder part 3
 
+    public static Module mTransformer = null; // recover transformer
+
+    public static int recover_round = 1;
+
     public static long[] encode_sequence; // encoder final output (64 long integer)
 
     public static int compressImageSize = 128; // rescale image for encoding
 
+    public static Button cameraCaptureBtn;
+    public static FrameLayout frameLayout;
+    public static PreviewView preview;
+    public static ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    public static Bitmap currentCameraCapture;
+    public static String Sender_Latency_Str = "";
+    public static String Receiver_Latency_Str = "";
+
+    public static Switch logswitch;
+    public static boolean allowLog;
+
+    public static List<String> modelIgnoreDisplayInSpinnerList = Arrays.asList("embedding_optimized.ptl",
+            "encoder_optimized.ptl",
+            "post_quant_conv_optimized.ptl",
+            "quant_conv_optimized.ptl",
+            "quantize_optimized.ptl",
+            "decoder.ptl");
+
+    public static Map<String, String> serviceNameToModelMap = new HashMap<String, String>() {{
+        put("Encode Image", "VQGANEncode");
+        put("Decode Image", "VQGANDecode");
+        put("Recover Image", "transformer_optimized.ptl");
+        put("Detect Fish", "lite_optimized_clf.ptl");
+        put("Count Fish", "lite_optimized_count_fish_224_224.ptl");
+        put("Seg Fish Low Res", "lite_optimized_seg_240p.ptl");
+        put("Seg Fish High Res", "deepfish_scripted_optimized.ptl");
+
+
+    }};
+
     // ****************************** End of Codec Related Global Variables ******************************
+
 
     public enum EqMethod {
         Freq,
@@ -116,7 +156,16 @@ public class Constants {
         Rx_Symbols,
         Rx_Embedding,
         Battery_Level,
-        Timestamp
+        Timestamp,
+        Before_Equalization_Rx_Raw_Symbols,
+        Latency_Sender,
+        Latency_Receiver,
+        Raw_Input_Bitmap,
+        Sent_Gt_Bitmap,
+        Received_Bitmap,
+        Recovered_Bitmap,
+        Send_Embedding_Sequence,
+        Rx_Embedding_Recovered
     }
     public enum EstSignalType {
         Chirp,
@@ -335,7 +384,7 @@ public class Constants {
     public static HashSet<Integer> pilots;
 
     public static boolean FLIP_SYMBOL = false;
-    public static boolean stereo = false;
+    public static boolean stereo = false; // set recording to stereo
     public static LinkedList<String>acc;
     public static LinkedList<String>gyro;
     public static boolean sensorFlag=false;

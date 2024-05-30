@@ -56,6 +56,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.core.content.ContextCompat;
 
 import com.jjoe64.graphview.GraphView;
 
@@ -70,6 +72,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ExecutionException;
+import java.util.Set;
 
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
@@ -78,7 +84,7 @@ import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
-    String[] perms = new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+    String[] perms = new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
 
     private static SensorManager sensorManager;
     private Sensor accelerometer;
@@ -88,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     private static ImageView mImageView;
+    private static ImageView mImageView2;
+
     private Button mButtonSegment;
     private ProgressBar mProgressBar;
     private Bitmap mBitmap = null;
@@ -103,6 +111,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int currentIndex = 0;
     private String mImagename = "test1.jpg";
     private String defaultModelName = "lite_optimized_seg_240p.ptl";
+    private String defaultServiceName = "Seg Fish Low Res";
+
     private int defaultPosition = 0;
 
     private String[] allFiles;
@@ -299,11 +309,78 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Log.d("ImageSegmentation", "Image Files: " + Arrays.toString(imageFiles));
             Log.d("ImageSegmentation", "Ptl Files: " + Arrays.toString(ptlFiles));
 
+
+            if (Constants.mEncoder1 == null) {
+                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+            }
+            if (Constants.mEncoder2 == null) {
+                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+            }
+            if (Constants.mEncoder3 == null) {
+                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+            }
+
+            // later we can separate encoder and decoder users
+            if (Constants.mDecoder1 == null){
+                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+            }
+            if (Constants.mDecoder2 == null) {
+                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+            }
+            if (Constants.mDecoder3 == null) {
+                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+            }
+
+            if (Constants.mTransformer == null) {
+                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+            }
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         mImageView = findViewById(R.id.imageView_fish);
+        mImageView2 = findViewById(R.id.imageView_fish2);
+        Constants.logswitch = findViewById(R.id.logcontroller);
+        Constants.logswitch.setChecked(true); // set default to true which means we want to log
+        Constants.allowLog = true;
+
+        Constants.logswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Log Switch is ON");
+                    Constants.allowLog = true;
+                } else {
+                    Utils.log("Log Switch is OFF");
+                    Constants.allowLog = false;
+                }
+            }
+        });
+
+        Constants.frameLayout = findViewById(R.id.frameLayout);
+        Constants.preview = findViewById(R.id.previewView);
+        Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);
+        Constants.cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        Constants.cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = Constants.cameraProviderFuture.get();
+                CameraHelper.bindCamera(cameraProvider, this, mImageView2);
+            } catch (ExecutionException | InterruptedException e) {
+                // No errors need to be handled for this Future.
+                // This should never be reached.
+            }
+        }, ContextCompat.getMainExecutor(this));
+
+        //        CameraHelper.startCamera(this, Constants.cameraTextureView, mImageView2);
+        Constants.cameraCaptureBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CameraHelper.takePicture2();
+            }
+        });
 
         // Resize:
         // Create widgets for image resize feature (width edit text box, height edit text box and resize button)
@@ -327,7 +404,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             public void onClick(View v) {
                 mButtonSegment.setEnabled(false);
                 mProgressBar.setVisibility(ProgressBar.VISIBLE);
-                mButtonSegment.setText(getString(R.string.run_model));
+//                mButtonSegment.setText(getString(R.string.run_model));
 
                 //Thread thread = new Thread(MainActivity.this);
                 //thread.start();
@@ -358,13 +435,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // Load the initial model
         if (ptlFiles != null && ptlFiles.length > 0) {
+            // get all service names
+            Set<String> keySet = Constants.serviceNameToModelMap.keySet();
+            String[] allServiceNames = keySet.toArray(new String[0]);
+
             // Model Selector:
             modelSpinner = findViewById(R.id.modelSpinner);
-            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, ptlFiles);
+            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, allServiceNames);
             spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             modelSpinner.setAdapter(spinnerAdapter);
 
-            defaultPosition = findIndex(ptlFiles, defaultModelName);
+            defaultPosition = findIndex(allServiceNames, defaultServiceName);
             Log.d("ImageSegmentation", "default position of" + defaultModelName + " is " + defaultPosition);
 
             modelSpinner.setSelection(defaultPosition);
@@ -372,7 +453,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
                     // Load the selected model
-                    currentModelName = ptlFiles[position];
+                    currentModelName = Constants.serviceNameToModelMap.get(allServiceNames[position]);
                     try {
                         Log.d("ImageSegmentation", currentModelName);
                         if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
@@ -423,15 +504,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             resizeImage();
                         } else if (currentModelName.equals("VQGANEncode")) {
-                            if (Constants.mEncoder1 == null) {
-                                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-                            }
-                            if (Constants.mEncoder2 == null) {
-                                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-                            }
-                            if (Constants.mEncoder3 == null) {
-                                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-                            }
+//                            if (Constants.mEncoder1 == null) {
+//                                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+//                            }
+//                            if (Constants.mEncoder2 == null) {
+//                                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+//                            }
+//                            if (Constants.mEncoder3 == null) {
+//                                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+//                            }
                             Log.d("tbt", "finish load encoders");
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -443,15 +524,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else if (currentModelName.equals("VQGANDecode")) {
-                            if (Constants.mDecoder1 == null){
-                                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-                            }
-                            if (Constants.mDecoder2 == null) {
-                                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-                            }
-                            if (Constants.mDecoder3 == null) {
-                                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-                            }
+//                            if (Constants.mDecoder1 == null){
+//                                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+//                            }
+//                            if (Constants.mDecoder2 == null) {
+//                                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+//                            }
+//                            if (Constants.mDecoder3 == null) {
+//                                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+//                            }
 
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -463,7 +544,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                             displayImageCenterCropWithSize(currentIndex, compressImageSize);
                         } else if (currentModelName.equals("transformer_optimized.ptl")) {
-                            mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
+//                            if (Constants.mTransformer == null) {
+//                                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+//                            }
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -591,7 +674,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -650,7 +732,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mImageView.setImageBitmap(mBitmap);
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -663,8 +744,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Tensor inputTensor2 = Tensor.fromBlob(data, new long[]{1, 64});
             Log.d("tbt", "shape: " + Arrays.toString(inputTensor.shape()));
             final long startTime = SystemClock.elapsedRealtime();
-            for (int p = 0; p < recover_round; p++) {
-                IValue result = mModule.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
+            for (int p = 0; p < Constants.recover_round; p++) {
+                IValue result = Constants.mTransformer.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
                 if (result.isTuple()) {
                     // Get the tuple and extract the tensors
                     IValue[] outputs = result.toTuple();
@@ -703,7 +784,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime + " ms");
                 }
@@ -732,12 +812,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     fishCountTextView.setText(String.valueOf(Constants.NumFish));
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
             });
-        } else if (currentModelName.equals("lite_optimized_clf.ptl")) {
+        }
+        else if (currentModelName.equals("lite_optimized_clf.ptl")) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
             final float[] inputs = inputTensor.getDataAsFloatArray();
@@ -760,13 +840,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     fishExistTextView.setText(clf_res_postprocess(results[0]).toString());
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
             });
         }
-        else {
+        else if (currentModelName.equals("deepfish_scripted_optimized.ptl") || currentModelName.equals("lite_optimized_seg_240p.ptl")) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
             final float[] inputs = inputTensor.getDataAsFloatArray();
@@ -823,7 +902,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     mImageView.setImageBitmap(transferredBitmap);
                     mButtonSegment.setEnabled(true);
-                    mButtonSegment.setText(getString(R.string.segment));
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
 
@@ -861,10 +939,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                 }
             }
-            if (audioGranted && writeGranted) {
-                Constants.user  = Constants.User.Bob;
-                startMethod(this);
-            }
+            // remove to solve double sendchirpasynctask
+//            if (audioGranted && writeGranted) {
+//                Constants.user  = Constants.User.Bob;
+//                if (started == false) {
+//                    Utils.log("start startmethod from on permission granted");
+//                    startMethod(this);
+//                }
+//            }
         }
     }
 
@@ -1010,27 +1092,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // trigger setup, need to clean the code
                 if (arrayList4.get(position) == "end2endTest") {
                     try {
-                        if (Constants.mEncoder1 == null) {
-                            Log.d("tbt", "check encoder");
-                            Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-                        }
-                        if (Constants.mEncoder2 == null) {
-                            Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-                        }
-                        if (Constants.mEncoder3 == null) {
-                            Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-                        }
-
-                        // later we can separate encoder and decoder users
-                        if (Constants.mDecoder1 == null){
-                            Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-                        }
-                        if (Constants.mDecoder2 == null) {
-                            Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-                        }
-                        if (Constants.mDecoder3 == null) {
-                            Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-                        }
+//                        if (Constants.mEncoder1 == null) {
+//                            Log.d("tbt", "check encoder");
+//                            Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+//                        }
+//                        if (Constants.mEncoder2 == null) {
+//                            Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+//                        }
+//                        if (Constants.mEncoder3 == null) {
+//                            Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+//                        }
+//
+//                        // later we can separate encoder and decoder users
+//                        if (Constants.mDecoder1 == null){
+//                            Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+//                        }
+//                        if (Constants.mDecoder2 == null) {
+//                            Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+//                        }
+//                        if (Constants.mDecoder3 == null) {
+//                            Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
+//                        }
+//
+//                        if (Constants.mTransformer == null) {
+//                            Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+//                        }
 
                         runOnUiThread(new Runnable() {
                             @Override
@@ -1041,7 +1127,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         });
 
                         displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         Log.e("ImageSegmentation", "Error reading assets", e);
                         finish();
                     }
@@ -1274,18 +1360,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        Constants.sw12.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (!isChecked) {
-                    stopMethod();
-                }
-                else {
-                    Constants.user  = Constants.User.Bob;
-                    startMethod(av);
-                }
-            }
-        });
+//        Constants.sw12.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                if (!isChecked) {
+//                    stopMethod();
+//                }
+//                else {
+//                    Constants.user  = Constants.User.Bob;
+//
+//                    startMethod(av);
+//                }
+//            }
+//        });
 
         Constants.et1.addTextChangedListener(new TextWatcher() {
             @Override
@@ -1811,13 +1898,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
         FullScreencall();
 
-        if (Constants.sw12.isChecked() &&
-            ActivityCompat.checkSelfPermission(av, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(av, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-            !started) {
-            Constants.user  = Constants.User.Bob;
+        Constants.user  = Constants.User.Bob;
+        if (started == false) {
+            Utils.log("start startmethod from onResume");
             startMethod(this);
         }
+//        if (Constants.sw12.isChecked() &&
+//            ActivityCompat.checkSelfPermission(av, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+//            ActivityCompat.checkSelfPermission(av, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+//            !started) {
+//            Constants.user  = Constants.User.Bob;
+//            Utils.log("start startmethod from Constants.sw12.isChecked() ");
+//
+//            startMethod(this);
+//        }
     }
 
     @Override
@@ -1846,6 +1940,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public static void startWrapper() {
         Constants.user = Constants.User.Alice;
         stopMethod();
+        Utils.log("start startmethod from startWrapper");
         startMethod(av);
     }
 
@@ -1882,19 +1977,30 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
         Constants.tv6.setText(Utils.trimmed_ts());
-        Constants.task = new SendChirpAsyncTask(av,Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps,mImageView);
+        String formattedNow = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+            formattedNow = now.format(formatter);
+        } else {
+            formattedNow = "not_available";
+        }
+
+        Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
         Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void onstop(View v) {
         stopMethod();
         Constants.user  = Constants.User.Bob;
+        Utils.log("start startmethod from onstop");
         startMethod(av);
     }
 
     public static void stopMethod() {
         if (Constants.task != null) {
             Constants.task.cancel(true);
+            Constants.task = null;
         }
         if (Constants.timer!=null) {
             Constants.timer.cancel();

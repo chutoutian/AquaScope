@@ -26,13 +26,17 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
     Drawable defaultBackground;
     ArrayList<Bitmap> testEnd2EndImageBitmaps;
     ImageView mImageView;
-    public SendChirpAsyncTask(Activity activity, int num_measurements, Button button, Drawable defaultBackground, ArrayList<Bitmap> testEnd2EndImageBitmaps, ImageView mImageView) {
+    ImageView mImageView2;
+    String TaskID; // task create time
+    public SendChirpAsyncTask(Activity activity, int num_measurements, Button button, Drawable defaultBackground, ArrayList<Bitmap> testEnd2EndImageBitmaps, ImageView mImageView, ImageView mImageView2, String TaskID) {
         this.av = activity;
         this.num_measurements = num_measurements;
         this.button = button;
         this.defaultBackground = defaultBackground;
         this.testEnd2EndImageBitmaps = testEnd2EndImageBitmaps;
         this.mImageView = mImageView;
+        this.mImageView2 = mImageView2;
+        this.TaskID = TaskID;
     }
 
     @Override
@@ -105,12 +109,14 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         Constants.WaitForBerTime = Constants.WaitForBerTimeDefault + Constants.SyncLag;
         Constants.WaitForPerTime = Constants.WaitForPerTimeDefault + Constants.SyncLag;
 
-        Constants.SEND_DATA=true;
+        Constants.SEND_DATA = true;
         Constants.WaitForDataTime = Constants.WaitForPerTime;
         Constants.AdaptationMethod = 3;
 
-        //FileOperations.writetofile(MainActivity.av, Constants.SNR_THRESH2+"\n"+Constants.FreAdaptScaleFactor+"\n"+Constants.SNR_THRESH2_2,
-        //        Utils.genName(Constants.SignalType.AdaptParams,0)+".txt");
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, Constants.SNR_THRESH2 + "\n" + Constants.FreAdaptScaleFactor + "\n" + Constants.SNR_THRESH2_2,
+                    Utils.genName(Constants.SignalType.AdaptParams, 0) + ".txt");
+        }
 
         setupTimer();
 
@@ -125,21 +131,20 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         //}
         if (Constants.expMode == Constants.Experiment.testExp) {
             for (int i = 0; i < num_measurements; i++) {
-                Log.e("timer","work "+i);
+                Log.e("timer", "work " + i);
                 int flag = 0;
-                if (i == num_measurements-1) {
+                if (i == num_measurements - 1) {
                     flag = work(i, true);
                 } else {
                     flag = work(i, false);
                 }
-                updateTimer((i+1)+"");
+                updateTimer((i + 1) + "");
                 if (flag == -1) {
                     updateTimer("-1");
                     break;
                 }
             }
-        }
-        else if (Constants.expMode == Constants.Experiment.end2endTest){
+        } else if (Constants.expMode == Constants.Experiment.end2endTest) {
             if (Constants.user.equals(Constants.User.Alice)) {
                 // step 1 read out file path in testImages
                 // passed as arguments
@@ -153,6 +158,13 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             mImageView.setImageBitmap(mBitmap);
                         }
                     });
+
+                    // save the bitmap
+                    if (Constants.allowLog) {
+                        FileOperations.saveBitmapToFile(MainActivity.av, mBitmap, Utils.genName(Constants.SignalType.Raw_Input_Bitmap, 0) + ".png");
+                    }
+
+
                     // step 2-1 encode
                     Log.d("tbt", "start to process bit maps");
                     float[] mu = {0.0f, 0.0f, 0.0f};
@@ -180,6 +192,35 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     Constants.encode_sequence = results;
                     Log.d("tbt", "result: " + Arrays.toString(results));
                     Utils.log("send embedding: " + Arrays.toString(results));
+
+                    // save some results, this might introduce extra latency, but here we only use it to test the accuracy
+                    if (Constants.allowLog) {
+                        // save embedding sequence
+                        FileOperations.writetofile(MainActivity.av, Arrays.toString(results),
+                                Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
+
+                        // save VQGAN image ground truth
+                        Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+                        Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+                        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+                        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+                        final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+                        int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                        int pixelIndex = 0;
+                        int argbIndex = 0;
+                        for (int y = 0; y < Constants.compressImageSize; y++) {
+                            for (int x = 0; x < Constants.compressImageSize; x++) {
+                                int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                                int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                                int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+                                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                                argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                            }
+                        }
+                        Bitmap vqganGtBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+                        FileOperations.saveBitmapToFile(MainActivity.av, vqganGtBitmap, Utils.genName(Constants.SignalType.Sent_Gt_Bitmap, 0) + ".png");
+
+                    }
                     // step 2-2 send
                     work(0, true);
                     try {
@@ -194,10 +235,101 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 work(0, true);
             }
             // step 2-3 save results
+        } else if (Constants.expMode == Constants.Experiment.end2endCam) {
+            if (Constants.user.equals(Constants.User.Alice)) {
+                mImageView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mImageView.setImageBitmap(Constants.currentCameraCapture);
+                    }
+                });
+
+                // save input image
+                if (Constants.allowLog) {
+                    FileOperations.saveBitmapToFile(MainActivity.av, Constants.currentCameraCapture, Utils.genName(Constants.SignalType.Raw_Input_Bitmap, 0) + ".png");
+                }
+
+                // step 2-1 encode
+                // sender t1 - encode image
+                Constants.Sender_Latency_Str = ""; // clean up the time
+                Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + TaskID + "\n"; // TaskID is the time of this sendchirpasync task
+                final long startTime = SystemClock.elapsedRealtime();
+
+                Log.d("tbt", "start to process bit maps");
+                float[] mu = {0.0f, 0.0f, 0.0f};
+                float[] std = {1.0f, 1.0f, 1.0f};
+                final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(Constants.currentCameraCapture,
+                        mu, std);
+
+                // Convert the PyTorch tensor to a float array
+                float[] tempArray = tempInputTensor.getDataAsFloatArray();
+
+                // Apply the operation x = 2 * x - 1 to the float array
+                for (int i = 0; i < tempArray.length; i++) {
+                    tempArray[i] = 2.0f * tempArray[i] - 1.0f;
+                }
+
+                // Convert the float array back to a PyTorch tensor
+                Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
+                // run model
+                Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
+                outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
+                outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+                final long[] results = outTensors.getDataAsLongArray();
+                Constants.encode_sequence = results;
+
+                // sender t1 - encode image
+                final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+                Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender encode image (ms): " + inferenceTime + "\n";
+                Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
+
+                Log.d("tbt", "result: " + Arrays.toString(results));
+                Utils.log("send embedding: " + Arrays.toString(results));
+
+                // save some results, this might introduce extra latency, but here we only use it to test the accuracy
+                if (Constants.allowLog) {
+                    // save embedding sequence
+                    FileOperations.writetofile(MainActivity.av, Arrays.toString(results),
+                            Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
+
+                    // save VQGAN image ground truth
+                    Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+                    Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+                    outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+                    outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+                    final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+                    int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                    int pixelIndex = 0;
+                    int argbIndex = 0;
+                    for (int y = 0; y < Constants.compressImageSize; y++) {
+                        for (int x = 0; x < Constants.compressImageSize; x++) {
+                            int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                            int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                            int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+                            int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                            argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                        }
+                    }
+                    Bitmap vqganGtBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+                    FileOperations.saveBitmapToFile(MainActivity.av, vqganGtBitmap, Utils.genName(Constants.SignalType.Sent_Gt_Bitmap, 0) + ".png");
+
+                }
+
+                // step 2-2 send
+                work(0, true);
+                try {
+                    Thread.sleep(Constants.end2endTestDelay);
+                } catch (Exception e) {
+                    Log.e("asdf", e.toString());
+                }
+
+            }
+            else if (Constants.user.equals(Constants.User.Bob)) {
+            Log.d("tbt", "enter Bob");
+            work(0, true);
         }
-        else if (Constants.expMode == Constants.Experiment.end2endCam) {
-            Log.d("tbt", "not implemented end2endCam");
-        }
+    }
         return null;
     }
 
@@ -257,7 +389,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
                     sleep(sig_len+Constants.SendPad);
 
-                    feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber);
+                    feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber, TaskID);
                     chirpLoopNumber++;
                     if (chirpLoopNumber >= 3 || !Constants.work) {
                         return -1;
@@ -288,7 +420,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 int[] valid_bins = null;
                 double[] sounding_signal = null;
                 do {
-                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber);
+                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber, TaskID);
                     if (sounding_signal == null) {
                         return -1;
                     }
@@ -316,11 +448,46 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 double[] data_signal = null;
                 if (Constants.SEND_DATA) {
-                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0);
+                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0, TaskID);
                 }
                 if (data_signal!=null) {
-                    Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
-                }
+                    long[] embeddings = Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
+                    // decode
+                    final long startTime = SystemClock.elapsedRealtime();
+                    Tensor inputTensor = Tensor.fromBlob(embeddings, new long[]{64});
+                    Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                    final float[] embedding_res = outTensors.getDataAsFloatArray();
+
+                    outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                    outTensors = Constants.mDecoder3.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                    final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+                    Log.d("tbt",  "inference time (ms): " + inferenceTime);
+
+                    final byte[] rgbData = outTensors.getDataAsUnsignedByteArray();
+                    int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                    int pixelIndex = 0;
+                    int argbIndex = 0;
+                    for (int y = 0; y < Constants.compressImageSize; y++) {
+                        for (int x = 0; x < Constants.compressImageSize; x++) {
+                            int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                            int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                            int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+//                    Log.d("tbt", "r " + rgbData[pixelIndex-3] + " g " + rgbData[pixelIndex-2] + " b " + rgbData[pixelIndex-1]);
+                            // Combine these into an ARGB color with full opacity.
+                            int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                            argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+                        }
+                    }
+                    Bitmap tempMBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+                    mImageView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            mImageView.setImageBitmap(tempMBitmap);
+                        }
+                    });                }
                 return 0;
             }
         }
@@ -330,7 +497,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 if (Constants.SEND_DATA) {
                     if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+
                         sendData(valid_bins, m_attempt);
+
                     }
                     if (skipSleep == false) {
                         try {
@@ -347,19 +516,63 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 double[] data_signal = null;
                 if (Constants.SEND_DATA) {
                     // need new packet detection algorithms
-                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0);
+                    data_signal = Utils.waitForData(Constants.SignalType.DataRx, m_attempt, 0, TaskID);
                 }
                 if (data_signal!=null) {
                     if (Constants.scheme == Constants.Modulation.LoRa)
                     {
                         // get embedding
                         long[] embeddings = Decoder.decoding(av,data_signal,m_attempt);
-                        // decode
+                        long[] prediction = new long[embeddings.length];
+
+                        // recover
+                        // receiver t5 transformer recover
+                        final long startTime_transformer_recover = SystemClock.elapsedRealtime();
+
+                        Tensor inputTensorTransformer = Tensor.fromBlob(embeddings, new long[]{1, 64});
+                        Tensor inputTensorTransformer2 = Tensor.fromBlob(embeddings, new long[]{1, 64});
+
+                        Utils.log("shape: " + Arrays.toString(inputTensorTransformer.shape()));
+                        final long startTimeTransformer = SystemClock.elapsedRealtime();
+                        for (int p = 0; p < Constants.recover_round; p++) {
+                            IValue result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+                            if (result.isTuple()) {
+                                // Get the tuple and extract the tensors
+                                IValue[] outputs = result.toTuple();
+                                Tensor prediction_tensor = outputs[0].toTensor();
+                                Tensor target = outputs[1].toTensor();
+                                prediction = prediction_tensor.getDataAsLongArray();
+                                int differenceCount = 0;
+                                for (int i = 0; i < embeddings.length; i++) {
+                                    if (embeddings[i] != prediction[i]) {
+                                        differenceCount++;
+                                    }
+                                }
+//                    Log.d("tbt", "input: " + Arrays.toString(data));
+                                Utils.log("before: " + Arrays.toString(embeddings));
+                                Utils.log("after: " + Arrays.toString(prediction));
+                                Utils.log("difference after recovery: " + differenceCount);
+                                inputTensorTransformer = Tensor.fromBlob(prediction, new long[]{1, 64});
+                                inputTensorTransformer2 = Tensor.fromBlob(prediction, new long[]{1, 64});
+                            }
+                        }
+
+                        // receiver t5 transformer recover
+                        final long inferenceTime_transformer_recover = SystemClock.elapsedRealtime() - startTime_transformer_recover;
+                        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver transformer recover (ms): " + inferenceTime_transformer_recover + "\n";
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+                        final long inferenceTimeTransformer = SystemClock.elapsedRealtime() - startTimeTransformer;
+                        Utils.log("transformer inference time (ms): " + inferenceTimeTransformer);
+                        // decode 1
                         final long startTime = SystemClock.elapsedRealtime();
+
+                        // receiver t6 decode image 1 (before recover)
+                        final long startTime_decode_image = SystemClock.elapsedRealtime();
+
                         Tensor inputTensor = Tensor.fromBlob(embeddings, new long[]{64});
                         Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
-                        final float[] embedding_res = outTensors.getDataAsFloatArray();
 
                         outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
@@ -384,12 +597,83 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             }
                         }
                         Bitmap tempMBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
-                        mImageView.setImageBitmap(tempMBitmap);
 
-                        Log.d("tbt", "result length: " + rgbData.length );
+                        // receiver t6 decode image 1 (before recover)
+                        final long inferenceTime_decode_image = SystemClock.elapsedRealtime() - startTime_decode_image;
+                        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image (before recover) (ms): " + inferenceTime_decode_image + "\n";
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
-                        FileOperations.writetofile(MainActivity.av, Constants.SF+"\n"+Constants.BW+"\n"+Constants.CodeRate_LoRA + "\n" + Constants.FC,
-                                        Utils.genName(Constants.SignalType.AdaptParams,0)+".txt");
+                        mImageView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mImageView.setImageBitmap(tempMBitmap);
+                            }
+                        });
+
+                        // decode 2
+                        // receiver t7 decode image 2 (after recover)
+                        final long startTime_decode_image2 = SystemClock.elapsedRealtime();
+
+                        inputTensor = Tensor.fromBlob(prediction, new long[]{64});
+                        outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                        outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+                        outTensors = Constants.mDecoder3.forward(IValue.from(outTensors)).toTensor();
+//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+
+                        final byte[] rgbData2 = outTensors.getDataAsUnsignedByteArray();
+                        int[] argbPixels2 = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+                        int pixelIndex2 = 0;
+                        int argbIndex2 = 0;
+                        for (int y = 0; y < Constants.compressImageSize; y++) {
+                            for (int x = 0; x < Constants.compressImageSize; x++) {
+                                int r = rgbData2[pixelIndex2++] & 0xFF; // Red component
+                                int g = rgbData2[pixelIndex2++] & 0xFF; // Green component
+                                int b = rgbData2[pixelIndex2++] & 0xFF; // Blue component
+//                    Log.d("tbt", "r " + rgbData[pixelIndex-3] + " g " + rgbData[pixelIndex-2] + " b " + rgbData[pixelIndex-1]);
+                                // Combine these into an ARGB color with full opacity.
+                                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                                argbPixels2[argbIndex2++] = argb; // Store the ARGB value in the array.
+                            }
+                        }
+                        Bitmap tempMBitmap2 = Bitmap.createBitmap(argbPixels2, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+
+                        // receiver t7 decode image 2 (after recover)
+                        final long inferenceTime_decode_image2 = SystemClock.elapsedRealtime() - startTime_decode_image2;
+                        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image2 (after recover) (ms): " + inferenceTime_decode_image2 + "\n";
+
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+                        FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
+                                Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
+
+                        // save embedding sequence recovered
+                        if (Constants.allowLog) {
+                            FileOperations.writetofile(MainActivity.av, Arrays.toString(prediction),
+                                    Utils.genName(Constants.SignalType.Rx_Embedding_Recovered, 0) + ".txt");
+                        }
+
+                        // save receive image before recover
+                        if (Constants.allowLog) {
+                            FileOperations.saveBitmapToFile(MainActivity.av, tempMBitmap, Utils.genName(Constants.SignalType.Received_Bitmap, 0) + ".png");
+                        }
+
+                        // save receive image after recover
+                        if (Constants.allowLog) {
+                            FileOperations.saveBitmapToFile(MainActivity.av, tempMBitmap2, Utils.genName(Constants.SignalType.Recovered_Bitmap, 0) + ".png");
+                        }
+
+                        mImageView2.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mImageView2.setImageBitmap(tempMBitmap2);
+                            }
+                        });
+                        // finish
+                        if (Constants.allowLog) {
+                            FileOperations.writetofile(MainActivity.av, Constants.SF + "\n" + Constants.BW + "\n" + Constants.CodeRate_LoRA + "\n" + Constants.FC,
+                                    Utils.genName(Constants.SignalType.AdaptParams, 0) + ".txt");
+                        }
                     }
                     else if (Constants.scheme == Constants.Modulation.OFDM_freq_all)
                     {
@@ -400,7 +684,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             }
         }
         else if (Constants.scheme == Constants.Modulation.Noise) {
-            Utils.listen_to_noise(Constants.SignalType.DataNoise,m_attempt,0);
+            Utils.listen_to_noise(Constants.SignalType.DataNoise,m_attempt,0,TaskID);
             av.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -419,21 +703,24 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 }
             }
             else if (Constants.user.equals(Constants.User.Bob)){
-                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0);
+                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0, TaskID); // sync, when the receiver is receiving the sound (after detecting sound) and processing the sound (demodulate, decode), all other signal will be ignored
                 if (chirp_signal != null)
                 {
-                    StringBuilder noiseBuilder = new StringBuilder();
-                    for (int j = 0; j < chirp_signal.length; j++) {
-                        noiseBuilder.append(chirp_signal[j]);
-                        noiseBuilder.append(",");
+                    if (Constants.allowLog) {
+                        StringBuilder noiseBuilder = new StringBuilder();
+                        for (int j = 0; j < chirp_signal.length; j++) {
+                            noiseBuilder.append(chirp_signal[j]);
+                            noiseBuilder.append(",");
+                        }
+                        String raw_chirp_signal = noiseBuilder.toString();
+                        if (raw_chirp_signal.endsWith(",")) {
+                            raw_chirp_signal = raw_chirp_signal.substring(0, raw_chirp_signal.length() - 1);
+                        }
+                        Utils.log("raw_chirp =>" + raw_chirp_signal);
+
+                        FileOperations.writetofile(MainActivity.av, raw_chirp_signal + "",
+                                Utils.genName(Constants.SignalType.DataChirp, m_attempt, 0) + ".txt");
                     }
-                    String raw_chirp_signal = noiseBuilder.toString();
-                    if (raw_chirp_signal.endsWith(",")) {
-                        raw_chirp_signal = raw_chirp_signal.substring(0, raw_chirp_signal.length() - 1);
-                    }
-                    Utils.log("raw_chirp =>" + raw_chirp_signal);
-                    FileOperations.writetofile(MainActivity.av, raw_chirp_signal + "",
-                             Utils.genName(Constants.SignalType.DataChirp, m_attempt, 0) + ".txt");
                     av.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -487,6 +774,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                  Constants.SignalType sigType) {
 
 //        byte[] embedding_bytes = Utils.Embedding2Bytes(Constants.SegFish);
+        // sender t2 - encode image
+        final long startTime_encoding_signal = SystemClock.elapsedRealtime();
+
         byte[] embedding_bytes_test;
         if (Constants.expMode == Constants.Experiment.testExp) {
             embedding_bytes_test = new byte[]{31, 69, 72, -112, -19, -104, 60, -51, -84, -72, -112, 95, 45, -33, -118, 43, 33, 8, 111, -96, 127, 57, 37, -8, -39, -74, -91, 25, 54, -85, -123, 114, -84, -44, 92, 42, -21, -49, 90, 67, -59, 37, -103, 52, -30, -100, 50, -34, 30, 98, -22, 124, -95, -74, 97, -122, -38, 20, -45, 67, -66, 93, 117, -102, -19, 117, 118, 31, -48, -106, 125, 50, 84, 20, 40, 125, -30, 79, 22, -55};
@@ -505,8 +795,24 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             {
                 encoded_byte += (encoded_symbol[i] + ",");
             }
+
+            // sender t2 - encode image
+            final long inferenceTime_encoding_signal = SystemClock.elapsedRealtime() - startTime_encoding_signal;
+            Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender encode signal (ms): " + inferenceTime_encoding_signal + "\n";
+            Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
             Utils.log("encoded_symbol =>"+encoded_byte);
+
+            // sender t3 - generate signal
+            final long startTime_generate_signal = SystemClock.elapsedRealtime();
+
             txsig = SymbolGeneration.generateDataSymbols_LoRa(encoded_symbol,true,m_attempt);
+
+            // sender t3 - generate signal
+            final long inferenceTime_generate_signal = SystemClock.elapsedRealtime() - startTime_generate_signal;
+            Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender generate signal (ms): " + inferenceTime_generate_signal + "\n";
+            Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
         }
         else if (Constants.scheme == Constants.Modulation.OFDM_freq_all || Constants.scheme == Constants.Modulation.OFDM_freq_adapt)
         {
@@ -515,15 +821,27 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         }
 
 
+        // write send signal to txt
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, txsig,
+                    Utils.genName(sigType, m_attempt) + ".txt");
+        }
 
-        FileOperations.writetofile(MainActivity.av, txsig,
-                Utils.genName(sigType, m_attempt) + ".txt");
+        // sender t4 - send signal
+        final long startTime_send_signal = SystemClock.elapsedRealtime();
 
         Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs , 0, txsig.length, false); // this is where I leave to solve Mar. 19.
         Constants.sp1.play(Constants.volume);
 
         int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
         sleep(sleepTime + Constants.SendPad);
+
+        // sender t4 - send signal
+        final long inferenceTime_send_signal = SystemClock.elapsedRealtime() - startTime_send_signal;
+        Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender send signal (ms): " + inferenceTime_send_signal + "\n";
+        Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+        FileOperations.writetofile(MainActivity.av, Constants.Sender_Latency_Str,
+                Utils.genName(Constants.SignalType.Latency_Sender, m_attempt) + ".txt");
     }
 
     public static int[] generateBins(int bin1, int bin2) {
