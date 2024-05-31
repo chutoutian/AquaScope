@@ -100,6 +100,16 @@ public class Constants {
 
     }};
 
+    public static float[] VolumeCandidates = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
+    public static int[] SF_Candidates = {3,4,5,6,7};
+    public static int[] FC_Candidates = {2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000};
+    public static int[] BW_Candidates = {1000, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000};
+    public static int[] SendDelay_Candidates = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    public static int[] Mattempts_Candidates = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+
+
+
     // ****************************** End of Codec Related Global Variables ******************************
 
 

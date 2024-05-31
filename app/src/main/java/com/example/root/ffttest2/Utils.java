@@ -34,6 +34,7 @@ import android.graphics.BitmapFactory;
 import java.io.ByteArrayOutputStream;
 
 import android.graphics.Color;
+import android.widget.EditText;
 
 import org.apache.commons.math3.complex.Complex;
 
@@ -2017,6 +2018,37 @@ public class Utils {
             editor.putInt("notif_id_pkey", notifID + 1);
             editor.commit();
 //        }
+    }
+
+    public static void checkTextInput(int[] range, EditText textinput, String ss) {
+        try {
+            int ss_int = Integer.parseInt(ss);
+            if (!Arrays.stream(range).anyMatch(i -> i == ss_int)) {
+                textinput.setError("Input must be in " + Arrays.toString(range));
+                return;
+            }
+        } catch (Exception e) {
+            textinput.setError("Input must be integer and not empty");
+        }
+    }
+
+    public static void checkTextInput(float[] range, EditText textinput, String ss) {
+        try {
+            float ss_float = Float.parseFloat(ss);
+            boolean found = false;
+            for (float value : range) {
+                if (value == ss_float) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found == false) {
+                textinput.setError("Input must be in " + Arrays.toString(range));
+                return;
+            }
+        } catch (Exception e) {
+            textinput.setError("Input must be float and not empty");
+        }
     }
 
     /**

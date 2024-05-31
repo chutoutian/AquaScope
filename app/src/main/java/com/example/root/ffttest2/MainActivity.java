@@ -1387,6 +1387,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et1.getText().toString();
+                Utils.checkTextInput(Constants.VolumeCandidates, Constants.et1, ss);
+
                 if (Utils.isFloat(ss)) {
                     try {
                         editor.putFloat("volume", Float.parseFloat(ss));
@@ -1442,6 +1444,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // send delay text input
         Constants.et4.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1455,6 +1458,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et4.getText().toString();
+
+                Utils.checkTextInput(Constants.SendDelay_Candidates, Constants.et4, ss);
+
                 if (Utils.isInteger(ss)) {
                         editor.putInt("Send_Delay", Integer.parseInt(ss));
                         Constants.Send_Delay = Integer.parseInt(ss);
@@ -1485,6 +1491,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // bandwidth text input
         Constants.et6.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1498,6 +1505,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et6.getText().toString();
+
+                Utils.checkTextInput(Constants.BW_Candidates, Constants.et6, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("BW", Integer.parseInt(ss));
                     editor.commit();
@@ -1508,6 +1518,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // FC carrier frequency text input
         Constants.et7.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1521,6 +1532,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et7.getText().toString();
+
+                Utils.checkTextInput(Constants.FC_Candidates, Constants.et7, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("FC", Integer.parseInt(ss));
                     editor.commit();
@@ -1531,6 +1545,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // sf text input
         Constants.et8.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1544,6 +1559,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et8.getText().toString();
+
+                Utils.checkTextInput(Constants.SF_Candidates, Constants.et8, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("SF", Integer.parseInt(ss));
                     editor.commit();
@@ -1553,6 +1571,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // n measurement text input
         Constants.et9.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1566,6 +1585,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et9.getText().toString();
+
+                Utils.checkTextInput(Constants.Mattempts_Candidates, Constants.et9, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("mattempts", Integer.parseInt(ss));
                     editor.commit();
