@@ -22,6 +22,9 @@ import android.os.BatteryManager;
 
 import androidx.core.app.NotificationCompat;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -685,6 +688,24 @@ public class Utils {
     public static void log(String s) {
         if (Constants.allowLog) {
             Log.e(Constants.LOG, s);
+            (MainActivity.av).runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (Constants.debugPane.getText().toString().length() > 400) {
+                        Constants.debugPane.setText("");
+                    }
+                    Constants.debugPane.setText(Constants.debugPane.getText() + "\n" + s);
+                    scrollToBottom();
+                }
+            });
+        }
+    }
+
+
+    // log debug
+    public static void logd(String s) {
+        if (Constants.allowLog) {
+            Log.d(Constants.LOG, s);
             (MainActivity.av).runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -2048,6 +2069,15 @@ public class Utils {
             }
         } catch (Exception e) {
             textinput.setError("Input must be float and not empty");
+        }
+    }
+
+    public static String assetFilePath(Context context, String assetName) throws IOException {
+        File file = new File(context.getFilesDir(), assetName);
+        if (file.exists() && file.length() > 0) {
+            return file.getAbsolutePath();
+        } else {
+            throw new FileNotFoundException("The file " + assetName + " does not exist or is empty in the directory " + context.getFilesDir().getAbsolutePath());
         }
     }
 

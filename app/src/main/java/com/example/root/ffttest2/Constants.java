@@ -355,6 +355,7 @@ public class Constants {
     public static Switch sw1,sw2,sw3,sw4,sw5,sw6,sw7,sw8,sw9,sw10,sw11,sw12;
     public static EqMethod eqMethod = EqMethod.Freq;
     public static String LOG="log";
+    public static String LOGD="logd";
     public static int Ns=960; // original is 960
     public static int Gi=0;
     public static int[] f_range={1000,4000};

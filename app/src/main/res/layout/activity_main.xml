@@ -196,7 +196,7 @@
             app:layout_constraintTop_toBottomOf="@+id/imageView_fish" />
 
         <Button
-            android:id="@+id/segmentButton"
+            android:id="@+id/runModelButton"
             android:layout_width="100dp"
             android:layout_height="50dp"
             android:layout_marginBottom="16dp"
@@ -210,10 +210,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="@+id/segmentButton"
-            app:layout_constraintEnd_toEndOf="@+id/segmentButton"
-            app:layout_constraintStart_toStartOf="@+id/segmentButton"
-            app:layout_constraintTop_toTopOf="@+id/segmentButton" />
+            app:layout_constraintBottom_toBottomOf="@+id/runModelButton"
+            app:layout_constraintEnd_toEndOf="@+id/runModelButton"
+            app:layout_constraintStart_toStartOf="@+id/runModelButton"
+            app:layout_constraintTop_toTopOf="@+id/runModelButton" />
 
         <Spinner
             android:id="@+id/modelSpinner"
@@ -221,7 +221,7 @@
             android:layout_height="67dp"
             android:layout_marginStart="24dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/segmentButton" />
+            app:layout_constraintTop_toTopOf="@+id/runModelButton" />
 
 
         <Button
@@ -1293,7 +1293,7 @@
             android:layout_marginBottom="16dp"
             android:text="Camera"
             app:layout_constraintBottom_toTopOf="@+id/progressBar"
-            app:layout_constraintStart_toStartOf="@+id/segmentButton" />
+            app:layout_constraintStart_toStartOf="@+id/runModelButton" />
 
         <FrameLayout
             android:id="@+id/frameLayout"
