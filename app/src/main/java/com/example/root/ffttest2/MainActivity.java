@@ -1129,7 +1129,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     Constants.CodeRate_LoRA = 2;
                 }
                 stopMethod();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 startMethod(av);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 editor.commit();
             }
             @Override
@@ -1179,7 +1189,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     //Constants.et4.setText(Constants.Modulation.OFDM_freq_all+"");
                 }
                 stopMethod();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 startMethod(av);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 editor.commit();
             }
             @Override
@@ -1244,7 +1264,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
                 Constants.expMode = Constants.Experiment.valueOf(arrayList4.get(position));
                 stopMethod();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 startMethod(av);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 Utils.logd("Current Expmode: " + arrayList4.get(position));
                 editor.commit();
             }
