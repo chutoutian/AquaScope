@@ -24,6 +24,7 @@ public class Decoder {
                     Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
         }
 
+        final long startTime_decode = SystemClock.elapsedRealtime();
 
         data = Utils.filter(data);
 
@@ -92,17 +93,20 @@ public class Decoder {
 
         byte[] received_bytes = Utils.convertBitStringToByteArray(uncoded);
         long[] embedding = Utils.Bytes2Embedding(received_bytes);
-        String all_embedding = "";
-        for (int i = 0 ; i < embedding.length; i++)
-        {
-            all_embedding += (embedding[i] + ",");
+
+        final long inferenceTime_time_decode = SystemClock.elapsedRealtime() - startTime_decode;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver demodulate + decode (signal to embedding) signal time (ms): " + inferenceTime_time_decode + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        if (Constants.allowLog) {
+            String all_embedding = "";
+            for (int i = 0; i < embedding.length; i++) {
+                all_embedding += (embedding[i] + ",");
+            }
+            Utils.log("all_embedding =>" + all_embedding);
+            FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
+                    Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
         }
-        Utils.log("all_embedding =>" + all_embedding);
-        if (all_embedding.endsWith(",")) {
-            all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
-        }
-        FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
-                Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
 
         /***
         String message="Error";

@@ -38,8 +38,12 @@ import java.io.ByteArrayOutputStream;
 
 import android.graphics.Color;
 import android.widget.EditText;
+import android.widget.ImageView;
 
 import org.apache.commons.math3.complex.Complex;
+import org.pytorch.IValue;
+import org.pytorch.Tensor;
+import org.pytorch.torchvision.TensorImageUtils;
 
 public class Utils {
 
@@ -1574,9 +1578,10 @@ public class Utils {
         }
     }
 
+//    shared by three protocols
     public static double[] waitForData(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
-        Log.e("fifo",filename);
+        Utils.logd(filename);
 
         Constants._OfflineRecorder = new OfflineRecorder(
                 MainActivity.av, Constants.fs, filename);
@@ -1602,7 +1607,9 @@ public class Utils {
                 else if(Constants.ImagingFish)
                 {
                     timeout = 15;
-                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*200);
+//                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*200); // TODO this can be more precise freq all and freq adapt will not have the same
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*300); // TODO this can be more precise freq all and freq adapt will not have the same
+
                 }
             }
             else if(Constants.scheme == Constants.Modulation.LoRa)
@@ -1680,7 +1687,9 @@ public class Utils {
                 }
                 else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
                 {
-                    sounding_signal=new double[15*Constants.RecorderStepSize];
+//                    sounding_signal=new double[15*Constants.RecorderStepSize];
+                    sounding_signal=new double[25*Constants.RecorderStepSize];
+
                 }
             }
             else if (sigType.equals(Constants.SignalType.DataChirp))
@@ -1692,7 +1701,7 @@ public class Utils {
             sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
         }
 
-        Log.e("len","sig length "+sounding_signal.length+","+sigType.toString());
+        Utils.log("sig length "+sounding_signal.length+","+sigType.toString());
         boolean valid_signal = false;
 //        boolean getOneMoreFlag = false;
         int sounding_signal_counter=0;
@@ -1734,7 +1743,7 @@ public class Utils {
                         idxHistory.add(xcorr_out[1]);
 
                         if (xcorr_out[0] != -1) {
-                            // init the Receiver_Latency_Str
+                            // init the Receiver_Latency_Str all three protocols
                             Constants.Receiver_Latency_Str = "";
                             String formattedNow = "";
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -1744,7 +1753,7 @@ public class Utils {
                             } else {
                                 formattedNow = "not_available";
                             }
-                            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + formattedNow + "\n";
+                            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + formattedNow + "\n" + Constants.scheme.toString() + "\n";
                             // receiver t1 - receive signal
                             startTime_receive_signal = SystemClock.elapsedRealtime();
 
@@ -1769,10 +1778,10 @@ public class Utils {
                                 // plot SNR
                                 ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
 
-                                Log.e("copy", "copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
+                                Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
                             }
                             else {
-                                Log.e("copy","good! "+filt.length+","+xcorr_out[1]+","+filt.length);
+                                Utils.logd("good! "+filt.length+","+xcorr_out[1]+","+filt.length);
                                 Utils.log("good");
                                 int counter=0;
                                 for (int k = (int) xcorr_out[1]; k < out.length; k++) {
@@ -1786,7 +1795,7 @@ public class Utils {
                     }
                     else if (sounding_signal_counter>0){
 //                        Utils.log("another window");
-                        Log.e("copy","another window from "+sounding_signal_counter+","+(sounding_signal_counter+rec.length)+","+sounding_signal.length);
+                        Utils.logd("another window from "+sounding_signal_counter+","+(sounding_signal_counter+rec.length)+","+sounding_signal.length);
 
 //                        double[] filt2 = Utils.copyArray2(rec);
 //                        filt2 = Utils.filter(filt2);
@@ -1820,6 +1829,7 @@ public class Utils {
             final long inferenceTime_receive_signal = SystemClock.elapsedRealtime() - startTime_receive_signal;
             Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
             Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
 
             return sounding_signal;
 
@@ -2078,6 +2088,195 @@ public class Utils {
             return file.getAbsolutePath();
         } else {
             throw new FileNotFoundException("The file " + assetName + " does not exist or is empty in the directory " + context.getFilesDir().getAbsolutePath());
+        }
+    }
+
+
+    public static long[] encode_image(Bitmap mBitmap) {
+        float[] mu = {0.0f, 0.0f, 0.0f};
+        float[] std = {1.0f, 1.0f, 1.0f};
+        final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
+                mu, std);
+        // Convert the PyTorch tensor to a float array
+        float[] tempArray = tempInputTensor.getDataAsFloatArray();
+        // Apply the operation x = 2 * x - 1 to the float array
+        for (int i = 0; i < tempArray.length; i++) {
+            tempArray[i] = 2.0f * tempArray[i] - 1.0f;
+        }
+        // Convert the float array back to a PyTorch tensor
+        Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
+        final long startTime = SystemClock.elapsedRealtime();
+        // run model
+        Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
+        outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
+        outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+        final long[] results = outTensors.getDataAsLongArray();
+
+        Constants.encode_sequence = results;
+
+        return results;
+    }
+
+    public static Bitmap decode_image(long[] results) {
+        Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+        Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+        final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+        int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+        int pixelIndex = 0;
+        int argbIndex = 0;
+        for (int y = 0; y < Constants.compressImageSize; y++) {
+            for (int x = 0; x < Constants.compressImageSize; x++) {
+                int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+            }
+        }
+        Bitmap vqganGtBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+        return vqganGtBitmap;
+    }
+
+    public static void decode_image_receiver(long[] results, ImageView mImageView, boolean before) {
+        // receiver t6 decode image 1 (before recover)
+        final long startTime_decode_image = SystemClock.elapsedRealtime();
+        Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+        Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+        final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+        int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+        int pixelIndex = 0;
+        int argbIndex = 0;
+        for (int y = 0; y < Constants.compressImageSize; y++) {
+            for (int x = 0; x < Constants.compressImageSize; x++) {
+                int r = rgbData[pixelIndex++] & 0xFF; // Red component
+                int g = rgbData[pixelIndex++] & 0xFF; // Green component
+                int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+                argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+            }
+        }
+        Bitmap vqganDecodedBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+        // receiver t6 decode image 1 (before recover)
+        final long inferenceTime_decode_image = SystemClock.elapsedRealtime() - startTime_decode_image;
+        if (before == true) {
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image (before recover) (ms): " + inferenceTime_decode_image + "\n";
+        } else if (before == false) {
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image (after recover) (ms): " + inferenceTime_decode_image + "\n";
+
+        }
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        mImageView.post(new Runnable() {
+            @Override
+            public void run() {
+                mImageView.setImageBitmap(vqganDecodedBitmap);
+            }
+        });
+
+        // save receive image before recover
+        if (Constants.allowLog) {
+            if (before == true) {
+                FileOperations.saveBitmapToFile(MainActivity.av, vqganDecodedBitmap, Utils.genName(Constants.SignalType.Received_Bitmap, 0) + ".png");
+            } else if (before == false) {
+                FileOperations.saveBitmapToFile(MainActivity.av, vqganDecodedBitmap, Utils.genName(Constants.SignalType.Recovered_Bitmap, 0) + ".png");
+
+            }
+        }
+    }
+
+
+
+    public static long[] transformer_recover(long[] embeddings) {
+
+        // receiver t5 transformer recover
+        final long startTime_transformer_recover = SystemClock.elapsedRealtime();
+
+        long[] prediction = new long[embeddings.length];
+
+        Tensor inputTensorTransformer = Tensor.fromBlob(embeddings, new long[]{1, 64});
+        Tensor inputTensorTransformer2 = Tensor.fromBlob(embeddings, new long[]{1, 64});
+
+        Utils.log("shape: " + Arrays.toString(inputTensorTransformer.shape()));
+        final long startTimeTransformer = SystemClock.elapsedRealtime();
+        for (int p = 0; p < Constants.recover_round; p++) {
+            IValue result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+            if (result.isTuple()) {
+                // Get the tuple and extract the tensors
+                IValue[] outputs = result.toTuple();
+                Tensor prediction_tensor = outputs[0].toTensor();
+                Tensor target = outputs[1].toTensor();
+                prediction = prediction_tensor.getDataAsLongArray();
+                int differenceCount = 0;
+                for (int i = 0; i < embeddings.length; i++) {
+                    if (embeddings[i] != prediction[i]) {
+                        differenceCount++;
+                    }
+                }
+//                    Log.d("tbt", "input: " + Arrays.toString(data));
+                Utils.log("before: " + Arrays.toString(embeddings));
+                Utils.log("after: " + Arrays.toString(prediction));
+                Utils.log("difference after recovery: " + differenceCount);
+                inputTensorTransformer = Tensor.fromBlob(prediction, new long[]{1, 64});
+                inputTensorTransformer2 = Tensor.fromBlob(prediction, new long[]{1, 64});
+            }
+        }
+
+        // receiver t5 transformer recover
+        final long inferenceTime_transformer_recover = SystemClock.elapsedRealtime() - startTime_transformer_recover;
+        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver transformer recover (ms): " + inferenceTime_transformer_recover + "\n";
+        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+        // save embedding sequence recovered
+        if (Constants.allowLog) {
+            FileOperations.writetofile(MainActivity.av, Arrays.toString(prediction),
+                    Utils.genName(Constants.SignalType.Rx_Embedding_Recovered, 0) + ".txt");
+        }
+        return prediction;
+    }
+
+    // shared by all protocols
+    public static void imageSendPrepare(Bitmap mBitmap, ImageView mImageView, String TaskID) {
+        // sender shows the scaled image in left image viewer
+        mImageView.post(new Runnable() {
+            @Override
+            public void run() {
+                mImageView.setImageBitmap(mBitmap);
+            }
+        });
+
+        // save the groundtruth bitmap (scaled from camera image)
+        if (Constants.allowLog) {
+            FileOperations.saveBitmapToFile(MainActivity.av, mBitmap, Utils.genName(Constants.SignalType.Raw_Input_Bitmap, 0) + ".png");
+        }
+
+        Constants.Sender_Latency_Str = ""; // clean up the time
+        Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + TaskID + "\n" + Constants.scheme.toString() + "\n"; // TaskID is the time of this sendchirpasync task
+
+        // sender t1 - encode image
+        final long startTime = SystemClock.elapsedRealtime();
+        // encode
+        long[] results = Utils.encode_image(mBitmap);
+        // sender t1 - encode image
+        final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+        Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender encode image (ms): " + inferenceTime + "\n";
+        Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
+        // save some results, this might introduce extra latency, but here we only use it to test the accuracy
+        if (Constants.allowLog) {
+            Utils.log("send embedding: " + Arrays.toString(results));
+
+            // save embedding sequence
+            FileOperations.writetofile(MainActivity.av, Arrays.toString(results),
+                    Utils.genName(Constants.SignalType.Send_Embedding_Sequence, 0) + ".txt");
+
+            // generate VQGAN decoded image ground truth
+            Bitmap vqganGtBitmap = Utils.decode_image(results);
+            // save VQGAN decoded image ground truth (encoded and decoded via VQGAN)
+            FileOperations.saveBitmapToFile(MainActivity.av, vqganGtBitmap, Utils.genName(Constants.SignalType.Sent_Gt_Bitmap, 0) + ".png");
         }
     }
 

@@ -15,12 +15,13 @@
 
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graphProd"
-            android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_width="415dp"
+            android:layout_height="112dp"
             android:layout_alignParentBottom="true"
             android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/switch11" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/imageView_fish"
+            app:layout_constraintTop_toBottomOf="@+id/imageView_fish2" />
 
         <com.jjoe64.graphview.GraphView
             android:id="@+id/graphProd2"
@@ -131,18 +132,19 @@
             android:gravity="center"
             android:text=""
             android:textSize="40dp"
-            app:layout_constraintTop_toBottomOf="@+id/graphProd3" />
+            app:layout_constraintTop_toTopOf="parent" />
 
 
-        <ImageView
-            android:id="@+id/my_image_view"
-            android:layout_width="400dp"
-            android:layout_height="180dp"
-            android:gravity="center"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/msg" />
+        <!--        <ImageView-->
+        <!--            android:id="@+id/my_image_view"-->
+        <!--            android:layout_width="410dp"-->
+        <!--            android:layout_height="169dp"-->
+        <!--            android:gravity="center"-->
+        <!--            app:layout_constraintEnd_toEndOf="parent"-->
+        <!--            app:layout_constraintHorizontal_bias="0.0"-->
+        <!--            app:layout_constraintLeft_toLeftOf="parent"-->
+        <!--            app:layout_constraintRight_toRightOf="parent"-->
+        <!--            app:layout_constraintTop_toBottomOf="@+id/msg" />-->
 
         <ImageView
             android:id="@+id/imageView_fish"
@@ -150,8 +152,8 @@
             android:layout_height="180dp"
             android:layout_marginTop="8dp"
             android:contentDescription="@string/image_view"
-            app:layout_constraintTop_toBottomOf="@+id/logcontroller"
-            tools:layout_editor_absoluteX="16dp" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/logcontroller" />
 
         <ImageView
             android:id="@+id/imageView_fish2"
@@ -160,154 +162,6 @@
             android:contentDescription="@string/image_view"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/imageView_fish" />
-
-        <TextView
-            android:id="@+id/fishExist"
-            android:layout_width="50dp"
-            android:layout_height="17dp"
-            android:layout_marginBottom="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/FishExistTitle"
-            app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
-
-        <TextView
-            android:id="@+id/FishExistTitle"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginTop="8dp"
-            android:text="Fish?"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/fishCountTitle" />
-
-        <TextView
-            android:id="@+id/inferenceTime"
-            android:layout_width="50dp"
-            android:layout_height="17dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginBottom="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/inferenceTimeTitle"
-            app:layout_constraintStart_toEndOf="@+id/inferenceTimeTitle" />
-
-        <TextView
-            android:id="@+id/inferenceTimeTitle"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
-            android:layout_marginTop="16dp"
-            android:text="Inference Time:"
-            app:layout_constraintTop_toBottomOf="@+id/imageView_fish" />
-
-        <Button
-            android:id="@+id/runModelButton"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
-            android:layout_marginBottom="16dp"
-            android:text="Run Model"
-            android:textAllCaps="false"
-            app:layout_constraintBottom_toTopOf="@+id/clearbutton"
-            app:layout_constraintStart_toStartOf="@+id/buttonResize" />
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="@+id/runModelButton"
-            app:layout_constraintEnd_toEndOf="@+id/runModelButton"
-            app:layout_constraintStart_toStartOf="@+id/runModelButton"
-            app:layout_constraintTop_toTopOf="@+id/runModelButton" />
-
-        <Spinner
-            android:id="@+id/modelSpinner"
-            android:layout_width="219dp"
-            android:layout_height="67dp"
-            android:layout_marginStart="24dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/runModelButton" />
-
-
-        <Button
-            android:id="@+id/clearbutton"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
-            android:layout_marginBottom="16dp"
-            android:onClick="clear"
-            android:text="Clear"
-            android:textAllCaps="false"
-            app:layout_constraintBottom_toTopOf="@+id/restartButton"
-            app:layout_constraintStart_toStartOf="@+id/restartButton" />
-
-        <Button
-            android:id="@+id/restartButton"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
-            android:layout_marginBottom="16dp"
-            android:text="Next"
-            android:textAllCaps="false"
-            app:layout_constraintBottom_toTopOf="@+id/buttonResize"
-            app:layout_constraintStart_toStartOf="@+id/buttonResize" />
-
-        <EditText
-            android:id="@+id/editWidth"
-            style="@android:style/Widget.EditText"
-            android:layout_width="50dp"
-            android:layout_height="43dp"
-            android:layout_marginTop="32dp"
-            android:ems="10"
-            android:inputType="text"
-            android:singleLine="true"
-            android:text="426"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="@+id/modelSpinner"
-            app:layout_constraintTop_toBottomOf="@+id/modelSpinner" />
-
-        <EditText
-            android:id="@+id/editHeight"
-            android:layout_width="50dp"
-            android:layout_height="43dp"
-            android:layout_marginStart="32dp"
-            android:ems="10"
-            android:inputType="text"
-            android:text="240"
-            android:textSize="14sp"
-            app:layout_constraintStart_toEndOf="@+id/editWidth"
-            app:layout_constraintTop_toTopOf="@+id/editWidth" />
-
-        <Button
-            android:id="@+id/sendbutton"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:layout_marginBottom="16dp"
-            android:onClick="onstart"
-            android:text="Send"
-            android:textAllCaps="false"
-            app:layout_constraintStart_toStartOf="@+id/editWidth"
-            app:layout_constraintTop_toBottomOf="@+id/editWidth" />
-
-
-        <Button
-            android:id="@+id/buttonResize"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:text="Resize"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <TextView
-            android:id="@+id/fishCount"
-            android:layout_width="50dp"
-            android:layout_height="17dp"
-            android:layout_marginBottom="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/fishCountTitle"
-            app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
-
-        <TextView
-            android:id="@+id/fishCountTitle"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginTop="8dp"
-            android:text="Fish \nCount:"
-            app:layout_constraintTop_toBottomOf="@+id/inferenceTimeTitle" />
 
 
         <!--    <GridLayout-->
@@ -742,7 +596,7 @@
             android:ems="10"
             android:inputType="numberDecimal"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/my_image_view" />
+            app:layout_constraintTop_toBottomOf="@+id/msg" />
 
         <TextView
             android:id="@+id/textView"
@@ -1286,31 +1140,188 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/textView24" />
 
+        <!--        <FrameLayout-->
+        <!--            android:id="@+id/frameLayout"-->
+        <!--            android:layout_width="180dp"-->
+        <!--            android:layout_height="180dp"-->
+        <!--            android:layout_marginTop="8dp"-->
+        <!--            app:layout_constraintTop_toBottomOf="@+id/graphProd"-->
+        <!--            tools:layout_editor_absoluteX="231dp">-->
+
+        <!--        </FrameLayout>-->
+
+        <TextView
+            android:id="@+id/fishExist"
+            android:layout_width="50dp"
+            android:layout_height="17dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="24dp"
+            app:layout_constraintBottom_toBottomOf="@+id/FishExistTitle"
+            app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
+
+        <TextView
+            android:id="@+id/FishExistTitle"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="12dp"
+            android:text="Fish?"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/fishCountTitle" />
+
+        <TextView
+            android:id="@+id/inferenceTime"
+            android:layout_width="50dp"
+            android:layout_height="17dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginBottom="12dp"
+            app:layout_constraintBottom_toBottomOf="@+id/inferenceTimeTitle"
+            app:layout_constraintStart_toEndOf="@+id/inferenceTimeTitle" />
+
+        <TextView
+            android:id="@+id/inferenceTimeTitle"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="24dp"
+            android:text="Inference Time:"
+            app:layout_constraintTop_toBottomOf="@+id/graphProd"
+            tools:layout_editor_absoluteX="0dp" />
+
+        <Button
+            android:id="@+id/runModelButton"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="Run Model"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cameraCapture" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/runModelButton"
+            app:layout_constraintEnd_toEndOf="@+id/runModelButton"
+            app:layout_constraintHorizontal_bias="0.519"
+            app:layout_constraintStart_toStartOf="@+id/runModelButton"
+            app:layout_constraintTop_toTopOf="@+id/runModelButton"
+            app:layout_constraintVertical_bias="1.0" />
+
+        <Spinner
+            android:id="@+id/modelSpinner"
+            android:layout_width="219dp"
+            android:layout_height="67dp"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/FishExistTitle" />
+
+        <Button
+            android:id="@+id/clearbutton"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:onClick="clear"
+            android:text="Clear"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/runModelButton" />
+
+        <Button
+            android:id="@+id/restartButton"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="8dp"
+            android:text="Next"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/clearbutton" />
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:layout_marginTop="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/graphProd" />
+
+        <Button
+            android:id="@+id/buttonResize"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="16dp"
+            android:text="Resize"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/restartButton" />
+
+        <EditText
+            android:id="@+id/editWidth"
+            style="@android:style/Widget.EditText"
+            android:layout_width="50dp"
+            android:layout_height="43dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="24dp"
+            android:ems="10"
+            android:inputType="text"
+            android:singleLine="true"
+            android:text="426"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/modelSpinner"
+            app:layout_constraintTop_toBottomOf="@+id/modelSpinner" />
+
+        <EditText
+            android:id="@+id/editHeight"
+            android:layout_width="50dp"
+            android:layout_height="43dp"
+            android:layout_marginStart="28dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="240"
+            android:textSize="14sp"
+            app:layout_constraintStart_toEndOf="@+id/editWidth"
+            app:layout_constraintTop_toTopOf="@+id/editWidth" />
+
+        <Button
+            android:id="@+id/sendbutton"
+            android:layout_width="200dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="16dp"
+            android:onClick="onstart"
+            android:text="Send"
+            android:textAllCaps="false"
+            app:layout_constraintStart_toStartOf="@+id/editWidth"
+            app:layout_constraintTop_toBottomOf="@+id/editWidth" />
+
+        <TextView
+            android:id="@+id/fishCount"
+            android:layout_width="50dp"
+            android:layout_height="17dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="20dp"
+            app:layout_constraintBottom_toBottomOf="@+id/fishCountTitle"
+            app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
+
+        <TextView
+            android:id="@+id/fishCountTitle"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="16dp"
+            android:text="Fish \nCount:"
+            app:layout_constraintTop_toBottomOf="@+id/inferenceTimeTitle"
+            tools:layout_editor_absoluteX="0dp" />
+
         <Button
             android:id="@+id/cameraCapture"
             android:layout_width="99dp"
             android:layout_height="47dp"
-            android:layout_marginBottom="16dp"
-            android:text="Camera"
-            app:layout_constraintBottom_toTopOf="@+id/progressBar"
-            app:layout_constraintStart_toStartOf="@+id/runModelButton" />
-
-        <FrameLayout
-            android:id="@+id/frameLayout"
-            android:layout_width="180dp"
-            android:layout_height="180dp"
             android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/cameraCapture"
+            android:layout_marginEnd="8dp"
+            android:text="Camera"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@+id/imageView_fish2"
-            app:layout_constraintTop_toBottomOf="@+id/imageView_fish2">
-
-            <androidx.camera.view.PreviewView
-                android:id="@+id/previewView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </FrameLayout>
+            app:layout_constraintTop_toBottomOf="@+id/previewView" />
 
         <Switch
             android:id="@+id/logcontroller"

@@ -107,7 +107,7 @@ public class Constants {
     public static int[] SendDelay_Candidates = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
     public static int[] Mattempts_Candidates = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-
+    public static int SendInterval = 7000; // 7000 ms between two images
 
 
     // ****************************** End of Codec Related Global Variables ******************************

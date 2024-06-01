@@ -567,7 +567,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     public void clear(View v) {
         Constants.debugPane.setText("");
-        Constants.imgview.setImageBitmap(null);
+//        Constants.imgview.setImageBitmap(null);
         inferenceTimeTextView.setText("");
         fishCountTextView.setText("");
         fishExistTextView.setText("");
@@ -890,7 +890,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        Constants.frameLayout = findViewById(R.id.frameLayout);
+//        Constants.frameLayout = findViewById(R.id.frameLayout);
         Constants.preview = findViewById(R.id.previewView);
         Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);
         Constants.cameraProviderFuture = ProcessCameraProvider.getInstance(this);
@@ -1285,7 +1285,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.tv20 = (TextView) findViewById(R.id.textView20);
         Constants.tv21 = (TextView) findViewById(R.id.textView21);
         Constants.msgview = (TextView) findViewById(R.id.msg);
-        Constants.imgview = (ImageView) findViewById(R.id.my_image_view);
+//        Constants.imgview = (ImageView) findViewById(R.id.my_image_view);
 
         Constants.sview = (NestedScrollView) findViewById(R.id.scrollView);
         Constants.tv5.setMovementMethod(new ScrollingMovementMethod());
