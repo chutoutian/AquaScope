@@ -10,8 +10,8 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 public class Display {
-    static double currentMin=100000;
-    static double currentMax=-100000;
+    static double currentMin = 100000;
+    static double currentMax = -100000;
 
     public static void plotVerticalLine(GraphView gview, int x) {
         DataPoint[] dp = new DataPoint[2];
@@ -37,14 +37,14 @@ public class Display {
             currentMin = 100000;
             currentMax = -100000;
         }
-        double tempMin = Utils.min(spectrum, 0, spectrum.length)-10;
-        double tempMax = Utils.max(spectrum, 0, spectrum.length)+10;
+        double tempMin = Utils.min(spectrum, 0, spectrum.length) - 10;
+        double tempMax = Utils.max(spectrum, 0, spectrum.length) + 10;
         if (tempMin < -100) {
-            tempMin=-100;
+            tempMin = -100;
         }
         currentMin = tempMin < currentMin ? tempMin : currentMin;
         currentMax = tempMax > currentMax ? tempMax : currentMax;
-        Log.e("graph", currentMin+","+currentMax);
+        Log.e("graph", currentMin + "," + currentMax);
 
         LineGraphSeries<DataPoint> series = convert(spectrum);
 
@@ -55,7 +55,7 @@ public class Display {
         gview.getViewport().setYAxisBoundsManual(true);
         gview.getViewport().setXAxisBoundsManual(true);
         gview.getViewport().setMinX(500);
-        gview.getViewport().setMaxX(Constants.f_seq.get(Constants.nbin2_default)+1000);
+        gview.getViewport().setMaxX(Constants.f_seq.get(Constants.nbin2_default) + 1000);
         GridLabelRenderer r = gview.getGridLabelRenderer();
         gview.setTitle(title);
     }
@@ -63,11 +63,61 @@ public class Display {
     public static LineGraphSeries<DataPoint> convert(double[] sig) {
         DataPoint[] dp = new DataPoint[sig.length];
 
-        int freqSpacing = Constants.fs/sig.length;
+        int freqSpacing = Constants.fs / sig.length;
         for (int i = 0; i < sig.length; i++) {
-            dp[i] = new DataPoint(i*freqSpacing, sig[i]);
+            dp[i] = new DataPoint(i * freqSpacing, sig[i]);
         }
 
         return new LineGraphSeries<>(dp);
+    }
+
+    public static LineGraphSeries<DataPoint> convertSNR(double[] sig, int speclen) {
+        DataPoint[] dp = new DataPoint[speclen];
+
+        int freqSpacing = Constants.fs / speclen;
+
+        int start = 1000 / freqSpacing;
+        int end = (Constants.f_seq.get(Constants.nbin2_default)) / freqSpacing;
+
+        for (int i = 0; i < dp.length; i++) {
+            dp[i] = new DataPoint(i * freqSpacing, -100);
+        }
+
+        for (int i = start; i < end; i++) {
+            dp[i] = new DataPoint(i * freqSpacing, sig[i-start]);
+        }
+
+        return new LineGraphSeries<>(dp);
+    }
+
+    public static void plotSNR(GraphView gview, double[] snr, int speclen, boolean clear, int c, String title) {
+        Utils.logd("length of snr " + snr.length);
+
+        if (clear) {
+            gview.removeAllSeries();
+            currentMin = 100000;
+            currentMax = -100000;
+        }
+        double tempMin = Utils.min(snr, 0, snr.length) - 10;
+        double tempMax = Utils.max(snr, 0, snr.length) + 10;
+        if (tempMin < -100) {
+            tempMin = -100;
+        }
+        currentMin = tempMin < currentMin ? tempMin : currentMin;
+        currentMax = tempMax > currentMax ? tempMax : currentMax;
+        Log.e("graph", currentMin + "," + currentMax);
+
+        LineGraphSeries<DataPoint> series = convertSNR(snr, speclen);
+
+        series.setColor(c);
+        gview.addSeries(series);
+        gview.getViewport().setMinY(currentMin);
+        gview.getViewport().setMaxY(currentMax);
+        gview.getViewport().setYAxisBoundsManual(true);
+        gview.getViewport().setXAxisBoundsManual(true);
+        gview.getViewport().setMinX(1000);
+        gview.getViewport().setMaxX(4000);
+        GridLabelRenderer r = gview.getGridLabelRenderer();
+        gview.setTitle(title);
     }
 }

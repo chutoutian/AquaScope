@@ -386,7 +386,7 @@ public class Constants {
     public static int sym_len;
     public static int blocklen;
 
-    public static GraphView gview,gview2,gview3;
+    public static GraphView gview,gview2,gview3,gview4;
     public static int ChirpGap = 960;
     public static int[] valid_carrier_preamble;
     public static int[] valid_carrier_data;

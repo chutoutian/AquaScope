@@ -61,7 +61,9 @@ public class ChannelEstimate {
 
         snrs = SNR_freq.calculate_snr(spec_est, Constants.pn60_syms, 1, Constants.chanest_symreps);
 
-        thresh=Constants.SNR_THRESH2;
+        plotSNR(av, snrs, Constants.Ns);
+
+        thresh=Constants.SNR_THRESH2; // TODO change this to change the sensitivity
 
         if(Constants.allowLog) {
             FileOperations.writetofile(MainActivity.av, Constants.snr_method + "",
@@ -96,6 +98,16 @@ public class ChannelEstimate {
         return selected;
     }
 
+    public static void plotSNR(Activity av, double[] snr, int speclen) {
+        av.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Display.plotSNR(Constants.gview4, snr, speclen, true,
+                        MainActivity.av.getResources().getColor(R.color.red), "SNR");
+            }
+        });
+    }
+
     public static void plotRxSyms(Activity av, double[] rx_symbols) {
         double[] finalRx_symbols = rx_symbols;
         av.runOnUiThread(new Runnable() {
@@ -107,31 +119,31 @@ public class ChannelEstimate {
                     double[] spec = Utils.mag2db(Utils.fftnative_double(seg,seg.length));
                     if (i==0) {
                         Display.plotSpectrum(Constants.gview2, spec, true,
-                                MainActivity.av.getResources().getColor(R.color.red), "");
+                                MainActivity.av.getResources().getColor(R.color.red), "RXSpec");
                     }
                     else if (i==1) {
                         Display.plotSpectrum(Constants.gview2, spec, false,
-                                MainActivity.av.getResources().getColor(R.color.orange), "");
+                                MainActivity.av.getResources().getColor(R.color.orange), "RXSpec");
                     }
                     else if (i==2) {
                         Display.plotSpectrum(Constants.gview2, spec, false,
-                                MainActivity.av.getResources().getColor(R.color.yellow), "");
+                                MainActivity.av.getResources().getColor(R.color.yellow), "RXSpec");
                     }
                     else if (i==3) {
                         Display.plotSpectrum(Constants.gview2, spec, false,
-                                MainActivity.av.getResources().getColor(R.color.green), "");
+                                MainActivity.av.getResources().getColor(R.color.green), "RXSpec");
                     }
                     else if (i==4) {
                         Display.plotSpectrum(Constants.gview2, spec, false,
-                                MainActivity.av.getResources().getColor(R.color.blue), "");
+                                MainActivity.av.getResources().getColor(R.color.blue), "RXSpec");
                     }
                     else if (i==5) {
                         Display.plotSpectrum(Constants.gview2, spec, false,
-                                MainActivity.av.getResources().getColor(R.color.purple), "");
+                                MainActivity.av.getResources().getColor(R.color.purple), "RXSpec");
                     }
                     else if (i==6) {
                         Display.plotSpectrum(Constants.gview2, spec, false,
-                                MainActivity.av.getResources().getColor(R.color.black), "");
+                                MainActivity.av.getResources().getColor(R.color.black), "RXSpec");
                     }
                     else {
                         Display.plotSpectrum(Constants.gview2, spec, false,

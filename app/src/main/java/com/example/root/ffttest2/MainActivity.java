@@ -1083,6 +1083,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.gview = (GraphView) findViewById(R.id.graphProd);
         Constants.gview2 = (GraphView) findViewById(R.id.graphProd);
         Constants.gview3 = (GraphView) findViewById(R.id.graphProd3);
+        Constants.gview4 = (GraphView) findViewById(R.id.graphProd4);
+
         Constants.sw1 = (Switch) findViewById(R.id.switch1);
         Constants.sw2 = (Switch) findViewById(R.id.switch2);
         Constants.sw3 = (Switch) findViewById(R.id.switch3);
