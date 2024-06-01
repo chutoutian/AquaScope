@@ -1128,6 +1128,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     editor.putString("code_rate", Constants.CodeRate.C4_6.toString());
                     Constants.CodeRate_LoRA = 2;
                 }
+                stopMethod();
+                startMethod(av);
                 editor.commit();
             }
             @Override
@@ -1145,6 +1147,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 android.R.layout.simple_spinner_item, arrayList2);
         arrayAdapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         Constants.spinner2.setAdapter(arrayAdapter2);
+        // need to stop the current method
         Constants.spinner2.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -1175,6 +1178,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     Constants.scheme = Constants.Modulation.Chirp;
                     //Constants.et4.setText(Constants.Modulation.OFDM_freq_all+"");
                 }
+                stopMethod();
+                startMethod(av);
                 editor.commit();
             }
             @Override
@@ -1238,6 +1243,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                 }
                 Constants.expMode = Constants.Experiment.valueOf(arrayList4.get(position));
+                stopMethod();
+                startMethod(av);
                 Utils.logd("Current Expmode: " + arrayList4.get(position));
                 editor.commit();
             }

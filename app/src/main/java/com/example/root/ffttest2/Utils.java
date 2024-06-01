@@ -1775,7 +1775,8 @@ public class Utils {
                                 for (int j = (int)xcorr_out[1]; j < out.length; j++) {
                                     sounding_signal[sounding_signal_counter++]=out[j];
                                 }
-                                // plot SNR
+
+                                // plot Spec and SNR
                                 ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
 
                                 Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
