@@ -912,6 +912,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+
         // Resize:
         // Create widgets for image resize feature (width edit text box, height edit text box and resize button)
         widthEditText = findViewById(R.id.editWidth);
@@ -1130,13 +1131,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
                 stopMethod();
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 startMethod(av);
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -1190,13 +1191,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
                 stopMethod();
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 startMethod(av);
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -1265,13 +1266,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Constants.expMode = Constants.Experiment.valueOf(arrayList4.get(position));
                 stopMethod();
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 startMethod(av);
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

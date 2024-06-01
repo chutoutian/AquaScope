@@ -109,6 +109,8 @@ public class Constants {
 
     public static int SendInterval = 7000; // 7000 ms between two images
 
+    public static int spinnerStateChangeSleepTime = 300;
+
 
     // ****************************** End of Codec Related Global Variables ******************************
 
