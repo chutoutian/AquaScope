@@ -42,7 +42,7 @@ public class Constants {
     public enum Experiment {
         testExp, // for doing all test and experiment
         end2endTest, // for sending test image
-        end2endCam // for sending image captured by camera
+        end2endCam, // for sending image captured by camera
         // add more mode if needed
     }
 
@@ -78,7 +78,7 @@ public class Constants {
     public static String Sender_Latency_Str = "";
     public static String Receiver_Latency_Str = "";
 
-    public static Switch logswitch;
+    public static Switch logswitch, chirptypeswitch;
     public static boolean allowLog;
 
     public static List<String> modelIgnoreDisplayInSpinnerList = Arrays.asList("embedding_optimized.ptl",
@@ -110,6 +110,9 @@ public class Constants {
     public static int SendInterval = 7000; // 7000 ms between two images
 
     public static int spinnerStateChangeSleepTime = 300;
+
+    public static boolean isLinearChirp = true;
+    public static double[] NonlinearCoeff = {1, 0};
 
 
     // ****************************** End of Codec Related Global Variables ******************************

@@ -873,7 +873,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mImageView = findViewById(R.id.imageView_fish);
         mImageView2 = findViewById(R.id.imageView_fish2);
         Constants.logswitch = findViewById(R.id.logcontroller);
+        Constants.chirptypeswitch = findViewById(R.id.chirptypecontroller);
+
         Constants.logswitch.setChecked(true); // set default to true which means we want to log
+        Constants.chirptypeswitch.setChecked(true);
         Constants.allowLog = true;
 
         Constants.logswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -886,6 +889,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else {
                     Utils.log("Log Switch is OFF");
                     Constants.allowLog = false;
+                }
+            }
+        });
+
+        Constants.chirptypeswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Use Linear Chirp");
+                    Constants.isLinearChirp = true;
+                } else {
+                    Utils.log("Use Nonlinear Chirp");
+                    Constants.isLinearChirp = false;
                 }
             }
         });

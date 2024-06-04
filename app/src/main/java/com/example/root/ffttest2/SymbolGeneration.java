@@ -130,10 +130,10 @@ public class SymbolGeneration {
 
         short[] symbol;
             // add downchirp and upchirp
-        short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0);
-        short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0);
-        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0);
-        short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0);
+        short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0, true);
+        short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0, true);
+        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0, true);
+        short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0, true);
 
 
         for (Short s : preamble_up_1) {
@@ -158,7 +158,7 @@ public class SymbolGeneration {
 
 
         for (int i = 0; i < sym.length / 2; i++) {
-            symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
+            symbol = Utils.GeneratePreamble_LoRa(true, sym[i], false);
             // test
             //symbol = Utils.GeneratePreamble_LoRa(true, 0);
             for (Short s : symbol) {
@@ -189,7 +189,7 @@ public class SymbolGeneration {
         counter += Constants.Gap;
 
         for (int i = sym.length / 2; i < sym.length; i++) {
-            symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
+            symbol = Utils.GeneratePreamble_LoRa(true, sym[i], false);
             // test
             //symbol = Utils.GeneratePreamble_LoRa(true, 0);
             for (Short s : symbol) {

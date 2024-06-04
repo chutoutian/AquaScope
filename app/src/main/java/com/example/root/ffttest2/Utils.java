@@ -3,6 +3,7 @@ package com.example.root.ffttest2;
 import static com.example.root.ffttest2.Constants.LOG;
 import static com.example.root.ffttest2.Constants.XCORR_MAX_VAL_HEIGHT_FAC;
 import static com.example.root.ffttest2.Constants.fbackTime;
+import static com.example.root.ffttest2.Constants.sample_num;
 
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -232,9 +233,16 @@ public class Utils {
         return abs_value;
     }
 
-    public static double[] dechirp_test(double[][] symbol, boolean isUpChirp)
+    public static double[] dechirp_test(double[][] symbol, boolean isUpChirp, boolean issyncpreamble)
     {
-        Complex[] chirp = Utils.chirp(isUpChirp,Constants.SF,Constants.BW,  2 * Constants.BW ,0,Constants.CFO,0,1);
+        Complex[] chirp;
+        if (Constants.isLinearChirp || issyncpreamble) {
+            Utils.logd("dechirp linear");
+            chirp = Utils.chirp(isUpChirp, Constants.SF, Constants.BW, 2 * Constants.BW, 0, Constants.CFO, 0, 1);
+        } else {
+            Utils.logd("dechirp nonlinear");
+            chirp = Utils.getConjugate(Utils.chirpNonLinear(0, Constants.SF, Constants.NonlinearCoeff, Constants.BW, Constants.FS));
+        }
         double[][] mod_dat = new double[2][chirp.length];
         for (int i = 0; i < chirp.length; i++){
             mod_dat[0][i] = chirp[i].getReal();
@@ -251,7 +259,11 @@ public class Utils {
             double imaginary_1 = result_spec[1][i];
             double real_2 = result_spec[0][i + abs_value.length ];
             double imaginary_2 = result_spec[1][i + abs_value.length];
-            abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1) + Math.sqrt(real_2 * real_2 + imaginary_2 * imaginary_2) ;
+            if (Constants.isLinearChirp || issyncpreamble) {
+                abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1) + Math.sqrt(real_2 * real_2 + imaginary_2 * imaginary_2);
+            } else {
+                abs_value[i] = Math.sqrt(real_1 * real_1 + imaginary_1 * imaginary_1);
+            }
         }
 
         return abs_value;
@@ -494,6 +506,90 @@ public class Utils {
 
 
     }
+
+    // non-linear chirp
+    public static Complex[] chirpNonLinear(int encodedData, int SF, double[] coefficientVector, double BW, double sampleRate) {
+        // Initialization
+        double endT = Math.pow(2, SF) / BW;
+        double symbol = encodedData;
+        double initFrequency = symbol / endT;
+
+        // Coefficient Processing
+        double total = Arrays.stream(coefficientVector).sum();
+        // Normalization
+        for (int i = 0; i < coefficientVector.length; i++) {
+            coefficientVector[i] /= total;
+        }
+        // Degree of polynomial function
+        int degree = coefficientVector.length;
+        double[] divisors = new double[degree];
+        for (int i = 0; i < degree; i++) {
+            divisors[i] = Math.pow(endT, degree + 1 - (i + 1));
+        }
+        for (int i = 0; i < degree; i++) {
+            coefficientVector[i] = BW * coefficientVector[i] / divisors[i];
+        }
+        double[] coeff = new double[degree + 1];
+        System.arraycopy(coefficientVector, 0, coeff, 0, coefficientVector.length);
+        coeff[coeff.length - 1] = -BW / 2;
+
+        // From Phase to Signals
+        int numSamples = (int) (endT * sampleRate);
+        Complex[] y = new Complex[numSamples];
+
+        int t1_end = (int) Math.round(Math.sqrt((BW - initFrequency) / (BW/endT/endT))*sampleRate);
+
+        for (int i = 0; i < t1_end; i++) {
+            double t = i / sampleRate;
+            double[] polyint_res = polyint(coeff);
+            double polyval_res = polyval(polyint_res, t);
+            double phase = 2 * Math.PI * polyval_res + 2 * Math.PI * initFrequency * t;
+            y[i] = new Complex(Math.cos(phase), Math.sin(phase));
+        }
+
+        for (int i = t1_end; i < numSamples; i++) {
+            double t = i / sampleRate;
+            double[] polyint_res = polyint(coeff);
+            double polyval_res = polyval(polyint_res, t);
+            double phase = 2 * Math.PI * polyval_res + 2 * Math.PI * (-BW/2) * t;
+            y[i] = new Complex(Math.cos(phase), Math.sin(phase));
+        }
+
+        return y;
+    }
+
+    private static double[] polyint(double[] coeff) {
+        double[] integral = new double[coeff.length + 1];
+        integral[integral.length-1] = 0; // last is 0
+        for (int i = 0; i < integral.length-1; i++) { // ignore last one
+            integral[i] = coeff[i] / (integral.length - i - 1);
+        }
+        return integral;
+    }
+
+    private static double polyval(double[] coeff, double x) {
+        double result = 0;
+        double len = coeff.length;
+        for (int i = 0; i < coeff.length; i++) {
+            result = result + Math.pow(x,len - i-1)*coeff[i];
+        }
+        return result;
+    }
+
+    public static Complex[] getConjugate(Complex[] array) {
+        Complex[] conjugateArray = new Complex[array.length];
+        for (int i = 0; i < array.length; i++) {
+            conjugateArray[i] = array[i].conjugate();
+        }
+        return conjugateArray;
+    }
+
+    // non-linear chirp
+
+
+
+
+
     public static Complex[] chirp(boolean isUpChirp, int sf, int bw, int fs, double h, double cfo, double tdelta, double tscale) {
         int N = (int)Math.pow(2,sf);
         double T = N / ((double)bw /tscale);  // symbol period
@@ -551,9 +647,17 @@ public class Utils {
 
         return y;
     }
-    public static short[] GeneratePreamble_LoRa(boolean isUpChirp, int sym)
+    public static short[] GeneratePreamble_LoRa(boolean isUpChirp, int sym, boolean issyncpreamble)
     {
-        Complex[] chirp = Utils.chirp(isUpChirp, Constants.SF, Constants.BW, Constants.FS, sym, 0, 0, 1); // Assuming this method exists and returns Complex[]
+        Complex[] chirp;
+        if (Constants.isLinearChirp || issyncpreamble) {
+            Utils.logd("send linear");
+            chirp = Utils.chirp(isUpChirp, Constants.SF, Constants.BW, Constants.FS, sym, 0, 0, 1); // Assuming this method exists and returns Complex[]
+        } else {
+            Utils.logd("send nonlinear");
+
+            chirp = Utils.chirpNonLinear(sym, Constants.SF, Constants.NonlinearCoeff, Constants.BW, Constants.FS);
+        }
         // Preparing to store real and imaginary components scaled and converted to short
 
         double[][] symbol = new double[2][chirp.length];

@@ -203,7 +203,7 @@ public class Decoder {
             double[][] preamble = Utils.segment2(downversion_preamble,start , start + Constants.Ns_lora - 1);
             double[][] preamble_downsample = Utils.downsample(preamble, 2* Constants.Sample_Lora, Constants.Ns_lora);
             start = start + Constants.Ns_lora + Constants.Gap;
-            double[] index_upchirp = Utils.dechirp_test(preamble_downsample,false);
+            double[] index_upchirp = Utils.dechirp_test(preamble_downsample,false, true);
             int index_tmp = Utils.MaxIndex(index_upchirp);
             //double index_tmp_test = (((double)index_tmp + 10 * Constants.Sample_Lora - 1 ) / 10)% Constants.Sample_Lora; // which one is better?
             double index_tmp_test = ((double)index_tmp  / 10.0)% Constants.Sample_Lora;
@@ -216,7 +216,7 @@ public class Decoder {
             double[][] preamble = Utils.segment2(downversion_preamble,start , start + Constants.Ns_lora - 1);
             double[][] preamble_downsample = Utils.downsample(preamble, 2* Constants.Sample_Lora, Constants.Ns_lora);
             start = start + Constants.Ns_lora + Constants.Gap;
-            double[] index_downchirp = Utils.dechirp_test(preamble_downsample,true);
+            double[] index_downchirp = Utils.dechirp_test(preamble_downsample,true, true);
             int index_tmp = Utils.MaxIndex(index_downchirp);
             //double index_tmp_test = (((double)index_tmp + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
             double index_tmp_test = ((double)index_tmp  / 10.0)% Constants.Sample_Lora;
@@ -225,6 +225,9 @@ public class Decoder {
         }
         // frequency and time synchronization
         double[] off_set = Utils.synchronization2(index_count_test[1], index_count_test[3]);
+//        double[] off_set2 = Utils.synchronization2(index_count_test[0], index_count_test[2]);
+
+
         Utils.log("first index  =>" + index_count_test[1]);
         Utils.log("second index  =>" + index_count_test[3]);
         Utils.log("cfo =>" + off_set[0]);
@@ -254,7 +257,7 @@ public class Decoder {
             double[][] sym = Utils.segment2(downversion_preamble, start , start  + Constants.Ns_lora - 1);
             double[][] sym_downsample = Utils.downsample(sym, 2* Constants.Sample_Lora, Constants.Ns_lora);
             start = start  + Constants.Ns_lora + Constants.Gap;
-            double[] index = Utils.dechirp_test(sym_downsample,false);
+            double[] index = Utils.dechirp_test(sym_downsample,false, false);
             double sym_index = Utils.MaxIndex(index);
             //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
             double index_tmp_test = (sym_index  / 10.0)% Constants.Sample_Lora;
@@ -311,7 +314,7 @@ public class Decoder {
             double[][] sym = Utils.segment2(downversion_preamble, start , start  + Constants.Ns_lora - 1);
             double[][] sym_downsample = Utils.downsample(sym, 2* Constants.Sample_Lora, Constants.Ns_lora);
             start = start  + Constants.Ns_lora + Constants.Gap;
-            double[] index = Utils.dechirp_test(sym_downsample,false);
+            double[] index = Utils.dechirp_test(sym_downsample,false, false);
             double sym_index = Utils.MaxIndex(index);
             //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
             double index_tmp_test = (sym_index  / 10.0)% Constants.Sample_Lora;
@@ -446,51 +449,53 @@ public class Decoder {
                     Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
         }
 
-        // add time equalization
-        // receiver t2 time domain equalization (part of demodulate)
-        final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
+        if (Constants.isLinearChirp) {
+            // add time equalization
+            // receiver t2 time domain equalization (part of demodulate)
+            final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
 
-        int gtIdx = 0;
-        int Ns = 960;
-        int tapNum = 480;
-        int offset = 100;
-        int pkgIdx = 1200;
-        int lenRx = Ns + tapNum - 1;
-        short[] preamble_sig = PreambleGen.preamble_s();
-        double[] sendingSignalArray = convertShortArrayToDoubleArray(preamble_sig);
+            int gtIdx = 0;
+            int Ns = 960;
+            int tapNum = 480;
+            int offset = 100;
+            int pkgIdx = 1200;
+            int lenRx = Ns + tapNum - 1;
+            short[] preamble_sig = PreambleGen.preamble_s();
+            double[] sendingSignalArray = convertShortArrayToDoubleArray(preamble_sig);
 
-        Matrix sendingSignal = new Matrix(sendingSignalArray, 1).transpose();
-        Matrix dataBad = new Matrix(received_data, 1).transpose();
+            Matrix sendingSignal = new Matrix(sendingSignalArray, 1).transpose();
+            Matrix dataBad = new Matrix(received_data, 1).transpose();
 
-        Matrix symbolTx = sendingSignal.getMatrix(gtIdx, gtIdx + Ns - 1, 0, 0).transpose(); // []
-        Matrix symbolRx = dataBad.getMatrix(pkgIdx - offset, pkgIdx + lenRx - offset - 1, 0, 0);
+            Matrix symbolTx = sendingSignal.getMatrix(gtIdx, gtIdx + Ns - 1, 0, 0).transpose(); // []
+            Matrix symbolRx = dataBad.getMatrix(pkgIdx - offset, pkgIdx + lenRx - offset - 1, 0, 0);
 
-        Matrix g = timeEqualizerEstimation(symbolTx, symbolRx, tapNum);
-        if (g != null) {
-            // Recover the transmitted signal
-            Matrix tx = timeEqualizerRecover(dataBad, g);
-            received_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
-            Utils.log("Equalizer estimation success.");
+            Matrix g = timeEqualizerEstimation(symbolTx, symbolRx, tapNum);
+            if (g != null) {
+                // Recover the transmitted signal
+                Matrix tx = timeEqualizerRecover(dataBad, g);
+                received_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
+                Utils.log("Equalizer estimation success.");
 
-            if (Constants.allowLog) {
-                StringBuilder gBuilder = new StringBuilder();
-                for (int j = 0; j < 20; j++) {
-                    gBuilder.append(g.get(j, 0));
-                    gBuilder.append(",");
+                if (Constants.allowLog) {
+                    StringBuilder gBuilder = new StringBuilder();
+                    for (int j = 0; j < 20; j++) {
+                        gBuilder.append(g.get(j, 0));
+                        gBuilder.append(",");
+                    }
+                    String g_string = gBuilder.toString();
+                    Utils.log("time equalization g => " + g_string);
                 }
-                String g_string = gBuilder.toString();
-                Utils.log("time equalization g => " + g_string);
+
+            } else {
+                Utils.log("Equalizer estimation failed.");
             }
+            // receiver t2 time domain equalization
+            final long inferenceTime_time_domain_equalization = SystemClock.elapsedRealtime() - startTime_time_domain_equalization;
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver time domain equalization (ms): " + inferenceTime_time_domain_equalization + "\n";
+            Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
-        } else {
-            Utils.log("Equalizer estimation failed.");
+            // end add time equalization
         }
-        // receiver t2 time domain equalization
-        final long inferenceTime_time_domain_equalization = SystemClock.elapsedRealtime() - startTime_time_domain_equalization;
-        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver time domain equalization (ms): " + inferenceTime_time_domain_equalization + "\n";
-        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
-
-        // end add time equalization
 
         // receiver t3 demodulate
         final long startTime_demodulate = SystemClock.elapsedRealtime();
