@@ -599,7 +599,7 @@ public class Decoder {
                 int res_start = start;
 
                 int section_len = Constants.Equalization2_Range * (Constants.Ns_lora + Constants.Gap);
-                int last_section_len = (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) % Constants.Equalization_Range) * (Constants.Ns_lora + Constants.Gap);
+                int last_section_len = (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) % Constants.Equalization2_Range) * (Constants.Ns_lora + Constants.Gap);
 
                 double[] output_data =  Arrays.copyOf(received_data, received_data.length);
 
