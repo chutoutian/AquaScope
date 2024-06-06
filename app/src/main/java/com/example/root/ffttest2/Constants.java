@@ -78,7 +78,7 @@ public class Constants {
     public static String Sender_Latency_Str = "";
     public static String Receiver_Latency_Str = "";
 
-    public static Switch logswitch, chirptypeswitch;
+    public static Switch logswitch, chirptypeswitch, equalizationTestController, equalizationTestController2;
     public static boolean allowLog;
 
     public static List<String> modelIgnoreDisplayInSpinnerList = Arrays.asList("embedding_optimized.ptl",
@@ -112,8 +112,18 @@ public class Constants {
     public static int spinnerStateChangeSleepTime = 300;
 
     public static boolean isLinearChirp = true;
+    public static boolean isNewEqualization = false;
+    public static boolean isNewEqualization2 = false;
+
     public static double[] NonlinearCoeff = {1, 0};
 
+    public static int BW_Equalization = 400;
+    public static int SF_Equalization = 3;
+    public static double Equalization_Original_Ratio = 0.8;
+    public static double Equalization_Part_Ratio = 0.2;
+    public static int Equalization_Range = 5;
+    public static int Equalization_Gap = Constants.Equalization_Range * (Constants.Ns + Constants.Gap) - Constants.Ns_Equalization;
+    public static int Equalization2_Range = 5; // insert a preamble every 5 symbols
 
     // ****************************** End of Codec Related Global Variables ******************************
 
@@ -218,18 +228,26 @@ public class Constants {
     public static int BW = 2000; // bandwidth 125kHz which should be changed in the acoustic system (12.5kHz for testing)
 
     public static int FC = 2500;
+    public static int FC_Equalization = 3800;
 
     public static int Gap = 0;
 
     public static int Preamble_Num = 2;
 
     public static int Center_Freq = 0;
+    public static int Center_Freq_Equalization = 3800;
+    public static int Center_Freq_Equalization2 = 2500;
 
     public static int Offset_Freq = 1000;
+    public static int Offset_Freq_Equalization = 200;
+    public static int Offset_Freq_Equalization2 = 1000;
+
+
 
     public static int FS = 48000; // sampling rate 1Mhz which should be changed to fs = 48000hz
 
     public static int Ns_lora = 768;
+    public static int Ns_Equalization = 960;
 
     public static int EmbeddindBytes = 80;
 
@@ -238,6 +256,7 @@ public class Constants {
     public static int Send_Delay = 3000;
 
     public static double[][] carrier = new double[2][Ns_lora];
+    public static double[][] carrier_Equalization = new double[2][Ns_Equalization];
 
 
     public static double CFO = 0.0;
@@ -974,6 +993,8 @@ public class Constants {
             Gap = (int)(Ns_lora * 0.05);
         }
 
+        Equalization_Gap = Constants.Equalization_Range * (Constants.Ns + Constants.Gap) - Constants.Ns_Equalization;
+
         double[] t = new double[Ns_lora];
         for (int i = 0; i<t.length; i++){
             t[i] = i / (double)Constants.FS ;
@@ -983,6 +1004,19 @@ public class Constants {
             carrier[0][i] = Math.cos(2* Math.PI* Constants.FC * t[i]);
             carrier[1][i] = Math.sin(2* Math.PI* Constants.FC * t[i]);
         }
+
+        // equalization
+        double[] t_equalization = new double[Ns_Equalization];
+        for (int i = 0; i<t_equalization.length; i++){
+            t_equalization[i] = i / (double)Constants.FS ;
+        }
+        for (int i = 0; i< t_equalization.length; i++)
+        {
+            carrier_Equalization[0][i] = Math.cos(2* Math.PI* Constants.FC_Equalization * t_equalization[i]);
+            carrier_Equalization[1][i] = Math.sin(2* Math.PI* Constants.FC_Equalization * t_equalization[i]);
+        }
+
+
     }
     public static void updateNbins() {
         if (Constants.Ns == 960) {

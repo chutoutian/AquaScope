@@ -874,9 +874,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mImageView2 = findViewById(R.id.imageView_fish2);
         Constants.logswitch = findViewById(R.id.logcontroller);
         Constants.chirptypeswitch = findViewById(R.id.chirptypecontroller);
+        Constants.equalizationTestController = findViewById(R.id.equalizationTestController);
+        Constants.equalizationTestController2 = findViewById(R.id.equalizationTestController2);
 
         Constants.logswitch.setChecked(true); // set default to true which means we want to log
         Constants.chirptypeswitch.setChecked(true);
+        Constants.equalizationTestController.setChecked(false);
+        Constants.equalizationTestController2.setChecked(false);
+
         Constants.allowLog = true;
 
         Constants.logswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -903,6 +908,36 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else {
                     Utils.log("Use Nonlinear Chirp");
                     Constants.isLinearChirp = false;
+                }
+            }
+        });
+
+        Constants.equalizationTestController.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Use new equalization");
+                    Constants.isNewEqualization = true;
+                    Constants.isNewEqualization2 = false;
+                } else {
+                    Utils.log("Use old equalization");
+                    Constants.isNewEqualization = false;
+                }
+            }
+        });
+
+        Constants.equalizationTestController2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Use new equalization 2 insert preamble");
+                    Constants.isNewEqualization2 = true;
+                    Constants.isNewEqualization = false;
+                } else {
+                    Utils.log("Use old equalization");
+                    Constants.isNewEqualization2 = false;
                 }
             }
         });

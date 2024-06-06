@@ -647,6 +647,28 @@ public class Utils {
 
         return y;
     }
+
+    public static short[] GenerateEqualizationPreamble_LoRa() {
+        Complex[] chirp;
+        chirp = Utils.chirp(true, Constants.SF_Equalization, Constants.BW_Equalization, Constants.FS, 0, 0, 0, 1); // Assuming this method exists and returns Complex[]
+        double[][] symbol = new double[2][chirp.length];
+
+        for (int i = 0, j = 0; i < chirp.length; i++) {
+            // Scale the real and imaginary parts to the maximum range of short type
+
+            symbol[0][i] = chirp[i].getReal();
+            symbol[1][i] = chirp[i].getImaginary();
+        }
+        double[][] results_double = timesnative(symbol,Constants.carrier_Equalization); // result[0] is cos(a)cos(b) - sin(a)sin(b) = cos(a+b)
+        short[] results_real = new short[results_double[0].length];
+        for (int i =0 ; i<results_real.length;i++)
+        {
+            results_real[i] = (short) (results_double[0][i] * 32767.0);
+        }
+
+        return results_real;
+    }
+
     public static short[] GeneratePreamble_LoRa(boolean isUpChirp, int sym, boolean issyncpreamble)
     {
         Complex[] chirp;
@@ -1222,6 +1244,8 @@ public class Utils {
         }
         return out;
     }
+
+
 
     public static int[] segment(int[] data, int i, int j) {
         int[] out = new int[j-i+1];

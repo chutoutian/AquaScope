@@ -175,8 +175,8 @@ public class Decoder {
         }
 
 
-        //
-        double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+8) * (Constants.Ns_lora + Constants.Gap)-1);
+        // TODO improve performance
+        double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+4) * (Constants.Ns_lora + Constants.Gap)-1);
 
 
         start = 0;
@@ -237,7 +237,7 @@ public class Decoder {
 //        int time_offset = (int)Math.round(Math.abs(off_set[1]) * Constants.Ns_lora / Constants.Sample_Lora); // remove abs
         int time_offset = (int)Math.round(off_set[1] * Constants.Ns_lora / Constants.Sample_Lora);
 
-        double[] data_remove_preamble_shift = Utils.segment(data,ptime+Constants.ChirpGap + 4* (Constants.Ns_lora + Constants.Gap) +time_offset,ptime+Constants.ChirpGap +time_offset+ (numsyms+4 + 4) * (Constants.Ns_lora+ Constants.Gap)-1);
+        double[] data_remove_preamble_shift = Utils.segment(data,ptime+Constants.ChirpGap + 4* (Constants.Ns_lora + Constants.Gap) +time_offset,ptime+Constants.ChirpGap +time_offset+ (numsyms+4) * (Constants.Ns_lora+ Constants.Gap)-1);
         downversion_preamble = Utils.downversion(data_remove_preamble_shift);
         //data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,Constants.Ns_lora);
         start = 0;
@@ -253,7 +253,7 @@ public class Decoder {
 
 
         // extract each symbol
-        for (int i = 0; i < numsyms / 2; i++) {
+        for (int i = 0; i < numsyms; i++) {
             double[][] sym = Utils.segment2(downversion_preamble, start , start  + Constants.Ns_lora - 1);
             double[][] sym_downsample = Utils.downsample(sym, 2* Constants.Sample_Lora, Constants.Ns_lora);
             start = start  + Constants.Ns_lora + Constants.Gap;
@@ -305,25 +305,25 @@ public class Decoder {
         //Constants.CFO = off_set[0] * Constants.BW / Constants.Sample_Lora; confirmed
 //        time_offset = time_offset +  (int)Math.round(Math.abs(off_set[1]) * Constants.Ns_lora / Constants.Sample_Lora);
 
-        data_remove_preamble_shift = Utils.segment(data,ptime+Constants.ChirpGap + (8 + numsyms/ 2)* (Constants.Ns_lora + Constants.Gap) +time_offset,ptime+Constants.ChirpGap +time_offset+ (numsyms+8) * (Constants.Ns_lora+ Constants.Gap)-1);
-        downversion_preamble = Utils.downversion(data_remove_preamble_shift);
+//        data_remove_preamble_shift = Utils.segment(data,ptime+Constants.ChirpGap + (8 + numsyms/ 2)* (Constants.Ns_lora + Constants.Gap) +time_offset,ptime+Constants.ChirpGap +time_offset+ (numsyms+8) * (Constants.Ns_lora+ Constants.Gap)-1);
+//        downversion_preamble = Utils.downversion(data_remove_preamble_shift);
 //        data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,Constants.Ns_lora);
-        start = 0;
+//        start = 0;
 
-        for (int i = 0; i < numsyms / 2; i++) {
-            double[][] sym = Utils.segment2(downversion_preamble, start , start  + Constants.Ns_lora - 1);
-            double[][] sym_downsample = Utils.downsample(sym, 2* Constants.Sample_Lora, Constants.Ns_lora);
-            start = start  + Constants.Ns_lora + Constants.Gap;
-            double[] index = Utils.dechirp_test(sym_downsample,false, false);
-            double sym_index = Utils.MaxIndex(index);
-            //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
-            double index_tmp_test = (sym_index  / 10.0)% Constants.Sample_Lora;
-            index_tmp_test = index_tmp_test - off_set[0] ;
-            index_tmp_test = Math.round(index_tmp_test) % Constants.Sample_Lora;
-
-            detected_index_cfo[numsyms/ 2 + i+4] = (int)index_tmp_test;
-
-        }
+//        for (int i = 0; i < numsyms / 2; i++) {
+//            double[][] sym = Utils.segment2(downversion_preamble, start , start  + Constants.Ns_lora - 1);
+//            double[][] sym_downsample = Utils.downsample(sym, 2* Constants.Sample_Lora, Constants.Ns_lora);
+//            start = start  + Constants.Ns_lora + Constants.Gap;
+//            double[] index = Utils.dechirp_test(sym_downsample,false, false);
+//            double sym_index = Utils.MaxIndex(index);
+//            //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
+//            double index_tmp_test = (sym_index  / 10.0)% Constants.Sample_Lora;
+//            index_tmp_test = index_tmp_test - off_set[0] ;
+//            index_tmp_test = Math.round(index_tmp_test) % Constants.Sample_Lora;
+//
+//            detected_index_cfo[numsyms/ 2 + i+4] = (int)index_tmp_test;
+//
+//        }
 
 
 
@@ -449,7 +449,7 @@ public class Decoder {
                     Utils.genName(Constants.SignalType.Before_Equalization_Rx_Raw_Symbols, m_attempt) + ".txt");
         }
 
-        if (Constants.isLinearChirp) {
+        if (Constants.isLinearChirp && Constants.isNewEqualization == false && Constants.isNewEqualization2 == false) {
             // add time equalization
             // receiver t2 time domain equalization (part of demodulate)
             final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
@@ -496,6 +496,162 @@ public class Decoder {
 
             // end add time equalization
         }
+
+        if (Constants.isLinearChirp && Constants.isNewEqualization == true) {
+            // new equalization
+            final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
+            double[] equalization_data = Arrays.copyOf(received_data, received_data.length);
+            double[] equalization_data2 = Arrays.copyOf(received_data, received_data.length);
+            // filtered
+            equalization_data = Utils.bpass_filter2(equalization_data, Constants.Center_Freq_Equalization, Constants.Offset_Freq_Equalization, Constants.FS);
+            equalization_data2 = Utils.bpass_filter2(equalization_data, Constants.Center_Freq_Equalization2, Constants.Offset_Freq_Equalization2, Constants.FS);
+
+            // your code here
+
+            int Ns = 960;
+            int tapNum = 480;
+            int offset = 100;
+            int start = 0;
+            int lenRx = Ns + tapNum - 1;
+            short[] preamble_sig = Utils.GenerateEqualizationPreamble_LoRa();
+            Utils.logd("preamble_sig length " + preamble_sig.length);
+
+            double[] sendingSignalArray = convertShortArrayToDoubleArray(preamble_sig);
+
+            int num_sections = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) / 5;
+
+            Matrix symbolTx = new Matrix(sendingSignalArray, 1).transpose();
+
+            int ptime = (int) ((Constants.preambleTime / 1000.0) * Constants.fs);
+            start = ptime + Constants.ChirpGap; // skip preambles
+            start = start + 4 * (Constants.Ns_lora + Constants.Gap); // skip to and cfo preambles
+
+            int section_len = Constants.Equalization_Range * (Constants.Ns_lora + Constants.Gap);
+            Utils.logd("Ns length " + Constants.Ns);
+            Utils.logd("Gap length " + Constants.Gap);
+
+            Utils.logd("section_len length " + section_len);
+
+            int last_section_len = (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) % 5) * (Constants.Ns + Constants.Gap);
+
+            double[] output_data = Arrays.copyOf(received_data, received_data.length);
+
+            for (int i = 0; i < num_sections; i++) {
+                double[] temp_received_data = Utils.segment(equalization_data, start - offset, start + lenRx - 1 - offset);
+                double[] temp_to_recover_data;
+                if (i == num_sections - 1) {
+                    temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + last_section_len - 1- 1 - offset+ tapNum );
+                } else {
+                    temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + section_len - 1- 1 - offset+ tapNum );
+                }
+                Utils.logd("to recover data length " + temp_to_recover_data.length);
+                Matrix symbolRx = new Matrix(temp_received_data, 1).transpose();
+                Matrix badData = new Matrix(temp_to_recover_data, 1).transpose();
+                Matrix g = timeEqualizerEstimation(symbolTx.transpose(), symbolRx, tapNum);
+                if (g != null) {
+                    // Recover the transmitted signal
+                    Matrix tx = timeEqualizerRecover(badData, g);
+                    double[] temp_output_data = tx.getColumnPackedCopy();
+                    Utils.logd("recovered data length " + temp_output_data.length);
+
+                    if (i == num_sections - 1) {
+                        System.arraycopy(temp_output_data, 0, output_data, start, last_section_len);
+                    } else {
+                        System.arraycopy(temp_output_data, 0, output_data, start, section_len);
+                    }
+
+                    Utils.log("Equalizer estimation success.");
+
+                } else {
+                    Utils.log("Equalizer estimation failed.");
+                }
+                if (i == num_sections - 1) {
+                    start = start + last_section_len;
+                } else {
+                    start = start + section_len;
+                }
+            }
+        }
+
+        if (Constants.isLinearChirp && Constants.isNewEqualization2 == true) {
+                Utils.logd("use new equalization");
+                // new equalization
+                final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
+                double[] equalization_data =  Arrays.copyOf(received_data, received_data.length);
+                // filtered
+                // TODO: all long filter can be optimized
+                equalization_data = Utils.bpass_filter2(equalization_data,Constants.Center_Freq_Equalization2,Constants.Offset_Freq_Equalization2,Constants.FS);
+
+                // your code here
+                int Ns = Constants.Ns_lora;
+                int tapNum = 480;
+                int offset = 100;
+                int start = 0;
+                int lenRx = Ns + tapNum - 1;
+                short[] preamble_sig = Utils.GeneratePreamble_LoRa(true, 0, true);
+                double[] sendingSignalArray = convertShortArrayToDoubleArray(preamble_sig);
+                int num_sections = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) / Constants.Equalization2_Range + 1;
+                Matrix symbolTx = new Matrix(sendingSignalArray, 1).transpose();
+
+                int ptime = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+                start = ptime+Constants.ChirpGap; // skip preambles
+                start = start + 4 * (Constants.Ns_lora + Constants.Gap); // skip to and cfo preambles
+                int res_start = start;
+
+                int section_len = Constants.Equalization2_Range * (Constants.Ns_lora + Constants.Gap);
+                int last_section_len = (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) % Constants.Equalization_Range) * (Constants.Ns_lora + Constants.Gap);
+
+                double[] output_data =  Arrays.copyOf(received_data, received_data.length);
+
+                for (int i = 0; i < num_sections; i++) {
+                    double[] temp_received_data = Utils.segment(equalization_data, start - offset, start + lenRx - 1 - offset);
+                    start = start + (Constants.Ns_lora + Constants.Gap);
+                    double[] temp_to_recover_data;
+                    if (i == num_sections - 1) {
+                        temp_to_recover_data = Utils.segment(equalization_data, start - offset, start + last_section_len + tapNum - 1 - offset - 1);
+                    } else {
+                        temp_to_recover_data = Utils.segment(equalization_data, start - offset, start + section_len + tapNum -1 - offset - 1);
+                    }
+                    Utils.logd("to recover data length " + temp_to_recover_data.length);
+                    Matrix symbolRx = new Matrix(temp_received_data, 1).transpose();
+                    Matrix badData = new Matrix(temp_to_recover_data, 1).transpose();
+                    Matrix g = timeEqualizerEstimation(symbolTx.transpose(), symbolRx, tapNum);
+                    if (g != null) {
+                        // Recover the transmitted signal
+                        Matrix tx = timeEqualizerRecover(badData, g);
+                        double[] temp_output_data = tx.getColumnPackedCopy();
+                        Utils.logd("recovered data length " + temp_output_data.length);
+
+                        if (i == num_sections - 1) {
+                            System.arraycopy(temp_output_data, 0, output_data, res_start, last_section_len);
+                        } else {
+                            System.arraycopy(temp_output_data, 0, output_data, res_start, section_len);
+                        }
+
+                        Utils.log("Equalizer estimation success.");
+
+                    } else {
+                        Utils.log("Equalizer estimation failed.");
+                    }
+                    if (i == num_sections - 1) {
+                        start = start + last_section_len;
+                        res_start = res_start + last_section_len;
+                    } else {
+                        start = start + section_len;
+                        res_start = res_start + section_len;
+                    }
+                }
+            final long inferenceTime_time_domain_equalization = SystemClock.elapsedRealtime() - startTime_time_domain_equalization;
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver time domain equalization (new continuous method) (ms): " + inferenceTime_time_domain_equalization + "\n";
+            Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+            for (int i = res_start; i < output_data.length; i++) {
+                output_data[i] = 0.0;
+            }
+            received_data = output_data;
+        }
+
+
 
         // receiver t3 demodulate
         final long startTime_demodulate = SystemClock.elapsedRealtime();

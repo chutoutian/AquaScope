@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/equalizationTest"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
@@ -163,9 +163,9 @@
             android:id="@+id/imageView_fish"
             android:layout_width="180dp"
             android:layout_height="180dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:contentDescription="@string/image_view"
-            app:layout_constraintTop_toBottomOf="@+id/chirptypecontroller" />
+            app:layout_constraintTop_toBottomOf="@+id/equalizationTestController2" />
 
         <ImageView
             android:id="@+id/imageView_fish2"
@@ -1350,6 +1350,22 @@
             android:layout_height="35dp"
             android:text="  UseLinear"
             app:layout_constraintTop_toBottomOf="@+id/logcontroller" />
+
+        <Switch
+            android:id="@+id/equalizationTestController"
+            android:layout_width="283dp"
+            android:layout_height="35dp"
+            android:text="Test Equalization Use New Freq"
+            app:layout_constraintTop_toBottomOf="@+id/chirptypecontroller"
+            tools:layout_editor_absoluteX="0dp" />
+
+        <Switch
+            android:id="@+id/equalizationTestController2"
+            android:layout_width="283dp"
+            android:layout_height="35dp"
+            android:text="Test Equalization Insert Pilot"
+            app:layout_constraintTop_toBottomOf="@+id/equalizationTestController"
+            tools:layout_editor_absoluteX="0dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
