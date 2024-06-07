@@ -583,7 +583,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         // sender t4 - send signal
         final long inferenceTime_send_signal = SystemClock.elapsedRealtime() - startTime_send_signal;
         Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender send signal (ms): " + inferenceTime_send_signal + "\n";
-        Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+        Utils.logd("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
         FileOperations.writetofile(MainActivity.av, Constants.Sender_Latency_Str,
                 Utils.genName(Constants.SignalType.Latency_Sender, m_attempt) + ".txt");
         // sender finish

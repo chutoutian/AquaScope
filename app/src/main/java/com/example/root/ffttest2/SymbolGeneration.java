@@ -140,7 +140,10 @@ public class SymbolGeneration {
         short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0, true);
 
         short[] equalization_preamble = Utils.GenerateEqualizationPreamble_LoRa();
-        short[] equalization2_preamble = Utils.GeneratePreamble_LoRa(true, 0, true);
+//        short[] equalization2_preamble = Utils.GeneratePreamble_LoRa(true, 0, true);
+        // try to use the preamble
+        short[] equalization2_preamble = PreambleGen.preamble_s();
+        equalization2_preamble = Utils.segment(equalization2_preamble, 0, 0 + Constants.Ns_lora - 1);
 
 //        for (Short s: equalization_preamble) {
 //            Utils.logd("short s:" + s);

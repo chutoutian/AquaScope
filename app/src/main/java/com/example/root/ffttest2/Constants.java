@@ -107,7 +107,7 @@ public class Constants {
     public static int[] SendDelay_Candidates = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
     public static int[] Mattempts_Candidates = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-    public static int SendInterval = 7000; // 7000 ms between two images
+    public static int SendInterval = 15000; // 7000 ms between two images
 
     public static int spinnerStateChangeSleepTime = 300;
 
@@ -123,7 +123,7 @@ public class Constants {
     public static double Equalization_Part_Ratio = 0.2;
     public static int Equalization_Range = 5;
     public static int Equalization_Gap = Constants.Equalization_Range * (Constants.Ns + Constants.Gap) - Constants.Ns_Equalization;
-    public static int Equalization2_Range = 5; // insert a preamble every 5 symbols
+    public static int Equalization2_Range = 3; // insert a preamble every 5 symbols
 
     // ****************************** End of Codec Related Global Variables ******************************
 
@@ -241,6 +241,11 @@ public class Constants {
     public static int Offset_Freq = 1000;
     public static int Offset_Freq_Equalization = 200;
     public static int Offset_Freq_Equalization2 = 1000;
+
+    // changed after switch from lora preamble from ofdm preamble
+    public static int Center_Freq_Equalization3 = 2500;
+    public static int Offset_Freq_Equalization3 = 1500;
+
 
 
 
