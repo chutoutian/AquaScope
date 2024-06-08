@@ -22,8 +22,6 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.speech.RecognizerIntent;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
@@ -40,7 +38,6 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
@@ -52,24 +49,16 @@ import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventList
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 
 import com.jjoe64.graphview.GraphView;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 import java.time.LocalDateTime;
@@ -84,6 +73,8 @@ import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
+
+    // ********************************** Start App Variable Definition **********************************
     String[] perms = new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
 
     private static SensorManager sensorManager;
@@ -92,24 +83,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     static Activity av;
     static boolean started=false;
 
-
+    // these can be put into constants
     private static ImageView mImageView;
     private static ImageView mImageView2;
 
-    private Button mButtonSegment;
+    private Button runModelButton;
     private ProgressBar mProgressBar;
     private Bitmap mBitmap = null;
     private Module mModule = null;
-//    private Module mEncoder1 = null;
-//    private Module mEncoder2 = null;
-//    private Module mEncoder3 = null;
-//
-//    private Module mDecoder1 = null;
-//    private Module mDecoder2 = null;
-//    private Module mDecoder3 = null;
 
     private int currentIndex = 0;
-    private String mImagename = "test1.jpg";
     private String defaultModelName = "lite_optimized_seg_240p.ptl";
     private String defaultServiceName = "Seg Fish Low Res";
 
@@ -135,30 +118,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private TextView fishExistTextView;
     private static final int CLASSNUM = 2;
     private int compressImageSize = 128;
-
     private Random random = new Random();
     private boolean isShouldRandom = false;
     private int recover_round = 1;
 
+    // ********************************** End App Variable Definition **********************************
 
-    public static String assetFilePath(Context context, String assetName) throws IOException {
-        File file = new File(context.getFilesDir(), assetName);
-        if (file.exists() && file.length() > 0) {
-            return file.getAbsolutePath();
-        }
 
-        try (InputStream is = context.getAssets().open(assetName)) {
-            try (OutputStream os = new FileOutputStream(file)) {
-                byte[] buffer = new byte[4 * 1024];
-                int read;
-                while ((read = is.read(buffer)) != -1) {
-                    os.write(buffer, 0, read);
-                }
-                os.flush();
-            }
-            return file.getAbsolutePath();
-        }
-    }
+    // ********************************** Start App Methods (Later can be put into separate classes) **********************************
 
     public static int findIndex(String[] array, String target) {
         for (int i = 0; i < array.length; i++) {
@@ -179,11 +146,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             int newHeight = Integer.parseInt(heightStr);
             currentWidth = newWidth;
             currentHeight = newHeight;
-
             displayImage(currentIndex);
         }
     }
-
 
     private void displayImageCenterCropWithSize(int index, int targetSize) {
 
@@ -262,316 +227,113 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         return false;
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    private void load_bitmaps_for_end2endTest() {
+        try {
+            String[] testEnd2EndImageFiles = getAssets().list("sendTestImages");
+            for (String file : testEnd2EndImageFiles) {
+                int targetSize = compressImageSize;
+                Bitmap tempMBitmap = BitmapFactory.decodeStream(getAssets().open(file));
+                int sourceWidth = tempMBitmap.getWidth();
+                int sourceHeight = tempMBitmap.getHeight();
+                int s = Math.min(sourceWidth, sourceHeight);
+                float r = (float) targetSize / s;
+                int widthAfterScaled = Math.round(r * sourceWidth);
+                int heightAfterScaled = Math.round(r * sourceHeight);
+                tempMBitmap = Bitmap.createScaledBitmap(tempMBitmap, widthAfterScaled, heightAfterScaled, true);
 
-        // get all image files and models in the assets folder
-        AssetManager assetManager = getAssets();
+                // Calculate the coordinates to center crop the scaled bitmap
+                int x = (int) Math.round((widthAfterScaled - targetSize) / 2);
+                int y = (int) Math.round((heightAfterScaled - targetSize) / 2);
+                // Create a new bitmap and draw the center-cropped region
+                Bitmap resultBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(resultBitmap);
+                canvas.drawBitmap(tempMBitmap, -x, -y, null);
+                tempMBitmap = resultBitmap;
+                Constants.testEnd2EndImageBitmaps.add(tempMBitmap);
+            }
+        }  catch(Exception e){
+            e.printStackTrace();
+        }
+        Utils.logd("Length of bitmapList: " + Constants.testEnd2EndImageBitmaps.size());
+        Constants.didLoadTestImages = true;
+    }
+
+    private void load_all_image_codec_models() {
+        try {
+            if (Constants.mEncoder1 == null) {
+                Constants.mEncoder1 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+            }
+            if (Constants.mEncoder2 == null) {
+                Constants.mEncoder2 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+            }
+            if (Constants.mEncoder3 == null) {
+                Constants.mEncoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+            }
+
+            // later we can separate encoder and decoder users
+            if (Constants.mDecoder1 == null) {
+                Constants.mDecoder1 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+            }
+            if (Constants.mDecoder2 == null) {
+                Constants.mDecoder2 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+            }
+            if (Constants.mDecoder3 == null) {
+                Constants.mDecoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "decoder.ptl"));
+            }
+
+            if (Constants.mTransformer == null) {
+                Constants.mTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void load_all_file_paths(AssetManager assetManager) {
         try {
             allFiles = assetManager.list("");
             imageFiles = filterJpgFiles(allFiles);
             ptlFiles = filterPtlFiles(allFiles);
-// preload bitmaps
-            if (Constants.didLoadTestImages == false) {
-                String[] testEnd2EndImageFiles = getAssets().list("sendTestImages");
-                for (String file : testEnd2EndImageFiles) {
-                    try {
-                        int targetSize = compressImageSize;
-                        Bitmap tempMBitmap = BitmapFactory.decodeStream(getAssets().open(file));
-                        int sourceWidth = tempMBitmap.getWidth();
-                        int sourceHeight = tempMBitmap.getHeight();
-                        int s = Math.min(sourceWidth, sourceHeight);
-                        float r = (float)targetSize / s;
-                        int widthAfterScaled = Math.round(r * sourceWidth);
-                        int heightAfterScaled = Math.round(r * sourceHeight);
-                        tempMBitmap = Bitmap.createScaledBitmap(tempMBitmap, widthAfterScaled, heightAfterScaled, true);
-
-                        // Calculate the coordinates to center crop the scaled bitmap
-                        int x = (int)Math.round((widthAfterScaled - targetSize) / 2);
-                        int y = (int)Math.round((heightAfterScaled - targetSize) / 2);
-                        // Create a new bitmap and draw the center-cropped region
-                        Bitmap resultBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888);
-                        Canvas canvas = new Canvas(resultBitmap);
-                        canvas.drawBitmap(tempMBitmap, -x, -y, null);
-                        tempMBitmap = resultBitmap;
-                        Constants.testEnd2EndImageBitmaps.add(tempMBitmap);
-                    } catch (java.io.IOException e) {
-                        e.printStackTrace();
-                        continue;
-                    }
-                }
-                Log.d("tbt", "Length of bitmapList: " + Constants.testEnd2EndImageBitmaps.size());
-                Constants.didLoadTestImages = true;
-            }
-
-            Log.d("ImageSegmentation", "Image Files: " + Arrays.toString(imageFiles));
-            Log.d("ImageSegmentation", "Ptl Files: " + Arrays.toString(ptlFiles));
-
-
-            if (Constants.mEncoder1 == null) {
-                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-            }
-            if (Constants.mEncoder2 == null) {
-                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-            }
-            if (Constants.mEncoder3 == null) {
-                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-            }
-
-            // later we can separate encoder and decoder users
-            if (Constants.mDecoder1 == null){
-                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-            }
-            if (Constants.mDecoder2 == null) {
-                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-            }
-            if (Constants.mDecoder3 == null) {
-                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-            }
-
-            if (Constants.mTransformer == null) {
-                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
-            }
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+        Utils.logd("Image Files: " + Arrays.toString(imageFiles));
+        Utils.logd("Ptl Files: " + Arrays.toString(ptlFiles));
+    }
 
-        mImageView = findViewById(R.id.imageView_fish);
-        mImageView2 = findViewById(R.id.imageView_fish2);
-        Constants.logswitch = findViewById(R.id.logcontroller);
-        Constants.logswitch.setChecked(true); // set default to true which means we want to log
-        Constants.allowLog = true;
+    // ********************************** End App Methods (Later can be put into separate classes) **********************************
 
-        Constants.logswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // Handle switch state change
-                if (isChecked) {
-                    Utils.log("Log Switch is ON");
-                    Constants.allowLog = true;
-                } else {
-                    Utils.log("Log Switch is OFF");
-                    Constants.allowLog = false;
-                }
-            }
-        });
+    // Called when the app is created
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        Utils.logd("oncreate start");
 
-        Constants.frameLayout = findViewById(R.id.frameLayout);
-        Constants.preview = findViewById(R.id.previewView);
-        Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);
-        Constants.cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        Constants.cameraProviderFuture.addListener(() -> {
-            try {
-                ProcessCameraProvider cameraProvider = Constants.cameraProviderFuture.get();
-                CameraHelper.bindCamera(cameraProvider, this, mImageView2);
-            } catch (ExecutionException | InterruptedException e) {
-                // No errors need to be handled for this Future.
-                // This should never be reached.
-            }
-        }, ContextCompat.getMainExecutor(this));
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        //        CameraHelper.startCamera(this, Constants.cameraTextureView, mImageView2);
-        Constants.cameraCaptureBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                CameraHelper.takePicture2();
-            }
-        });
+        // request permission
+        ActivityCompat.requestPermissions(this,
+                perms,
+                1234);
 
-        // Resize:
-        // Create widgets for image resize feature (width edit text box, height edit text box and resize button)
-        widthEditText = findViewById(R.id.editWidth);
-        heightEditText = findViewById(R.id.editHeight);
-        resizeButton = findViewById(R.id.buttonResize);
-        // Set click listener for the resize button
-        resizeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Resize the image based on user input
-                resizeImage();
-            }
-        });
+        // get all image and model filepaths in the assets folder
+        AssetManager assetManager = getAssets();
+        load_all_file_paths(assetManager);
 
-        // Run Model:
-        // set listener of the segment button (do model inference with the current displayed image).
-        mButtonSegment = findViewById(R.id.segmentButton);
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mButtonSegment.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                mButtonSegment.setEnabled(false);
-                mProgressBar.setVisibility(ProgressBar.VISIBLE);
-//                mButtonSegment.setText(getString(R.string.run_model));
-
-                //Thread thread = new Thread(MainActivity.this);
-                //thread.start();
-                run();
-            }
-        });
-
-        // Go to Next Image:
-        // set listener of the next image button
-        buttonRestart = findViewById(R.id.restartButton);
-        buttonRestart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Show the next image
-                currentIndex = (currentIndex + 1) % imageFiles.length;
-                if (currentModelName.equals("VQGANEncode")) {
-                    displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                } else {
-                    displayImage(currentIndex);
-                }
-            }
-        });
-
-        // Count Fish Text View
-        fishCountTextView = findViewById(R.id.fishCount);
-        inferenceTimeTextView = findViewById(R.id.inferenceTime);
-        fishExistTextView = findViewById(R.id.fishExist);
-
-        // Load the initial model
-        if (ptlFiles != null && ptlFiles.length > 0) {
-            // get all service names
-            Set<String> keySet = Constants.serviceNameToModelMap.keySet();
-            String[] allServiceNames = keySet.toArray(new String[0]);
-
-            // Model Selector:
-            modelSpinner = findViewById(R.id.modelSpinner);
-            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, allServiceNames);
-            spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            modelSpinner.setAdapter(spinnerAdapter);
-
-            defaultPosition = findIndex(allServiceNames, defaultServiceName);
-            Log.d("ImageSegmentation", "default position of" + defaultModelName + " is " + defaultPosition);
-
-            modelSpinner.setSelection(defaultPosition);
-            modelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                    // Load the selected model
-                    currentModelName = Constants.serviceNameToModelMap.get(allServiceNames[position]);
-                    try {
-                        Log.d("ImageSegmentation", currentModelName);
-                        if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
-                            Constants.IsCountingFish = true;
-                            Constants.IsDectectingFish = false;
-                            Constants.ImagingFish = false;
-                        }
-                        else if (currentModelName.equals("lite_optimized_clf.ptl"))
-                        {
-                            Constants.IsDectectingFish = true;
-                            Constants.IsCountingFish = false;
-                            Constants.ImagingFish = false;
-                        }
-                        else if (currentModelName.equals("lite_optimized_seg_240p.ptl"))
-                        {
-                            Constants.IsDectectingFish = false;
-                            Constants.IsCountingFish = false;
-                            Constants.ImagingFish = true;
-                        }
-
-                        // special handle counting fish
-                        if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl") || currentModelName.equals("lite_optimized_clf.ptl")) {
-                            mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
-                            currentHeight = 224;
-                            currentWidth = 224;
-                            // do we need it?
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText("224");
-                                    heightEditText.setText("224");
-                                }
-                            });
-
-                            resizeImage();
-                        } else if (currentModelName.equals("lite_optimized_seg_240p.ptl")) {
-                            mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
-                            currentHeight = 240;
-                            currentWidth = 426;
-                            // do we need it?
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText("426");
-                                    heightEditText.setText("240");
-                                }
-                            });
-
-                            resizeImage();
-                        } else if (currentModelName.equals("VQGANEncode")) {
-//                            if (Constants.mEncoder1 == null) {
-//                                Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-//                            }
-//                            if (Constants.mEncoder2 == null) {
-//                                Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-//                            }
-//                            if (Constants.mEncoder3 == null) {
-//                                Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-//                            }
-                            Log.d("tbt", "finish load encoders");
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText(String.valueOf(compressImageSize));
-                                    heightEditText.setText(String.valueOf(compressImageSize));
-                                }
-                            });
-
-                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                        } else if (currentModelName.equals("VQGANDecode")) {
-//                            if (Constants.mDecoder1 == null){
-//                                Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-//                            }
-//                            if (Constants.mDecoder2 == null) {
-//                                Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-//                            }
-//                            if (Constants.mDecoder3 == null) {
-//                                Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-//                            }
-
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText(String.valueOf(compressImageSize));
-                                    heightEditText.setText(String.valueOf(compressImageSize));
-                                }
-                            });
-
-                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                        } else if (currentModelName.equals("transformer_optimized.ptl")) {
-//                            if (Constants.mTransformer == null) {
-//                                Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
-//                            }
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText(String.valueOf(compressImageSize));
-                                    heightEditText.setText(String.valueOf(compressImageSize));
-                                }
-                            });
-                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
-
-                        } else {
-                            mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), currentModelName));
-                        }
-                    } catch (IOException e) {
-                        Log.e("ImageSegmentation", "Error reading assets", e);
-                        finish();
-                    }
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
-                    // Do nothing
-                }
-            });
-
+        // preload bitmaps for end2endTest, only load once
+        if (Constants.didLoadTestImages == false) {
+            load_bitmaps_for_end2endTest();
         }
+
+        // preload all image code related models
+        load_all_image_codec_models();
+
+        // setup ui components
+        uiSetup();
+
+        // setup constants
+        Constants.setup(this);
 
         // Load the initial image
         if (imageFiles != null && imageFiles.length > 0) {
@@ -583,23 +345,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             resizeButton.setEnabled(false);
         }
 
+        // set window properties
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        // Example of a call to a native method
-        uiSetup();
+
+        // set up some services
+        // set up sensor manager
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
-        KeyboardVisibilityEvent.setEventListener(
-                this,
-                new KeyboardVisibilityEventListener() {
-                    @Override
-                    public void onVisibilityChanged(boolean isOpen) {
-                        FullScreencall();
-                    }
-                });
-
+        // setup notification maneger
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -613,30 +369,220 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             startActivity(intent);
         }
 
-        ActivityCompat.requestPermissions(this,
-                perms,
-                1234);
-        Constants.setup(this);
-
-        Constants.tts = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
-
-            @Override
-            public void onInit(int status) {
-                if(status == TextToSpeech.SUCCESS){
-                    int result=Constants.tts.setLanguage(Locale.UK);
-                    if(result==TextToSpeech.LANG_MISSING_DATA ||
-                        result==TextToSpeech.LANG_NOT_SUPPORTED){
-                        Log.e("error", "This Language is not supported");
-                    }
-                }
-                else
-                    Log.e("error", "Initilization Failed!");
-            }
-        });
-
-        Log.e("asdf","oncreate end");
+        // is tts used ?
+//        Constants.tts = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+//            @Override
+//            public void onInit(int status) {
+//                if(status == TextToSpeech.SUCCESS){
+//                    int result=Constants.tts.setLanguage(Locale.UK);
+//                    if(result==TextToSpeech.LANG_MISSING_DATA ||
+//                        result==TextToSpeech.LANG_NOT_SUPPORTED){
+//                        Log.e("error", "This Language is not supported");
+//                    }
+//                }
+//                else
+//                    Log.e("error", "Initilization Failed!");
+//            }
+//        });
+        Utils.logd("oncreate end");
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 1234) {
+            boolean audioGranted=false;
+            boolean writeGranted=false;
+            for (int i = 0; i < permissions.length; i++) {
+                String permission = permissions[i];
+                int grantResult = grantResults[i];
+
+                if (permission.equals(Manifest.permission.RECORD_AUDIO)) {
+                    if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                        audioGranted=true;
+                    } else {
+                        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1234);
+                    }
+                }
+                else if (permission.equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                        writeGranted=true;
+                    } else {
+                        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1234);
+                    }
+                }
+            }
+            // remove to solve double sendchirpasynctask
+//            if (audioGranted && writeGranted) {
+//                Constants.user  = Constants.User.Bob;
+//                if (started == false) {
+//                    Utils.log("start startmethod from on permission granted");
+//                    startMethod(this);
+//                }
+//            }
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        FullScreencall();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Utils.logd("destroy!!!");
+    }
+
+    protected void onPause() {
+        super.onPause();
+        Utils.logd("onpause");
+//        sensorManager.unregisterListener(this);
+        stopMethod();
+    }
+
+    protected void onResume() {
+        super.onResume();
+        Utils.logd("onresume");
+//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+//        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
+        FullScreencall();
+
+        Constants.user  = Constants.User.Bob;
+        if (started == false) {
+            Utils.log("start startmethod from onResume");
+            startMethod(this);
+        }
+//        if (Constants.sw12.isChecked() &&
+//            ActivityCompat.checkSelfPermission(av, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+//            ActivityCompat.checkSelfPermission(av, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+//            !started) {
+//            Constants.user  = Constants.User.Bob;
+//            Utils.log("start startmethod from Constants.sw12.isChecked() ");
+//
+//            startMethod(this);
+//        }
+    }
+
+    public static void startWrapper() {
+        Constants.user = Constants.User.Alice;
+        stopMethod();
+        Utils.log("start startmethod from startWrapper");
+        startMethod(av);
+    }
+
+    public void onstart(View v) {
+        // Beitong: Change the button color to RED after it is pressed. Save the default background for recover the button color after sending chirp.
+        Constants.defaultBackground = v.getBackground();
+        v.setBackgroundColor(Color.RED);
+        // Beitong: Recommended by ChatGPT, in this way it will not block the UI Thread
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startWrapper();
+            }
+        }, Constants.Send_Delay);
+
+//        try {
+//            Thread.sleep(Constants.Send_Delay);
+//        }
+//        catch (Exception e) {
+//            Utils.log(e.getMessage());
+//        }
+//        startWrapper();
+    }
+
+    public static void startMethod(Activity av) {
+        started=true;
+//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+//        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
+
+        Constants.ts = System.currentTimeMillis();
+
+        Constants.work=true;
+        FileOperations.mkdir(av,Utils.getDirName());
+//        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
+
+        Constants.tv6.setText(Utils.trimmed_ts());
+        String formattedNow = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+            formattedNow = now.format(formatter);
+        } else {
+            formattedNow = "not_available";
+        }
+
+        Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
+        Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    public void onstop(View v) {
+        stopMethod();
+        Constants.user  = Constants.User.Bob;
+        Utils.log("start startmethod from onstop");
+        startMethod(av);
+    }
+
+    public static void stopMethod() {
+        if (Constants.task != null) {
+            Constants.task.cancel(true);
+            Constants.task = null;
+        }
+        if (Constants.timer!=null) {
+            Constants.timer.cancel();
+        }
+
+//        sensorManager.unregisterListener(this);
+        Constants.work=false;
+        Utils.logd("onstop");
+        Constants.sensorFlag=false;
+//        if (Constants.acc != null && Constants.acc.size() > 0) {
+//            FileOperations.writeSensors(this, Constants.ts+".txt");
+//        }
+        if (Constants._OfflineRecorder!=null) {
+            Constants._OfflineRecorder.halt2();
+        }
+        if (Constants.sp1!=null && Constants.sp1.track1!=null&&
+                Constants.sp1.track1.getState()== AudioTrack.STATE_INITIALIZED) {
+            Constants.sp1.pause();
+        }
+        Constants.toggleUI(true);
+        started=false;
+    }
+
+    public void FullScreencall() {
+        if(Build.VERSION.SDK_INT > 11 && Build.VERSION.SDK_INT < 19) { // lower api
+            View v = this.getWindow().getDecorView();
+            v.setSystemUiVisibility(View.GONE);
+        } else if(Build.VERSION.SDK_INT >= 19) {
+            //for new api versions.
+            View decorView = getWindow().getDecorView();
+            int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            decorView.setSystemUiVisibility(uiOptions);
+        }
+    }
+
+    public void clear(View v) {
+        Constants.debugPane.setText("");
+//        Constants.imgview.setImageBitmap(null);
+        inferenceTimeTextView.setText("");
+        fishCountTextView.setText("");
+        fishExistTextView.setText("");
+        Constants.msgview.setText("");
+        FullScreencall();
+    }
+
+    public static void unreg(Activity av) {
+        sensorManager.unregisterListener((MainActivity)av);
+    }
+
+
+    // ********************************** Start App Long Methods **********************************
+
+    // Called when run model button is pressed
     public void run() {
         if (currentModelName.equals("VQGANEncode")) {
             float[] mu = {0.0f, 0.0f, 0.0f};
@@ -673,7 +619,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
-                    mButtonSegment.setEnabled(true);
+                    runModelButton.setEnabled(true);
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -731,7 +677,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
 //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
                     mImageView.setImageBitmap(mBitmap);
-                    mButtonSegment.setEnabled(true);
+                    runModelButton.setEnabled(true);
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -783,7 +729,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
                     //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
-                    mButtonSegment.setEnabled(true);
+                    runModelButton.setEnabled(true);
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime + " ms");
                 }
@@ -811,7 +757,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
                     fishCountTextView.setText(String.valueOf(Constants.NumFish));
-                    mButtonSegment.setEnabled(true);
+                    runModelButton.setEnabled(true);
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -839,7 +785,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
                     fishExistTextView.setText(clf_res_postprocess(results[0]).toString());
-                    mButtonSegment.setEnabled(true);
+                    runModelButton.setEnabled(true);
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
                 }
@@ -901,59 +847,297 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
                     mImageView.setImageBitmap(transferredBitmap);
-                    mButtonSegment.setEnabled(true);
+                    runModelButton.setEnabled(true);
                     mProgressBar.setVisibility(ProgressBar.INVISIBLE);
                     inferenceTimeTextView.setText(inferenceTime+" ms");
 
                 }
             });
         }
-
-
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == 1234) {
-            boolean audioGranted=false;
-            boolean writeGranted=false;
-            for (int i = 0; i < permissions.length; i++) {
-                String permission = permissions[i];
-                int grantResult = grantResults[i];
-
-                if (permission.equals(Manifest.permission.RECORD_AUDIO)) {
-                    if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                        audioGranted=true;
-                    } else {
-                        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1234);
-                    }
-                }
-                else if (permission.equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                    if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                        writeGranted=true;
-                    } else {
-                        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1234);
-                    }
-                }
-            }
-            // remove to solve double sendchirpasynctask
-//            if (audioGranted && writeGranted) {
-//                Constants.user  = Constants.User.Bob;
-//                if (started == false) {
-//                    Utils.log("start startmethod from on permission granted");
-//                    startMethod(this);
-//                }
-//            }
-        }
     }
 
     public void uiSetup() {
+
+        // *********************** start setup ui components new in image transmission ***********************
+
+        // setup keyboard
+        KeyboardVisibilityEvent.setEventListener(
+                this,
+                new KeyboardVisibilityEventListener() {
+                    @Override
+                    public void onVisibilityChanged(boolean isOpen) {
+                        FullScreencall();
+                    }
+                });
+
+        mImageView = findViewById(R.id.imageView_fish);
+        mImageView2 = findViewById(R.id.imageView_fish2);
+        Constants.logswitch = findViewById(R.id.logcontroller);
+        Constants.chirptypeswitch = findViewById(R.id.chirptypecontroller);
+        Constants.equalizationTestController = findViewById(R.id.equalizationTestController);
+        Constants.equalizationTestController2 = findViewById(R.id.equalizationTestController2);
+
+        Constants.logswitch.setChecked(true); // set default to true which means we want to log
+        Constants.chirptypeswitch.setChecked(true);
+        Constants.equalizationTestController.setChecked(false);
+        Constants.equalizationTestController2.setChecked(false);
+
+        Constants.allowLog = true;
+
+        Constants.logswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Log Switch is ON");
+                    Constants.allowLog = true;
+                } else {
+                    Utils.log("Log Switch is OFF");
+                    Constants.allowLog = false;
+                }
+            }
+        });
+
+        Constants.chirptypeswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Use Linear Chirp");
+                    Constants.isLinearChirp = true;
+                } else {
+                    Utils.log("Use Nonlinear Chirp");
+                    Constants.isLinearChirp = false;
+                }
+            }
+        });
+
+        Constants.equalizationTestController.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Use new equalization");
+                    Constants.isNewEqualization = true;
+                    Constants.isNewEqualization2 = false;
+                } else {
+                    Utils.log("Use old equalization");
+                    Constants.isNewEqualization = false;
+                }
+            }
+        });
+
+        Constants.equalizationTestController2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                // Handle switch state change
+                if (isChecked) {
+                    Utils.log("Use new equalization 2 insert preamble");
+                    Constants.isNewEqualization2 = true;
+                    Constants.isNewEqualization = false;
+                } else {
+                    Utils.log("Use old equalization");
+                    Constants.isNewEqualization2 = false;
+                }
+            }
+        });
+
+//        Constants.frameLayout = findViewById(R.id.frameLayout);
+        Constants.preview = findViewById(R.id.previewView);
+        Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);
+        Constants.cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        Constants.cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = Constants.cameraProviderFuture.get();
+                CameraHelper.bindCamera(cameraProvider, this, mImageView2);
+            } catch (ExecutionException | InterruptedException e) {
+                // No errors need to be handled for this Future.
+                // This should never be reached.
+            }
+        }, ContextCompat.getMainExecutor(this));
+
+        //        CameraHelper.startCamera(this, Constants.cameraTextureView, mImageView2);
+        Constants.cameraCaptureBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CameraHelper.takePicture2();
+            }
+        });
+
+
+        // Resize:
+        // Create widgets for image resize feature (width edit text box, height edit text box and resize button)
+        widthEditText = findViewById(R.id.editWidth);
+        heightEditText = findViewById(R.id.editHeight);
+        resizeButton = findViewById(R.id.buttonResize);
+        // Set click listener for the resize button
+        resizeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Resize the image based on user input
+                resizeImage();
+            }
+        });
+
+        // Run Model:
+        // set listener of the segment button (do model inference with the current displayed image).
+        runModelButton = findViewById(R.id.runModelButton);
+        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
+        runModelButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                runModelButton.setEnabled(false);
+                mProgressBar.setVisibility(ProgressBar.VISIBLE);
+                run();
+            }
+        });
+
+        // Go to Next Image:
+        // set listener of the next image button
+        buttonRestart = findViewById(R.id.restartButton);
+        buttonRestart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Show the next image
+                currentIndex = (currentIndex + 1) % imageFiles.length;
+                if (currentModelName.equals("VQGANEncode")) {
+                    displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                } else {
+                    displayImage(currentIndex);
+                }
+            }
+        });
+
+        // Count Fish Text View
+        fishCountTextView = findViewById(R.id.fishCount);
+        inferenceTimeTextView = findViewById(R.id.inferenceTime);
+        fishExistTextView = findViewById(R.id.fishExist);
+
+        // model selector
+        if (ptlFiles != null && ptlFiles.length > 0) {
+            // get all service names
+            Set<String> keySet = Constants.serviceNameToModelMap.keySet();
+            String[] allServiceNames = keySet.toArray(new String[0]);
+
+            // Model Selector:
+            modelSpinner = findViewById(R.id.modelSpinner);
+            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, allServiceNames);
+            spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            modelSpinner.setAdapter(spinnerAdapter);
+
+            defaultPosition = findIndex(allServiceNames, defaultServiceName);
+            Log.d("ImageSegmentation", "default position of" + defaultModelName + " is " + defaultPosition);
+
+            modelSpinner.setSelection(defaultPosition);
+            modelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                    // Load the selected model
+                    currentModelName = Constants.serviceNameToModelMap.get(allServiceNames[position]);
+                    try {
+                        Log.d("ImageSegmentation", currentModelName);
+                        if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
+                            Constants.IsCountingFish = true;
+                            Constants.IsDectectingFish = false;
+                            Constants.ImagingFish = false;
+                        }
+                        else if (currentModelName.equals("lite_optimized_clf.ptl"))
+                        {
+                            Constants.IsDectectingFish = true;
+                            Constants.IsCountingFish = false;
+                            Constants.ImagingFish = false;
+                        }
+                        else if (currentModelName.equals("lite_optimized_seg_240p.ptl"))
+                        {
+                            Constants.IsDectectingFish = false;
+                            Constants.IsCountingFish = false;
+                            Constants.ImagingFish = true;
+                        }
+
+                        // special handle counting fish
+                        if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl") || currentModelName.equals("lite_optimized_clf.ptl")) {
+                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
+                            currentHeight = 224;
+                            currentWidth = 224;
+                            // do we need it?
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText("224");
+                                    heightEditText.setText("224");
+                                }
+                            });
+
+                            resizeImage();
+                        } else if (currentModelName.equals("lite_optimized_seg_240p.ptl")) {
+                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
+                            currentHeight = 240;
+                            currentWidth = 426;
+                            // do we need it?
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText("426");
+                                    heightEditText.setText("240");
+                                }
+                            });
+
+                            resizeImage();
+                        } else if (currentModelName.equals("VQGANEncode")) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText(String.valueOf(compressImageSize));
+                                    heightEditText.setText(String.valueOf(compressImageSize));
+                                }
+                            });
+
+                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                        } else if (currentModelName.equals("VQGANDecode")) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText(String.valueOf(compressImageSize));
+                                    heightEditText.setText(String.valueOf(compressImageSize));
+                                }
+                            });
+
+                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                        } else if (currentModelName.equals("transformer_optimized.ptl")) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    widthEditText.setText(String.valueOf(compressImageSize));
+                                    heightEditText.setText(String.valueOf(compressImageSize));
+                                }
+                            });
+                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
+
+                        } else {
+                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        finish();
+                    }
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> adapterView) {
+                    // Do nothing
+                }
+            });
+
+        }
+
+        // *********************** end setup ui components new in image transmission ***********************
+
+
+
         Constants.gview = (GraphView) findViewById(R.id.graphProd);
-        Constants.gview2 = (GraphView) findViewById(R.id.graphProd2);
+        Constants.gview2 = (GraphView) findViewById(R.id.graphProd);
         Constants.gview3 = (GraphView) findViewById(R.id.graphProd3);
+        Constants.gview4 = (GraphView) findViewById(R.id.graphProd4);
+
         Constants.sw1 = (Switch) findViewById(R.id.switch1);
         Constants.sw2 = (Switch) findViewById(R.id.switch2);
         Constants.sw3 = (Switch) findViewById(R.id.switch3);
@@ -997,6 +1181,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     editor.putString("code_rate", Constants.CodeRate.C4_6.toString());
                     Constants.CodeRate_LoRA = 2;
                 }
+                stopMethod();
+                try {
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                startMethod(av);
+                try {
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 editor.commit();
             }
             @Override
@@ -1014,6 +1210,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 android.R.layout.simple_spinner_item, arrayList2);
         arrayAdapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         Constants.spinner2.setAdapter(arrayAdapter2);
+        // need to stop the current method
         Constants.spinner2.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -1043,6 +1240,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     editor.putString("Tx protocol", Constants.Modulation.Chirp.toString());
                     Constants.scheme = Constants.Modulation.Chirp;
                     //Constants.et4.setText(Constants.Modulation.OFDM_freq_all+"");
+                }
+                stopMethod();
+                try {
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                startMethod(av);
+                try {
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
                 editor.commit();
             }
@@ -1092,32 +1301,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // trigger setup, need to clean the code
                 if (arrayList4.get(position) == "end2endTest") {
                     try {
-//                        if (Constants.mEncoder1 == null) {
-//                            Log.d("tbt", "check encoder");
-//                            Constants.mEncoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-//                        }
-//                        if (Constants.mEncoder2 == null) {
-//                            Constants.mEncoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-//                        }
-//                        if (Constants.mEncoder3 == null) {
-//                            Constants.mEncoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-//                        }
-//
-//                        // later we can separate encoder and decoder users
-//                        if (Constants.mDecoder1 == null){
-//                            Constants.mDecoder1 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-//                        }
-//                        if (Constants.mDecoder2 == null) {
-//                            Constants.mDecoder2 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-//                        }
-//                        if (Constants.mDecoder3 == null) {
-//                            Constants.mDecoder3 = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "decoder.ptl"));
-//                        }
-//
-//                        if (Constants.mTransformer == null) {
-//                            Constants.mTransformer = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
-//                        }
-
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -1128,12 +1311,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                         displayImageCenterCropWithSize(currentIndex, compressImageSize);
                     } catch (Exception e) {
-                        Log.e("ImageSegmentation", "Error reading assets", e);
+                        e.printStackTrace();
                         finish();
                     }
                 }
                 Constants.expMode = Constants.Experiment.valueOf(arrayList4.get(position));
-                Log.d("tbt", arrayList4.get(position));
+                stopMethod();
+                try {
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                startMethod(av);
+                try {
+                    Thread.sleep(Constants.spinnerStateChangeSleepTime);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                Utils.logd("Current Expmode: " + arrayList4.get(position));
                 editor.commit();
             }
             @Override
@@ -1182,7 +1377,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.tv20 = (TextView) findViewById(R.id.textView20);
         Constants.tv21 = (TextView) findViewById(R.id.textView21);
         Constants.msgview = (TextView) findViewById(R.id.msg);
-        Constants.imgview = (ImageView) findViewById(R.id.my_image_view);
+//        Constants.imgview = (ImageView) findViewById(R.id.my_image_view);
 
         Constants.sview = (NestedScrollView) findViewById(R.id.scrollView);
         Constants.tv5.setMovementMethod(new ScrollingMovementMethod());
@@ -1387,6 +1582,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et1.getText().toString();
+                Utils.checkTextInput(Constants.VolumeCandidates, Constants.et1, ss);
+
                 if (Utils.isFloat(ss)) {
                     try {
                         editor.putFloat("volume", Float.parseFloat(ss));
@@ -1442,6 +1639,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // send delay text input
         Constants.et4.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1455,9 +1653,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et4.getText().toString();
+
+                Utils.checkTextInput(Constants.SendDelay_Candidates, Constants.et4, ss);
+
                 if (Utils.isInteger(ss)) {
-                        editor.putInt("Send_Delay", Integer.parseInt(ss));
-                        Constants.Send_Delay = Integer.parseInt(ss);
+                    editor.putInt("Send_Delay", Integer.parseInt(ss));
+                    Constants.Send_Delay = Integer.parseInt(ss);
 //                    }
                     editor.commit();
                 }
@@ -1485,6 +1686,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // bandwidth text input
         Constants.et6.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1498,6 +1700,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et6.getText().toString();
+
+                Utils.checkTextInput(Constants.BW_Candidates, Constants.et6, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("BW", Integer.parseInt(ss));
                     editor.commit();
@@ -1508,6 +1713,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // FC carrier frequency text input
         Constants.et7.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1521,6 +1727,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et7.getText().toString();
+
+                Utils.checkTextInput(Constants.FC_Candidates, Constants.et7, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("FC", Integer.parseInt(ss));
                     editor.commit();
@@ -1531,6 +1740,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // sf text input
         Constants.et8.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1544,6 +1754,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et8.getText().toString();
+
+                Utils.checkTextInput(Constants.SF_Candidates, Constants.et8, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("SF", Integer.parseInt(ss));
                     editor.commit();
@@ -1553,6 +1766,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        // n measurement text input
         Constants.et9.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -1566,6 +1780,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                       int before, int count) {
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(av).edit();
                 String ss = Constants.et9.getText().toString();
+
+                Utils.checkTextInput(Constants.Mattempts_Candidates, Constants.et9, ss);
+
                 if (Utils.isInteger(ss)) {
                     editor.putInt("mattempts", Integer.parseInt(ss));
                     editor.commit();
@@ -1859,6 +2076,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //        });
     }
 
+    // ********************************** End App Long Methods **********************************
+
+
+    // Sensor related
     @Override
     protected void onActivityResult(int requestCode, int resultCode,
                                     @Nullable Intent data) {
@@ -1884,176 +2105,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    protected void onPause() {
-        super.onPause();
-        Log.e("asdf","onpause");
-        sensorManager.unregisterListener(this);
-        stopMethod();
-    }
-
-    protected void onResume() {
-        super.onResume();
-        Log.e("asdf","onresume");
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
-        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
-        FullScreencall();
-
-        Constants.user  = Constants.User.Bob;
-        if (started == false) {
-            Utils.log("start startmethod from onResume");
-            startMethod(this);
-        }
-//        if (Constants.sw12.isChecked() &&
-//            ActivityCompat.checkSelfPermission(av, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
-//            ActivityCompat.checkSelfPermission(av, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-//            !started) {
-//            Constants.user  = Constants.User.Bob;
-//            Utils.log("start startmethod from Constants.sw12.isChecked() ");
-//
-//            startMethod(this);
-//        }
-    }
-
     @Override
     public void onSensorChanged(SensorEvent event) {
-//        if (Constants.sensorFlag && Constants.imu) {
-//            if (event.sensor.equals(accelerometer)) {
-//                Constants.acc.add(event.values[0]+","+event.values[1]+","+event.values[2]+"\n");
-//            }
-//            else if (event.sensor.equals(gyroscope)) {
-//                Constants.gyro.add(event.values[0]+","+event.values[1]+","+event.values[2]+"\n");
-//            }
-//        }
+        if (Constants.sensorFlag && Constants.imu) {
+            if (event.sensor.equals(accelerometer)) {
+                Constants.acc.add(event.values[0]+","+event.values[1]+","+event.values[2]+"\n");
+            }
+            else if (event.sensor.equals(gyroscope)) {
+                Constants.gyro.add(event.values[0]+","+event.values[1]+","+event.values[2]+"\n");
+            }
+        }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.e("asdf","destroy!!!");
-    }
-
-    public static void startWrapper() {
-        Constants.user = Constants.User.Alice;
-        stopMethod();
-        Utils.log("start startmethod from startWrapper");
-        startMethod(av);
-    }
-
-    public void onstart(View v) {
-        // Beitong: Change the button color to RED after it is pressed. Save the default background for recover the button color after sending chirp.
-        Constants.defaultBackground = v.getBackground();
-        v.setBackgroundColor(Color.RED);
-        // Beitong: Recommended by ChatGPT, in this way it will not block the UI Thread
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                startWrapper();
-            }
-        }, Constants.Send_Delay);
-
-//        try {
-//            Thread.sleep(Constants.Send_Delay);
-//        }
-//        catch (Exception e) {
-//            Utils.log(e.getMessage());
-//        }
-//        startWrapper();
-    }
-
-    public static void startMethod(Activity av) {
-        started=true;
-//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
-//        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
-
-        Constants.ts = System.currentTimeMillis();
-
-        Constants.work=true;
-        FileOperations.mkdir(av,Utils.getDirName());
-//        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
-
-        Constants.tv6.setText(Utils.trimmed_ts());
-        String formattedNow = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            LocalDateTime now = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-            formattedNow = now.format(formatter);
-        } else {
-            formattedNow = "not_available";
-        }
-
-        Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
-        Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    public void onstop(View v) {
-        stopMethod();
-        Constants.user  = Constants.User.Bob;
-        Utils.log("start startmethod from onstop");
-        startMethod(av);
-    }
-
-    public static void stopMethod() {
-        if (Constants.task != null) {
-            Constants.task.cancel(true);
-            Constants.task = null;
-        }
-        if (Constants.timer!=null) {
-            Constants.timer.cancel();
-        }
-
-//        sensorManager.unregisterListener(this);
-        Constants.work=false;
-        Log.e("asdf","onstop");
-        Constants.sensorFlag=false;
-//        if (Constants.acc != null && Constants.acc.size() > 0) {
-//            FileOperations.writeSensors(this, Constants.ts+".txt");
-//        }
-        if (Constants._OfflineRecorder!=null) {
-            Constants._OfflineRecorder.halt2();
-        }
-        if (Constants.sp1!=null && Constants.sp1.track1!=null&&
-                Constants.sp1.track1.getState()== AudioTrack.STATE_INITIALIZED) {
-            Constants.sp1.pause();
-        }
-        Constants.toggleUI(true);
-        started=false;
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        FullScreencall();
-    }
-
-    public void FullScreencall() {
-        if(Build.VERSION.SDK_INT > 11 && Build.VERSION.SDK_INT < 19) { // lower api
-            View v = this.getWindow().getDecorView();
-            v.setSystemUiVisibility(View.GONE);
-        } else if(Build.VERSION.SDK_INT >= 19) {
-            //for new api versions.
-            View decorView = getWindow().getDecorView();
-            int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-            decorView.setSystemUiVisibility(uiOptions);
-        }
-    }
-
-    public void clear(View v) {
-        Constants.debugPane.setText("");
-        Constants.imgview.setImageBitmap(null);
-        inferenceTimeTextView.setText("");
-        fishCountTextView.setText("");
-        fishExistTextView.setText("");
-        Constants.msgview.setText("");
-        FullScreencall();
-    }
-
-    public static void unreg(Activity av) {
-        sensorManager.unregisterListener((MainActivity)av);
     }
 
 }

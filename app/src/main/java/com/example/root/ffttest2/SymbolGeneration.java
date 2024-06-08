@@ -115,10 +115,14 @@ public class SymbolGeneration {
         if (preamble) {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
-        siglen += (Constants.Ns_lora + Constants.Gap) * 8;
+        siglen += (Constants.Ns_lora + Constants.Gap) * 4;
+        if (Constants.isNewEqualization2) {
+            siglen += (Constants.Ns_lora + Constants.Gap) * (Math.floor(sym.length / Constants.Equalization2_Range)+1);
+        }
         short[] txsig = new short[siglen];
 
         int counter = 0;
+        int counter_equalization = 0;
         if (preamble) {
             // add preamble
             short[] preamble_sig = PreambleGen.preamble_s();
@@ -130,10 +134,20 @@ public class SymbolGeneration {
 
         short[] symbol;
             // add downchirp and upchirp
-        short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0);
-        short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0);
-        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0);
-        short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0);
+        short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0, true);
+        short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0, true);
+        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0, true);
+        short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0, true);
+
+        short[] equalization_preamble = Utils.GenerateEqualizationPreamble_LoRa();
+//        short[] equalization2_preamble = Utils.GeneratePreamble_LoRa(true, 0, true);
+        // try to use the preamble
+        short[] equalization2_preamble = PreambleGen.preamble_s();
+        equalization2_preamble = Utils.segment(equalization2_preamble, 0, 0 + Constants.Ns_lora - 1);
+
+//        for (Short s: equalization_preamble) {
+//            Utils.logd("short s:" + s);
+//        }
 
 
         for (Short s : preamble_up_1) {
@@ -156,50 +170,60 @@ public class SymbolGeneration {
         }
         counter += Constants.Gap;
 
+        counter_equalization = counter;
 
-        for (int i = 0; i < sym.length / 2; i++) {
-            symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
+
+        for (int i = 0; i < sym.length; i++) {
+
+            // insert pilot for equalization 2
+
+            if (Constants.isNewEqualization2 && (i % Constants.Equalization2_Range == 0)) {
+                for (Short s : equalization2_preamble) {
+                    txsig[counter++] = s;
+                }
+                counter += Constants.Gap;
+            }
+
+            symbol = Utils.GeneratePreamble_LoRa(true, sym[i], false);
             // test
             //symbol = Utils.GeneratePreamble_LoRa(true, 0);
             for (Short s : symbol) {
                 txsig[counter++] = s;
             }
             counter += Constants.Gap;
+
         }
 
-
-        for (Short s : preamble_up_1) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (Short s : preamble_up_2) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (Short s : preamble_down_1) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (Short s : preamble_down_2) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (int i = sym.length / 2; i < sym.length; i++) {
-            symbol = Utils.GeneratePreamble_LoRa(true, sym[i]);
-            // test
-            //symbol = Utils.GeneratePreamble_LoRa(true, 0);
-            for (Short s : symbol) {
-                txsig[counter++] = s;
+        // add equalization
+        if (Constants.isNewEqualization) {
+            while (counter_equalization < counter) {
+                for (Short s : equalization_preamble) {
+                    txsig[counter_equalization] = (short) (txsig[counter_equalization] * Constants.Equalization_Original_Ratio + s * Constants.Equalization_Part_Ratio);
+                    counter_equalization++;
+                }
+                counter_equalization += Constants.Equalization_Gap;
             }
-            counter += Constants.Gap;
         }
 
-
-
+//        for (Short s : preamble_up_1) {
+//            txsig[counter++] = s;
+//        }
+//        counter += Constants.Gap;
+//
+//        for (Short s : preamble_up_2) {
+//            txsig[counter++] = s;
+//        }
+//        counter += Constants.Gap;
+//
+//        for (Short s : preamble_down_1) {
+//            txsig[counter++] = s;
+//        }
+//        counter += Constants.Gap;
+//
+//        for (Short s : preamble_down_2) {
+//            txsig[counter++] = s;
+//        }
+//        counter += Constants.Gap;
         return txsig;
     }
     public static short[] generateDataSymbols(short[] bits, int[] valid_carrier,
