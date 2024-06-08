@@ -324,7 +324,6 @@ public class Utils {
         Utils.log("length of data after bpass =>" + downversion_chirp[0].length);
 
         downversion_chirp[1] = bpass_filter2(downversion_chirp[1],Constants.Center_Freq,Constants.Offset_Freq,Constants.FS);
-
         return downversion_chirp;
 
     }
@@ -455,10 +454,10 @@ public class Utils {
             String filter_str = filter_strBuilder.toString();
             Utils.log("bpass filter => " + filter_str);
         }
+        double[] results = fir2(data,h);
 
-
-
-        return applyFilter(h, data);
+        return results;
+        //return applyFilter(h, data);
     }
 
     private static double[] applyFilter(double[] h, double[] data) {
@@ -2427,4 +2426,5 @@ public class Utils {
     public static native double[][] dividenative(double[][] data1,double[][] data2);
     public static native double[] bandpass(double[] data);
     public static native double[] fir(double[] data, double[] h);
+    public static native double[] fir2(double[] data, double[] h);
 }

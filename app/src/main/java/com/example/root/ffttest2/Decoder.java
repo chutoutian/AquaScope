@@ -575,51 +575,51 @@ public class Decoder {
 
         // insert pilot/preamble
         if (Constants.isLinearChirp && Constants.isNewEqualization2 == true) {
-                Utils.logd("use new equalization");
-                // new equalization
-                final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
+            Utils.logd("use new equalization");
+            // new equalization
+            final long startTime_time_domain_equalization = SystemClock.elapsedRealtime();
 //                double[] equalization_data =  Arrays.copyOf(received_data, received_data.length);
-                double[] equalization_data2 =  Arrays.copyOf(received_data, received_data.length);
+            double[] equalization_data2 =  Arrays.copyOf(received_data, received_data.length);
 
             // filtered
-                // TODO: all long filter can be optimized
+            // TODO: all long filter can be optimized
 //                equalization_data = Utils.bpass_filter2(equalization_data,Constants.Center_Freq_Equalization2,Constants.Offset_Freq_Equalization2,Constants.FS);
-                equalization_data2 = Utils.bpass_filter2(equalization_data2,Constants.Center_Freq_Equalization3,Constants.Offset_Freq_Equalization3,Constants.FS);
+            equalization_data2 = Utils.bpass_filter2(equalization_data2,Constants.Center_Freq_Equalization3,Constants.Offset_Freq_Equalization3,Constants.FS);
 
             // place holder for equalization output data
-                double[] output_data =  Arrays.copyOf(received_data, received_data.length);
-                // preamble time
-                int ptime = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+            double[] output_data =  Arrays.copyOf(received_data, received_data.length);
+            // preamble time
+            int ptime = (int)((Constants.preambleTime/1000.0)*Constants.fs);
 
-                // recover to estimator
-                int gtIdx = 0;
-                int Ns_to = 960;
-                int tapNum_to = 120;
-                int offset_to = 24;
-                int pkgIdx = 1200*7;
-                int lenRx_to = Ns_to + tapNum_to - 1;
-                int to_len = 4 * (Constants.Ns_lora + Constants.Gap);
-                int start_to = ptime + Constants.ChirpGap;
+            // recover to estimator
+            int gtIdx = 0;
+            int Ns_to = 960;
+            int tapNum_to = 120;
+            int offset_to = 24;
+            int pkgIdx = 1200*7;
+            int lenRx_to = Ns_to + tapNum_to - 1;
+            int to_len = 4 * (Constants.Ns_lora + Constants.Gap);
+            int start_to = ptime + Constants.ChirpGap;
 
-                short[] preamble_sig_to = PreambleGen.preamble_s();
-                preamble_sig_to = Utils.segment(preamble_sig_to, gtIdx, gtIdx + Ns_to - 1);
-                double[] sendingSignalArray_to = convertShortArrayToDoubleArray(preamble_sig_to);
-                Matrix symbolTx_to = new Matrix(sendingSignalArray_to, 1);
-                double[] temp_received_data_to = Utils.segment(equalization_data2, pkgIdx - offset_to, pkgIdx + lenRx_to - offset_to - 1);
-                Matrix symbolRx_to = new Matrix(temp_received_data_to, 1).transpose();
-                double[] to_recover_data = Utils.segment(equalization_data2,start_to-offset_to, start_to+to_len+tapNum_to-1-offset_to-1);
-                Matrix dataBad = new Matrix(to_recover_data, 1).transpose();
+            short[] preamble_sig_to = PreambleGen.preamble_s();
+            preamble_sig_to = Utils.segment(preamble_sig_to, gtIdx, gtIdx + Ns_to - 1);
+            double[] sendingSignalArray_to = convertShortArrayToDoubleArray(preamble_sig_to);
+            Matrix symbolTx_to = new Matrix(sendingSignalArray_to, 1);
+            double[] temp_received_data_to = Utils.segment(equalization_data2, pkgIdx - offset_to, pkgIdx + lenRx_to - offset_to - 1);
+            Matrix symbolRx_to = new Matrix(temp_received_data_to, 1).transpose();
+            double[] to_recover_data = Utils.segment(equalization_data2,start_to-offset_to, start_to+to_len+tapNum_to-1-offset_to-1);
+            Matrix dataBad = new Matrix(to_recover_data, 1).transpose();
 
-                Matrix g_to = timeEqualizerEstimation(symbolTx_to, symbolRx_to, tapNum_to);
-                if (g_to != null) {
-                    // Recover the transmitted signal
-                    Matrix tx = timeEqualizerRecover(dataBad, g_to);
-                    double[] temp_output_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
-                    System.arraycopy(temp_output_data, 0, output_data, start_to, to_len);
-                    Utils.log("TO Equalizer estimation success.");
-                } else {
-                    Utils.log("TO Equalizer estimation failed.");
-                }
+            Matrix g_to = timeEqualizerEstimation(symbolTx_to, symbolRx_to, tapNum_to);
+            if (g_to != null) {
+                // Recover the transmitted signal
+                Matrix tx = timeEqualizerRecover(dataBad, g_to);
+                double[] temp_output_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
+                System.arraycopy(temp_output_data, 0, output_data, start_to, to_len);
+                Utils.log("TO Equalizer estimation success.");
+            } else {
+                Utils.log("TO Equalizer estimation failed.");
+            }
 
                 // recover symbols
                 int Ns = Constants.Ns_lora;
@@ -637,52 +637,52 @@ public class Decoder {
                 Utils.logd("num sections " + num_sections);
                 Matrix symbolTx = new Matrix(sendingSignalArray, 1);
 
-                start = ptime+Constants.ChirpGap; // skip preambles
-                start = start + 4 * (Constants.Ns_lora + Constants.Gap); // skip to and cfo preambles
-                int res_start = start;
+            start = ptime+Constants.ChirpGap; // skip preambles
+            start = start + 4 * (Constants.Ns_lora + Constants.Gap); // skip to and cfo preambles
+            int res_start = start;
 
-                int section_len = Constants.Equalization2_Range * (Constants.Ns_lora + Constants.Gap);
-                int last_section_len = (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) % Constants.Equalization2_Range) * (Constants.Ns_lora + Constants.Gap);
+            int section_len = Constants.Equalization2_Range * (Constants.Ns_lora + Constants.Gap);
+            int last_section_len = (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) % Constants.Equalization2_Range) * (Constants.Ns_lora + Constants.Gap);
 
 
-                for (int i = 0; i < num_sections; i++) {
-                    double[] temp_received_data = Utils.segment(equalization_data2, start - offset, start + lenRx - 1 - offset);
-                    start = start + (Constants.Ns_lora + Constants.Gap);
-                    double[] temp_to_recover_data;
-                    if (i == num_sections - 1) {
-                        temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + last_section_len + tapNum - 1 - offset - 1);
-                    } else {
-                        temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + section_len + tapNum -1 - offset - 1);
-                    }
-                    Utils.logd("to recover data length " + temp_to_recover_data.length);
-                    Matrix symbolRx = new Matrix(temp_received_data, 1).transpose();
-                    Matrix badData = new Matrix(temp_to_recover_data, 1).transpose();
-                    Matrix g = timeEqualizerEstimation(symbolTx, symbolRx, tapNum);
-                    if (g != null) {
-                        // Recover the transmitted signal
-                        Matrix tx = timeEqualizerRecover(badData, g);
-                        double[] temp_output_data = tx.getColumnPackedCopy();
-                        Utils.logd("recovered data length " + temp_output_data.length);
-
-                        if (i == num_sections - 1) {
-                            System.arraycopy(temp_output_data, 0, output_data, res_start, last_section_len);
-                        } else {
-                            System.arraycopy(temp_output_data, 0, output_data, res_start, section_len);
-                        }
-
-                        Utils.log("Equalizer estimation success.");
-
-                    } else {
-                        Utils.log("Equalizer estimation failed.");
-                    }
-                    if (i == num_sections - 1) {
-                        start = start + last_section_len;
-                        res_start = res_start + last_section_len;
-                    } else {
-                        start = start + section_len;
-                        res_start = res_start + section_len;
-                    }
+            for (int i = 0; i < num_sections; i++) {
+                double[] temp_received_data = Utils.segment(equalization_data2, start - offset, start + lenRx - 1 - offset);
+                start = start + (Constants.Ns_lora + Constants.Gap);
+                double[] temp_to_recover_data;
+                if (i == num_sections - 1) {
+                    temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + last_section_len + tapNum - 1 - offset - 1);
+                } else {
+                    temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + section_len + tapNum -1 - offset - 1);
                 }
+                Utils.logd("to recover data length " + temp_to_recover_data.length);
+                Matrix symbolRx = new Matrix(temp_received_data, 1).transpose();
+                Matrix badData = new Matrix(temp_to_recover_data, 1).transpose();
+                Matrix g = timeEqualizerEstimation(symbolTx, symbolRx, tapNum);
+                if (g != null) {
+                    // Recover the transmitted signal
+                    Matrix tx = timeEqualizerRecover(badData, g);
+                    double[] temp_output_data = tx.getColumnPackedCopy();
+                    Utils.logd("recovered data length " + temp_output_data.length);
+
+                    if (i == num_sections - 1) {
+                        System.arraycopy(temp_output_data, 0, output_data, res_start, last_section_len);
+                    } else {
+                        System.arraycopy(temp_output_data, 0, output_data, res_start, section_len);
+                    }
+
+                    Utils.log("Equalizer estimation success.");
+
+                } else {
+                    Utils.log("Equalizer estimation failed.");
+                }
+                if (i == num_sections - 1) {
+                    start = start + last_section_len;
+                    res_start = res_start + last_section_len;
+                } else {
+                    start = start + section_len;
+                    res_start = res_start + section_len;
+                }
+            }
             final long inferenceTime_time_domain_equalization = SystemClock.elapsedRealtime() - startTime_time_domain_equalization;
             Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver time domain equalization (new continuous method) (ms): " + inferenceTime_time_domain_equalization + "\n";
             Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);

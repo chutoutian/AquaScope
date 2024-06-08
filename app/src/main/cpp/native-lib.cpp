@@ -852,6 +852,52 @@ extern "C" JNIEXPORT jdoubleArray JNICALL Java_com_example_root_ffttest2_Utils_f
     return out;
 }
 
+extern "C" JNIEXPORT jdoubleArray JNICALL Java_com_example_root_ffttest2_Utils_fir2(
+        JNIEnv *env,
+        jclass,
+        jdoubleArray data,
+        jdoubleArray h) {
+
+    // Get the elements of the input arrays
+    jdouble *jh = env->GetDoubleArrayElements(h, NULL);
+    jdouble *jdata = env->GetDoubleArrayElements(data, NULL);
+
+    // Get the lengths of the input arrays
+    jint filterLength = env->GetArrayLength(h);
+    jint dataLength = env->GetArrayLength(data);
+
+    // Create a new array to hold the filter result
+    jdoubleArray result = env->NewDoubleArray(dataLength);
+    jdouble* tempResult = new jdouble[dataLength];
+
+    // Initialize the result array
+    for (int i = 0; i < dataLength; i++) {
+        tempResult[i] = 0;
+    }
+
+    // Apply the filter
+    for (int i = 0; i < dataLength; i++) {
+        for (int j = 0; j < filterLength; j++) {
+            if (i - j >= 0) {
+                tempResult[i] += jh[j] * jdata[i - j];
+            }
+        }
+    }
+
+    // Copy the result to the output array
+    env->SetDoubleArrayRegion(result, 0, dataLength, tempResult);
+
+    // Free the dynamically allocated memory
+    delete[] tempResult;
+
+    // Release the elements of the input arrays
+    env->ReleaseDoubleArrayElements(h, jh, 0);
+    env->ReleaseDoubleArrayElements(data, jdata, 0);
+
+    // Return the result
+    return result;
+}
+
 extern "C" JNIEXPORT jdoubleArray JNICALL Java_com_example_root_ffttest2_Utils_bandpass(
         JNIEnv *env,
         jclass,
