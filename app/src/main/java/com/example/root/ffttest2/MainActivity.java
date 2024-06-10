@@ -880,7 +880,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.logswitch.setChecked(true); // set default to true which means we want to log
         Constants.chirptypeswitch.setChecked(true);
         Constants.equalizationTestController.setChecked(false);
-        Constants.equalizationTestController2.setChecked(false);
+        // set our new method the default one
+        Constants.equalizationTestController2.setChecked(true);
+        Constants.isNewEqualization2 = true;
 
         Constants.allowLog = true;
 

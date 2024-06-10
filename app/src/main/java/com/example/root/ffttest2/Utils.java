@@ -2026,6 +2026,33 @@ public class Utils {
         return corr;
     }
 
+    public static double[] xcorr_matlab_abs(double[] x, double[] y) {
+        int lenX = x.length;
+        int lenY = y.length;
+        int maxLen = Math.max(lenX, lenY);
+
+        // Pad the shorter array with zeros
+        double[] xPadded = new double[maxLen];
+        double[] yPadded = new double[maxLen];
+        System.arraycopy(x, 0, xPadded, 0, lenX);
+        System.arraycopy(y, 0, yPadded, 0, lenY);
+
+        // Compute cross-correlation
+        double[] r = new double[2 * maxLen - 1];
+        for (int lag = -maxLen + 1; lag < maxLen; lag++) {
+            double sum = 0;
+            for (int i = 0; i < maxLen; i++) {
+                int j = i + lag;
+                if (j >= 0 && j < maxLen) {
+                    sum += xPadded[i] * yPadded[j];
+                }
+            }
+            r[maxLen - 1 - lag] = Math.abs(sum);
+        }
+
+        return r;
+    }
+
     public static double[] max_idx(double[] corr) {
         double maxval=0;
         int maxidx=0;

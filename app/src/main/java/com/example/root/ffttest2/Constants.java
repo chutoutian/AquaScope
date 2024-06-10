@@ -50,7 +50,7 @@ public class Constants {
     public static ArrayList<Bitmap> testEnd2EndImageBitmaps = new ArrayList<>(); // store bitmap of all test images (bypass access assets in class other than the main class)
     public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
     ;
-    public static int end2endTestDelay = 7000; // sending delay between two test images (leave time for propagation and decode)
+    public static int end2endTestDelay = 15000; // sending delay between two test images (leave time for propagation and decode)
     public static int end2endCamDelay = 3000; // sending delay between two captured images/ camera capture time interval (leave time for propagation and decode)
 
     // later maybe we can add a wrapper to merge these parts to one model
@@ -104,7 +104,7 @@ public class Constants {
     public static int[] SF_Candidates = {3,4,5,6,7};
     public static int[] FC_Candidates = {2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000};
     public static int[] BW_Candidates = {1000, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000};
-    public static int[] SendDelay_Candidates = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    public static int[] SendDelay_Candidates = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 12000, 15000};
     public static int[] Mattempts_Candidates = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
     public static int SendInterval = 15000; // 7000 ms between two images

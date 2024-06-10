@@ -647,7 +647,16 @@ public class Decoder {
 
                 for (int i = 0; i < num_sections; i++) {
                     double[] temp_received_data = Utils.segment(equalization_data2, start - offset, start + lenRx - 1 - offset);
-                    start = start + (Constants.Ns_lora + Constants.Gap);
+
+                    // new doppler
+                    double[] xcorr = Utils.xcorr_matlab_abs(temp_received_data, sendingSignalArray);
+                    double[] max_idx_info = Utils.max_idx(xcorr);
+                    int max_index = (int)max_idx_info[0];
+                    Utils.logd("max_index " + max_index);
+                    max_index = max_index - temp_received_data.length;
+                    int newstart = start + max_index;
+                    temp_received_data = Utils.segment(equalization_data2, newstart - offset, newstart + lenRx - 1 - offset);
+                    start = newstart + (Constants.Ns_lora + Constants.Gap);
                     double[] temp_to_recover_data;
                     if (i == num_sections - 1) {
                         temp_to_recover_data = Utils.segment(equalization_data2, start - offset, start + last_section_len + tapNum - 1 - offset - 1);
