@@ -46,15 +46,23 @@ import org.pytorch.IValue;
 import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
+
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+import org.apache.commons.math3.stat.descriptive.rank.Max;
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+
+
 public class Utils {
 
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("native-lib");
     }
-
-
-
 
     // Convert a Bitmap to a binary string
 
@@ -2435,6 +2443,184 @@ public class Utils {
             FileOperations.saveBitmapToFile(MainActivity.av, vqganGtBitmap, Utils.genName(Constants.SignalType.Sent_Gt_Bitmap, 0) + ".png");
         }
     }
+
+    public static List<Integer> findPeaks(double[] signal) {
+        List<Integer> peakIndices = new ArrayList<>();
+        for (int i = 1; i < signal.length - 1; i++) {
+            if (signal[i] > signal[i - 1] && signal[i] > signal[i + 1]) {
+                peakIndices.add(i);
+            }
+        }
+        return peakIndices;
+    }
+
+    public static class Peak {
+        public final int location;
+        public final double width;
+
+        public Peak(int location, double width) {
+            this.location = location;
+            this.width = width;
+        }
+    }
+
+    public static List<Peak> findPeaks2(double[] y) {
+        List<Peak> peaks = new ArrayList<>();
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+
+        for (int i = 1; i < y.length - 1; i++) {
+            if (y[i] > y[i - 1] && y[i] > y[i + 1]) {
+                // Peak found
+                int location = i;
+                double height = y[i];
+
+                // Estimate the width of the peak
+                int leftBase = findBase(y, i, -1);
+                int rightBase = findBase(y, i, 1);
+                double width = rightBase - leftBase;
+
+                peaks.add(new Peak(location, width));
+                stats.addValue(width);
+            }
+        }
+
+        return peaks;
+    }
+
+    public static double[] linspace2(double start, double end, int num) {
+        double[] result = new double[num];
+        double step = (end - start) / (num - 1);
+        for (int i = 0; i < num; i++) {
+            result[i] = start + (i * step);
+        }
+        return result;
+    }
+
+    private static int findBase(double[] y, int peakIndex, int direction) {
+        int index = peakIndex;
+        while (index >= 0 && index < y.length && y[index] > y[peakIndex] / 2) {
+            index += direction;
+        }
+        return Math.max(0, Math.min(index, y.length - 1));
+    }
+
+
+
+    public static double[] convertIntToDouble(int[] intArray) {
+        double[] doubleArray = new double[intArray.length];
+        for (int i = 0; i < intArray.length; i++) {
+            doubleArray[i] = (double) intArray[i];
+        }
+        return doubleArray;
+    }
+
+    public static int findFirstValidMaxima(double[] signal) {
+        List<Integer> locs = findPeaks(signal);
+        if (locs.isEmpty()) {
+            return -1;
+        }
+
+        double maxPeak = Double.NEGATIVE_INFINITY;
+        for (int loc : locs) {
+            if (signal[loc] > maxPeak) {
+                maxPeak = signal[loc];
+            }
+        }
+
+        double threshold = Constants.findPeakHeightThreshold * maxPeak;
+        int minDistance = Constants.findPeakMinDistanceThreshold;
+        List<Integer> filteredLocs = new ArrayList<>();
+
+        for (int loc : locs) {
+            if (signal[loc] >= threshold) {
+                boolean tooClose = false;
+                for (int filteredLoc : filteredLocs) {
+                    if (Math.abs(filteredLoc - loc) < minDistance) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                if (!tooClose) {
+                    filteredLocs.add(loc);
+                }
+            }
+        }
+        return filteredLocs.isEmpty() ? -1 : (int)filteredLocs.get(0);
+    }
+
+    public static double[] movingMedian(double[] data, int windowSize) {
+        Median median = new Median();
+        double[] smoothed = new double[data.length];
+
+        for (int i = 0; i < data.length; i++) {
+            int start = Math.max(0, i - windowSize / 2);
+            int end = Math.min(data.length, i + windowSize / 2 + 1);
+            double[] window = Arrays.copyOfRange(data, start, end);
+            smoothed[i] = median.evaluate(window);
+        }
+
+        return smoothed;
+    }
+
+    public static double[] movingMean(double[] data, int windowSize) {
+        double[] smoothed = new double[data.length];
+
+        for (int i = 0; i < data.length; i++) {
+            int start = Math.max(0, i - windowSize / 2);
+            int end = Math.min(data.length, i + windowSize / 2 + 1);
+            double sum = 0;
+            for (int j = start; j < end; j++) {
+                sum += data[j];
+            }
+            smoothed[i] = sum / (end - start);
+        }
+
+        return smoothed;
+    }
+
+    public static double[] fillMissing(double[] data) {
+        SplineInterpolator interpolator = new SplineInterpolator();
+        List<Double> xValues = new ArrayList<>();
+        List<Double> yValues = new ArrayList<>();
+
+        for (int i = 0; i < data.length; i++) {
+            if (!Double.isNaN(data[i])) {
+                xValues.add((double) i);
+                yValues.add(data[i]);
+            }
+        }
+
+        double[] x = xValues.stream().mapToDouble(Double::doubleValue).toArray();
+        double[] y = yValues.stream().mapToDouble(Double::doubleValue).toArray();
+
+        PolynomialSplineFunction function = interpolator.interpolate(x, y);
+
+        double[] filled = new double[data.length];
+        for (int i = 0; i < data.length; i++) {
+            filled[i] = Double.isNaN(data[i]) ? function.value(i) : data[i];
+        }
+
+        return filled;
+    }
+
+    public static double[] previousInterpolate(double[] originalIndex, double[] dataToSubsample, double[] newIndex) {
+        double[] result = new double[newIndex.length];
+        int j = 0;
+
+        for (int i = 0; i < newIndex.length; i++) {
+            while (j < originalIndex.length && newIndex[i] >= originalIndex[j]) {
+                j++;
+            }
+            if (j > 0) {
+                result[i] = dataToSubsample[j - 1];
+            } else {
+                result[i] = dataToSubsample[0];
+            }
+        }
+        return result;
+    }
+
+
 
     /**
      * A native method that is implemented by the 'native-lib' native library,

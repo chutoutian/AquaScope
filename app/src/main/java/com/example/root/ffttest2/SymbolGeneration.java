@@ -116,8 +116,8 @@ public class SymbolGeneration {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
         siglen += (Constants.Ns_lora + Constants.Gap) * 4;
-        if (Constants.isNewEqualization2) {
-            siglen += (Constants.Ns_lora + Constants.Gap) * (Math.floor(sym.length / Constants.Equalization2_Range)+1);
+        if (Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to) {
+            siglen += (Constants.Ns_lora + Constants.Gap) * (Math.floor(sym.length / Constants.Equalization2_Range)+1); // TODO: should add one more preamble at the end
         }
         short[] txsig = new short[siglen];
 
@@ -133,7 +133,7 @@ public class SymbolGeneration {
         }
 
         short[] symbol;
-            // add downchirp and upchirp
+        // add downchirp and upchirp
         short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0, true);
         short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0, true);
         short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0, true);
@@ -176,8 +176,7 @@ public class SymbolGeneration {
         for (int i = 0; i < sym.length; i++) {
 
             // insert pilot for equalization 2
-
-            if (Constants.isNewEqualization2 && (i % Constants.Equalization2_Range == 0)) {
+            if ((Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to) && (i % Constants.Equalization2_Range == 0)) {
                 for (Short s : equalization2_preamble) {
                     txsig[counter++] = s;
                 }
@@ -195,7 +194,7 @@ public class SymbolGeneration {
         }
 
         // add equalization
-        if (Constants.isNewEqualization) {
+        if (Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method2_new_freq) {
             while (counter_equalization < counter) {
                 for (Short s : equalization_preamble) {
                     txsig[counter_equalization] = (short) (txsig[counter_equalization] * Constants.Equalization_Original_Ratio + s * Constants.Equalization_Part_Ratio);

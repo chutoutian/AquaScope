@@ -163,9 +163,9 @@
             android:id="@+id/imageView_fish"
             android:layout_width="180dp"
             android:layout_height="180dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:contentDescription="@string/image_view"
-            app:layout_constraintTop_toBottomOf="@+id/equalizationTestController2" />
+            app:layout_constraintTop_toBottomOf="@+id/chirptypecontroller" />
 
         <ImageView
             android:id="@+id/imageView_fish2"
@@ -1144,6 +1144,15 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView13" />
 
+        <TextView
+            android:id="@+id/textView22"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="EqualizationMode"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView24" />
+
         <Spinner
             android:id="@+id/spinner4"
             android:layout_width="206dp"
@@ -1161,6 +1170,15 @@
         <!--            tools:layout_editor_absoluteX="231dp">-->
 
         <!--        </FrameLayout>-->
+
+        <Spinner
+            android:id="@+id/spinner5"
+            android:layout_width="206dp"
+            android:layout_height="30dp"
+            app:layout_constraintBottom_toBottomOf="@+id/textView22"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/textView22"
+            app:layout_constraintVertical_bias="0.0" />
 
         <TextView
             android:id="@+id/fishExist"
@@ -1339,10 +1357,10 @@
             android:id="@+id/logcontroller"
             android:layout_width="283dp"
             android:layout_height="35dp"
-            android:layout_marginTop="11dp"
+            android:layout_marginTop="16dp"
             android:text="  Log"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView24" />
+            app:layout_constraintTop_toBottomOf="@+id/textView22" />
 
         <Switch
             android:id="@+id/chirptypecontroller"
@@ -1350,22 +1368,6 @@
             android:layout_height="35dp"
             android:text="  UseLinear"
             app:layout_constraintTop_toBottomOf="@+id/logcontroller" />
-
-        <Switch
-            android:id="@+id/equalizationTestController"
-            android:layout_width="283dp"
-            android:layout_height="35dp"
-            android:text="Test Equalization Use New Freq"
-            app:layout_constraintTop_toBottomOf="@+id/chirptypecontroller"
-            tools:layout_editor_absoluteX="0dp" />
-
-        <Switch
-            android:id="@+id/equalizationTestController2"
-            android:layout_width="283dp"
-            android:layout_height="35dp"
-            android:text="Test Equalization Insert Pilot"
-            app:layout_constraintTop_toBottomOf="@+id/equalizationTestController"
-            tools:layout_editor_absoluteX="0dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

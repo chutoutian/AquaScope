@@ -3,6 +3,7 @@ package com.example.root.ffttest2;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.util.Size;
 import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.camera.core.CameraSelector;
@@ -30,20 +31,26 @@ public class CameraHelper {
 	public static void bindCamera(@NonNull ProcessCameraProvider cameraProvider, Activity activity, ImageView mimageview) {
 		imageView = mimageview;
 
-		Preview preview = new Preview.Builder()
-				.build();
+		try {
 
-		CameraSelector cameraSelector = new CameraSelector.Builder()
-				.requireLensFacing(CameraSelector.LENS_FACING_BACK)
-				.build();
-		Constants.preview.setScaleType(PreviewView.ScaleType.FIT_CENTER);
+			Preview preview = new Preview.Builder()
+					.setTargetResolution(new Size(1920,1080))
+					.build();
 
-		preview.setSurfaceProvider(Constants.preview.getSurfaceProvider());
-		imageCapture = new ImageCapture.Builder()
-						.setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-						.build();
+			CameraSelector cameraSelector = new CameraSelector.Builder()
+					.requireLensFacing(CameraSelector.LENS_FACING_BACK)
+					.build();
+			Constants.preview.setScaleType(PreviewView.ScaleType.FIT_CENTER);
 
-		Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner)activity, cameraSelector, imageCapture, preview);
+			preview.setSurfaceProvider(Constants.preview.getSurfaceProvider());
+			imageCapture = new ImageCapture.Builder()
+					.setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+					.build();
+
+			Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) activity, cameraSelector, imageCapture, preview);
+		} catch (Exception e) {
+			Utils.logd("Error binding camera: " + e.getMessage());
+		}
 	}
 
 	public static Bitmap imageProxyToBitmap(ImageProxy image) {

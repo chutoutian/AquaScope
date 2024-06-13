@@ -78,7 +78,7 @@ public class Constants {
     public static String Sender_Latency_Str = "";
     public static String Receiver_Latency_Str = "";
 
-    public static Switch logswitch, chirptypeswitch, equalizationTestController, equalizationTestController2;
+    public static Switch logswitch, chirptypeswitch;
     public static boolean allowLog;
 
     public static List<String> modelIgnoreDisplayInSpinnerList = Arrays.asList("embedding_optimized.ptl",
@@ -112,8 +112,14 @@ public class Constants {
     public static int spinnerStateChangeSleepTime = 300;
 
     public static boolean isLinearChirp = true;
-    public static boolean isNewEqualization = false;
-    public static boolean isNewEqualization2 = false;
+    public enum NewEqualizationMethod {
+        nouse, // do not use any equalization
+        method1_once, // only do equalization at the beginning, no time varied channel consideration
+        method2_new_freq,
+        method3_tv_wo_to, // time varied channel considered, insert new preambles, simple time correct
+        method4_tv_w_to // time varied channel considered, insert new preambles, time correct
+    }
+    public static NewEqualizationMethod currentEqualizationMethod = NewEqualizationMethod.nouse;
 
     public static double[] NonlinearCoeff = {1, 0};
 
@@ -124,6 +130,10 @@ public class Constants {
     public static int Equalization_Range = 5;
     public static int Equalization_Gap = Constants.Equalization_Range * (Constants.Ns + Constants.Gap) - Constants.Ns_Equalization;
     public static int Equalization2_Range = 3; // insert a preamble every 5 symbols
+
+    public static double findPeakHeightThreshold = 0.90;
+
+    public static int findPeakMinDistanceThreshold = 16;
 
     // ****************************** End of Codec Related Global Variables ******************************
 
@@ -366,7 +376,7 @@ public class Constants {
     //public static int maxbits=5;
     public static int exp_num=5;
     public static int SNR_THRESH = 10; //unused
-    public static Spinner spinner,spinner2,spinner3,spinner4;
+    public static Spinner spinner,spinner2,spinner3,spinner4, spinner5;
     public static CodeRate codeRate = CodeRate.None;
     public static int DATA_LEN = 32;
     public static int mattempts=1;

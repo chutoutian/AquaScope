@@ -874,15 +874,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mImageView2 = findViewById(R.id.imageView_fish2);
         Constants.logswitch = findViewById(R.id.logcontroller);
         Constants.chirptypeswitch = findViewById(R.id.chirptypecontroller);
-        Constants.equalizationTestController = findViewById(R.id.equalizationTestController);
-        Constants.equalizationTestController2 = findViewById(R.id.equalizationTestController2);
 
         Constants.logswitch.setChecked(true); // set default to true which means we want to log
         Constants.chirptypeswitch.setChecked(true);
-        Constants.equalizationTestController.setChecked(false);
         // set our new method the default one
-        Constants.equalizationTestController2.setChecked(true);
-        Constants.isNewEqualization2 = true;
 
         Constants.allowLog = true;
 
@@ -914,35 +909,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        Constants.equalizationTestController.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // Handle switch state change
-                if (isChecked) {
-                    Utils.log("Use new equalization");
-                    Constants.isNewEqualization = true;
-                    Constants.isNewEqualization2 = false;
-                } else {
-                    Utils.log("Use old equalization");
-                    Constants.isNewEqualization = false;
-                }
-            }
-        });
-
-        Constants.equalizationTestController2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // Handle switch state change
-                if (isChecked) {
-                    Utils.log("Use new equalization 2 insert preamble");
-                    Constants.isNewEqualization2 = true;
-                    Constants.isNewEqualization = false;
-                } else {
-                    Utils.log("Use old equalization");
-                    Constants.isNewEqualization2 = false;
-                }
-            }
-        });
 
 //        Constants.frameLayout = findViewById(R.id.frameLayout);
         Constants.preview = findViewById(R.id.previewView);
@@ -1156,6 +1122,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.spinner2 = (Spinner) findViewById(R.id.spinner2);
         Constants.spinner3 = (Spinner) findViewById(R.id.spinner3);
         Constants.spinner4 = (Spinner) findViewById(R.id.spinner4);
+        Constants.spinner5 = (Spinner) findViewById(R.id.spinner5);
         Constants.sendButton = (Button) findViewById(R.id.sendbutton);
 
         ArrayList<String> arrayList = new ArrayList<>();
@@ -1332,6 +1299,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
                 Utils.logd("Current Expmode: " + arrayList4.get(position));
                 editor.commit();
+            }
+            @Override
+            public void onNothingSelected(AdapterView <?> parent) {
+            }
+        });
+
+        // new equalization method
+        ArrayList<String> arrayList5 = new ArrayList<>();
+        arrayList5.add("nouse");
+        arrayList5.add("method1_once");
+        arrayList5.add("method2_new_freq");
+        arrayList5.add("method3_tv_wo_to");
+        arrayList5.add("method4_tv_w_to");
+
+        ArrayAdapter<String> arrayAdapter5 = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, arrayList5);
+        arrayAdapter5.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Constants.spinner5.setAdapter(arrayAdapter5);
+        // set default
+        int defaultPositionSpinner5 = arrayAdapter5.getPosition("method4_tv_w_to");
+        Constants.spinner5.setSelection(defaultPositionSpinner5);
+        Constants.spinner5.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Constants.currentEqualizationMethod = Constants.NewEqualizationMethod.valueOf(arrayList5.get(position));
             }
             @Override
             public void onNothingSelected(AdapterView <?> parent) {
