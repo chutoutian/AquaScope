@@ -28,6 +28,11 @@ android {
             path file('Android.mk')
         }
     }
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
 
     testOptions {
         unitTests.all {
