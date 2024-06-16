@@ -117,7 +117,8 @@ public class Constants {
         method1_once, // only do equalization at the beginning, no time varied channel consideration
         method2_new_freq,
         method3_tv_wo_to, // time varied channel considered, insert new preambles, simple time correct
-        method4_tv_w_to // time varied channel considered, insert new preambles, time correct
+        method4_tv_w_to, // time varied channel considered, insert new preambles, time correct, resample
+        method5_tv_w_to_range
     }
     public static NewEqualizationMethod currentEqualizationMethod = NewEqualizationMethod.nouse;
 
@@ -133,7 +134,7 @@ public class Constants {
 
     public static double findPeakHeightThreshold = 0.90;
 
-    public static int findPeakMinDistanceThreshold = 16;
+    public static int findPeakMinDistanceThreshold = 8;
 
     // ****************************** End of Codec Related Global Variables ******************************
 
@@ -1005,6 +1006,7 @@ public class Constants {
         carrier = new double[2][Ns_lora];
         if (Constants.ADD_GAP)
         {
+            // TODO: remove gap?
             Gap = (int)(Ns_lora * 0.05);
         }
 

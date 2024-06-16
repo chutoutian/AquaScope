@@ -55,8 +55,12 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-
-
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
+import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 public class Utils {
 
     // Used to load the 'native-lib' library on application startup.
@@ -2547,6 +2551,139 @@ public class Utils {
         }
         return filteredLocs.isEmpty() ? -1 : (int)filteredLocs.get(0);
     }
+
+
+
+    public static int findFirstValidMaxima2(double[] signal, int lastPeakValue, int th) {
+        double[] to_process_signal;
+        int to_add = 0;
+        if (lastPeakValue == -1) {
+            to_process_signal = signal;
+        } else {
+            to_process_signal = Utils.segment(signal, Math.max(0, lastPeakValue-th), Math.min(signal.length-1, lastPeakValue+th));
+            to_add = lastPeakValue-th;
+        }
+
+        List<Integer> locs = findPeaks(to_process_signal);
+
+        if (locs.isEmpty()) {
+            double[] res = max_idx(to_process_signal);
+            int loc = 0;
+            loc = (int) (res[0] + to_add);
+            return loc;
+        } else {
+            double maxPeak = Double.NEGATIVE_INFINITY;
+            for (int loc : locs) {
+                if (to_process_signal[loc] > maxPeak) {
+                    maxPeak = to_process_signal[loc];
+                }
+            }
+            double threshold = Constants.findPeakHeightThreshold * maxPeak;
+            int minDistance = Constants.findPeakMinDistanceThreshold;
+            List<Integer> filteredLocs = new ArrayList<>();
+            for (int loc : locs) {
+                if (to_process_signal[loc] >= threshold) {
+                    boolean tooClose = false;
+                    for (int filteredLoc : filteredLocs) {
+                        if (Math.abs(filteredLoc - loc) < minDistance) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (!tooClose) {
+                        filteredLocs.add(loc);
+                    }
+                }
+            }
+            return filteredLocs.isEmpty() ? -1 : (int)filteredLocs.get(0) + to_add;
+        }
+    }
+
+    public static double[] padSignal(double[] signal) {
+        int n = signal.length;
+        int nextPowerOf2 = 1;
+        while (nextPowerOf2 < n) {
+            nextPowerOf2 *= 2;
+        }
+        double[] paddedSignal = new double[nextPowerOf2];
+        System.arraycopy(signal, 0, paddedSignal, 0, n);
+        return paddedSignal;
+    }
+
+    public static double[] computeHilbertTransform(double[] signal) {
+        double[] paddedSignal = padSignal(signal);
+        int n = paddedSignal.length;
+        FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
+
+        // Compute FFT of the input signal
+        Complex[] fftResult = fft.transform(paddedSignal, TransformType.FORWARD);
+
+        // Create the Hilbert transform multiplier
+        Complex[] hilbertMultiplier = new Complex[n];
+        hilbertMultiplier[0] = Complex.ZERO;
+        for (int i = 1; i < (n + 1) / 2; i++) {
+            hilbertMultiplier[i] = Complex.I;
+        }
+        for (int i = (n + 1) / 2; i < n; i++) {
+            hilbertMultiplier[i] = Complex.ZERO;
+        }
+        if (n % 2 == 0) {
+            hilbertMultiplier[n / 2] = Complex.ZERO;
+        }
+
+        // Apply the Hilbert transform multiplier
+        for (int i = 0; i < n; i++) {
+            fftResult[i] = fftResult[i].multiply(hilbertMultiplier[i]);
+        }
+
+        // Compute the inverse FFT
+        Complex[] ifftResult = fft.transform(fftResult, TransformType.INVERSE);
+
+        // Extract the imaginary part (the Hilbert transform) and remove padding
+        double[] hilbertTransform = new double[signal.length];
+        for (int i = 0; i < signal.length; i++) {
+            hilbertTransform[i] = ifftResult[i].getImaginary();
+        }
+
+        return hilbertTransform;
+    }
+
+    public static double[] computeAnalyticSignalMagnitude(double[] signal) {
+        // Compute Hilbert Transform
+        double[] hilbert = computeHilbertTransform(signal);
+
+        // Compute magnitude of the analytic signal
+        double[] magnitude = new double[signal.length];
+        for (int i = 0; i < signal.length; i++) {
+            magnitude[i] = Math.sqrt(signal[i] * signal[i] + hilbert[i] * hilbert[i]);
+        }
+
+        return magnitude;
+    }
+
+    public static double[] interp1(double[] x, double[] v, double[] xq) {
+        double[] vq = new double[xq.length];
+
+        // Edge cases handling
+        for (int i = 0; i < xq.length; i++) {
+            if (xq[i] <= x[0]) {
+                vq[i] = v[0];
+            } else if (xq[i] >= x[x.length - 1]) {
+                vq[i] = v[v.length - 1];
+            } else {
+                // Binary search to find the interval
+                int idx = Arrays.binarySearch(x, xq[i]);
+                if (idx < 0) {
+                    idx = -idx - 2;
+                }
+                // Linear interpolation formula
+                vq[i] = v[idx] + (v[idx + 1] - v[idx]) * (xq[i] - x[idx]) / (x[idx + 1] - x[idx]);
+            }
+        }
+
+        return vq;
+    }
+
 
     public static double[] movingMedian(double[] data, int windowSize) {
         Median median = new Median();

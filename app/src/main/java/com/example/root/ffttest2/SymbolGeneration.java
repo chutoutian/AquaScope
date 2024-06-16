@@ -116,7 +116,7 @@ public class SymbolGeneration {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
         siglen += (Constants.Ns_lora + Constants.Gap) * 4;
-        if (Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to) {
+        if (Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method5_tv_w_to_range) {
             siglen += (Constants.Ns_lora + Constants.Gap) * (Math.floor(sym.length / Constants.Equalization2_Range)+1); // TODO: should add one more preamble at the end
         }
         short[] txsig = new short[siglen];
@@ -176,7 +176,7 @@ public class SymbolGeneration {
         for (int i = 0; i < sym.length; i++) {
 
             // insert pilot for equalization 2
-            if ((Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to) && (i % Constants.Equalization2_Range == 0)) {
+            if ((Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method5_tv_w_to_range) && (i % Constants.Equalization2_Range == 0)) {
                 for (Short s : equalization2_preamble) {
                     txsig[counter++] = s;
                 }

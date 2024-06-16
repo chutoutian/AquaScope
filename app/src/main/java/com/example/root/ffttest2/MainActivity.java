@@ -1312,13 +1312,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         arrayList5.add("method2_new_freq");
         arrayList5.add("method3_tv_wo_to");
         arrayList5.add("method4_tv_w_to");
+        arrayList5.add("method5_tv_w_to_range");
 
         ArrayAdapter<String> arrayAdapter5 = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, arrayList5);
         arrayAdapter5.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         Constants.spinner5.setAdapter(arrayAdapter5);
         // set default
-        int defaultPositionSpinner5 = arrayAdapter5.getPosition("method4_tv_w_to");
+        int defaultPositionSpinner5 = arrayAdapter5.getPosition("method5_tv_w_to_range");
         Constants.spinner5.setSelection(defaultPositionSpinner5);
         Constants.spinner5.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
