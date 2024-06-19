@@ -1325,6 +1325,16 @@
             app:layout_constraintStart_toStartOf="@+id/editWidth"
             app:layout_constraintTop_toBottomOf="@+id/editWidth" />
 
+        <Button
+            android:id="@+id/readyButton"
+            android:layout_width="200dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="16dp"
+            android:text="Ready"
+            android:textAllCaps="false"
+            app:layout_constraintStart_toStartOf="@+id/editWidth"
+            app:layout_constraintTop_toBottomOf="@+id/sendbutton" />
+
         <TextView
             android:id="@+id/fishCount"
             android:layout_width="50dp"

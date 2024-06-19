@@ -42,8 +42,8 @@ public class Constants {
     public enum Experiment {
         testExp, // for doing all test and experiment
         end2endTest, // for sending test image
-        end2endCam, // for sending image captured by camera
-        // add more mode if needed
+        end2endCam, // for sending image captured by camere
+        dataCollection
     }
 
     public static Experiment expMode = Experiment.testExp; // store current expMode
@@ -119,7 +119,7 @@ public class Constants {
         method2_new_freq,
         method3_tv_wo_to, // time varied channel considered, insert new preambles, simple time correct
         method4_tv_w_to, // time varied channel considered, insert new preambles, time correct, resample
-        method5_tv_w_to_range
+        method5_tv_w_to_range // most advanced with range limit
     }
     public static NewEqualizationMethod currentEqualizationMethod = NewEqualizationMethod.nouse;
 
@@ -137,6 +137,23 @@ public class Constants {
 
     public static int findPeakMinDistanceThreshold = 8;
 
+    public static int datacollection_times = 1;
+    public static int datacollection_image_count = 1; // use the 1- datacollection_image_count image in the sendTestImages folder
+    public static String datacollection_env = "air";
+    public static String datacollection_distance = "1m";
+    public static String datacollection_mobility = "static";
+    public static String datacollection_depth = "1m";
+    public static String datacollection_orientation = "0";
+
+    public static String setup_description = "";
+    public static int estimated_time_in_second = 0;
+
+    public static int datacollection_proposed_time = 15;
+    public static int datacollection_css_time = 15;
+    public static int datacollection_ofdm_adapt_time = 15;
+    public static int datacollection_ofdm_wo_adapt_time = 15;
+
+    public static View overlayView = null;
     // ****************************** End of Codec Related Global Variables ******************************
 
 
@@ -383,7 +400,7 @@ public class Constants {
     public static int DATA_LEN = 32;
     public static int mattempts=1;
     public static long ts;
-    public static Button startButton,clearButton,stopButton,sendButton;
+    public static Button startButton,clearButton,stopButton,sendButton, readyButton;
     public static Drawable defaultBackground;
     public static float volume=0.6f;
     public static TextView tv1,tv2,tv3,tv4, debugPane,tv5,tv6,tv7,tv8,tv9,tv10,tv13,tv14,tv15,tv16,tv17,tv18,tv19,tv20,tv21,msgview;

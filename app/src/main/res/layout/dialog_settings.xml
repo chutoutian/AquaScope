@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="10dp" />
+
+        <!-- Environment Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Environment" />
+        <Spinner
+            android:id="@+id/spinner_env"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Distance Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Distance" />
+        <Spinner
+            android:id="@+id/spinner_distance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Mobility Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mobility" />
+        <Spinner
+            android:id="@+id/spinner_mobility"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Depth Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Depth" />
+        <Spinner
+            android:id="@+id/spinner_depth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Orientation Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Orientation" />
+        <Spinner
+            android:id="@+id/spinner_orientation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Times Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Times" />
+        <Spinner
+            android:id="@+id/spinner_times"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Image Count Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Image Count" />
+        <Spinner
+            android:id="@+id/spinner_imagecount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Current Time TextView -->
+        <TextView
+            android:id="@+id/textview_current_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Current Time: "
+            android:textSize="16sp" />
+
+        <!-- Estimated Time TextView -->
+        <TextView
+            android:id="@+id/textview_estimated_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Estimated Time: "
+            android:textSize="16sp" />
+
+        <!-- Finish Button -->
+        <Button
+            android:id="@+id/button_finish"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Finish"
+            android:layout_marginTop="20dp" />
+    </LinearLayout>
+</ScrollView>

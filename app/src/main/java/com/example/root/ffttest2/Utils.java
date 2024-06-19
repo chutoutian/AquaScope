@@ -2140,6 +2140,34 @@ public class Utils {
     public static String getDirName() {
         return Constants.exp_num+"_"+Constants.ts;
     }
+
+    public static String getImageLevelDirPath(String imagename) {
+        return getDirName() + "/" + imagename;
+    }
+
+    public static String getMethodLevelDirPath(String imagename, String method) {
+        return getImageLevelDirPath(imagename) + "/" + method;
+    }
+
+    public static String getSetupLevelDirPath(String imagename, String method, String setup_description) {
+        return getMethodLevelDirPath(imagename, method) + "/" + setup_description;
+    }
+
+    public static void update_setup_description() {
+        Constants.setup_description = Constants.datacollection_env + "_" + Constants.datacollection_distance + "_" + Constants.datacollection_mobility + "_" + Constants.datacollection_depth + "_" + Constants.datacollection_orientation;
+    }
+
+    public static void update_estimated_time() {
+        Constants.estimated_time_in_second = Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time +Constants.datacollection_css_time + Constants.datacollection_ofdm_adapt_time + Constants.datacollection_ofdm_wo_adapt_time);
+    }
+
+    public static String convertSecondsToTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        return minutes + " Min " + seconds + " Seconds";
+    }
+
     public static boolean isInteger(String s) {
         try {
             Integer.parseInt(s);

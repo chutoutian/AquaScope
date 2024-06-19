@@ -26,13 +26,16 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -71,6 +74,17 @@ import org.pytorch.LiteModuleLoader;
 import org.pytorch.Module;
 import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
+
+
+import android.app.Dialog;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CheckBox;
+import androidx.appcompat.app.AppCompatActivity;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -225,6 +239,146 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (sigmoid(x) > 0.5)
             return true;
         return false;
+    }
+    private void showSettingsDialog() {
+        // Create the dialog
+        final Dialog settingsDialog = new Dialog(this);
+        settingsDialog.requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove the title
+        settingsDialog.setContentView(R.layout.dialog_settings);
+
+        // Set dialog width to match parent
+        if (settingsDialog.getWindow() != null) {
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+            lp.copyFrom(settingsDialog.getWindow().getAttributes());
+            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+            settingsDialog.getWindow().setAttributes(lp);
+        }
+
+        // Populate the spinners
+        setupSpinner(settingsDialog, R.id.spinner_env, new String[]{"air", "bridge", "pool"});
+        setupSpinner(settingsDialog, R.id.spinner_distance, new String[]{"1m", "3m", "5m", "10m", "20m"});
+        setupSpinner(settingsDialog, R.id.spinner_mobility, new String[]{"static", "slow", "fast"});
+        setupSpinner(settingsDialog, R.id.spinner_depth, new String[]{"1m", "2m", "5m"});
+        setupSpinner(settingsDialog, R.id.spinner_orientation, new String[]{"0", "90", "180"});
+        setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "5", "10", "20", "30"});
+        setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
+
+        // Display the current time
+        TextView currentTimeTextView = settingsDialog.findViewById(R.id.textview_current_time);
+        String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+        currentTimeTextView.setText("Current Time: " + currentTime);
+
+        // Find the finish button
+        Button finishButton = settingsDialog.findViewById(R.id.button_finish);
+
+        // Set click listener for the finish button
+        finishButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // build file structure
+                Constants.ts = System.currentTimeMillis();
+                FileOperations.mkdir(av,Utils.getDirName());
+                Utils.update_setup_description();
+                for (int i = 1; i <= Constants.datacollection_image_count; i++) {
+                    String imagename = "Image" + i;
+                    FileOperations.mkdir(av,Utils.getImageLevelDirPath(imagename));
+
+                    FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "proposed"));
+                    FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "proposed", Constants.setup_description));
+
+                    FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "css"));
+                    FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "css", Constants.setup_description));
+
+                    FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "ofdm_wo_adapt"));
+                    FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "ofdm_wo_adapt", Constants.setup_description));
+
+                    FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "ofdm_adapt"));
+                    FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "ofdm_adapt", Constants.setup_description));
+                }
+                // lock the screen and start the process
+                disableUserInput();
+                // Dismiss the dialog
+                settingsDialog.dismiss();
+            }
+        });
+
+        // Show the dialog
+        settingsDialog.show();
+    }
+
+    private void setupSpinner(Dialog dialog, int spinnerId, String[] values) {
+        Spinner spinner = dialog.findViewById(spinnerId);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, values);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // Setup constants
+                switch (spinnerId) {
+                    case R.id.spinner_env:
+//                        Utils.logd("spinner_env: " + values[position]);
+                        Constants.datacollection_env = values[position];
+                        break;
+                    case R.id.spinner_distance:
+                        Utils.logd("spinner_distance:: " + values[position]);
+                        Constants.datacollection_distance = values[position];
+                        break;
+                    case R.id.spinner_mobility:
+                        Utils.logd("spinner_mobility:: " + values[position]);
+                        Constants.datacollection_mobility = values[position];
+                        break;
+                    case R.id.spinner_depth:
+                        Utils.logd("spinner_depth:: " + values[position]);
+                        Constants.datacollection_depth = values[position];
+                        break;
+                    case R.id.spinner_orientation:
+                        Utils.logd("spinner_orientation:: " + values[position]);
+                        Constants.datacollection_orientation = values[position];
+                        break;
+                    case R.id.spinner_times:
+                        Utils.logd("spinner_times:: " + values[position]);
+                        Constants.datacollection_times = Integer.parseInt(values[position]);
+                        break;
+                    case R.id.spinner_imagecount:
+                        Utils.logd("spinner_imagecount:: " + values[position]);
+                        Constants.datacollection_image_count = Integer.parseInt(values[position]);
+                        break;
+                    default:
+                        break;
+                }
+
+                // Calculate and Display the estimated time
+                TextView estimatedTimeTextView = dialog.findViewById(R.id.textview_estimated_time);
+                Utils.update_estimated_time();
+                estimatedTimeTextView.setText("Estimated Experiment Time: " + Utils.convertSecondsToTime(Constants.estimated_time_in_second));
+            }
+            @Override
+            public void onNothingSelected(AdapterView <?> parent) {
+            }
+        });
+
+    }
+
+    private void disableUserInput() {
+        if (Constants.overlayView == null) {
+            LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+            Constants.overlayView = inflater.inflate(R.layout.overlay_view, null);
+
+            FrameLayout rootLayout = findViewById(android.R.id.content);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            rootLayout.addView(Constants.overlayView, params);
+        }
+        Constants.overlayView.setVisibility(View.VISIBLE);
+    }
+
+    private void enableUserInput() {
+        if (Constants.overlayView != null) {
+            Constants.overlayView.setVisibility(View.GONE);
+        }
     }
 
     private void load_bitmaps_for_end2endTest() {
@@ -537,10 +691,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else {
             formattedNow = "not_available";
         }
-
         Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
         Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
+
+
 
     public void onstop(View v) {
         stopMethod();
@@ -933,6 +1088,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         });
 
 
+
+
 //        Constants.frameLayout = findViewById(R.id.frameLayout);
         Constants.preview = findViewById(R.id.previewView);
         Constants.cameraCaptureBtn = findViewById(R.id.cameraCapture);
@@ -1147,6 +1304,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.spinner4 = (Spinner) findViewById(R.id.spinner4);
         Constants.spinner5 = (Spinner) findViewById(R.id.spinner5);
         Constants.sendButton = (Button) findViewById(R.id.sendbutton);
+        Constants.readyButton = (Button) findViewById(R.id.readyButton);
+
+        // when click, pop up a dialog to ask experiment details
+        Constants.readyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSettingsDialog();
+            }
+        });
+
 
         ArrayList<String> arrayList = new ArrayList<>();
         arrayList.add("None");
@@ -1280,6 +1447,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         arrayList4.add("testExp");
         arrayList4.add("end2endTest");
         arrayList4.add("end2endCam");
+        arrayList4.add("dataCollection");
 
         ArrayAdapter<String> arrayAdapter4 = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, arrayList4);
