@@ -81,6 +81,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -255,6 +257,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         // Populate the spinners
+        setupSpinner(settingsDialog, R.id.spinner_role, new String[]{"sender", "receiver"});
         setupSpinner(settingsDialog, R.id.spinner_env, new String[]{"air", "bridge", "pool"});
         setupSpinner(settingsDialog, R.id.spinner_distance, new String[]{"1m", "3m", "5m", "10m", "20m"});
         setupSpinner(settingsDialog, R.id.spinner_mobility, new String[]{"static", "slow", "fast"});
@@ -299,6 +302,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 disableUserInput();
                 // Dismiss the dialog
                 settingsDialog.dismiss();
+
+                // start running
+                // if Alice run start wrapper
+                if (Constants.user == Constants.User.Alice) {
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            startWrapper();
+                        }
+                    }, Constants.Send_Delay);
+                }
+
             }
         });
 
@@ -311,29 +326,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, values);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+        // set default to the first one
+        spinner.setSelection(0);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 // Setup constants
                 switch (spinnerId) {
+                    case R.id.spinner_role:
+                        Utils.logd("user: " + values[position]);
+                        if (values[position] == "sender")
+                            Constants.user = Constants.User.Alice;
+                        else
+                            Constants.user = Constants.User.Bob;
+                        break;
                     case R.id.spinner_env:
-//                        Utils.logd("spinner_env: " + values[position]);
+                        Utils.logd("spinner_env: " + values[position]);
                         Constants.datacollection_env = values[position];
                         break;
                     case R.id.spinner_distance:
-                        Utils.logd("spinner_distance:: " + values[position]);
+                        Utils.logd("spinner_distance: " + values[position]);
                         Constants.datacollection_distance = values[position];
                         break;
                     case R.id.spinner_mobility:
-                        Utils.logd("spinner_mobility:: " + values[position]);
+                        Utils.logd("spinner_mobility: " + values[position]);
                         Constants.datacollection_mobility = values[position];
                         break;
                     case R.id.spinner_depth:
-                        Utils.logd("spinner_depth:: " + values[position]);
+                        Utils.logd("spinner_depth: " + values[position]);
                         Constants.datacollection_depth = values[position];
                         break;
                     case R.id.spinner_orientation:
-                        Utils.logd("spinner_orientation:: " + values[position]);
+                        Utils.logd("spinner_orientation: " + values[position]);
                         Constants.datacollection_orientation = values[position];
                         break;
                     case R.id.spinner_times:
@@ -341,7 +365,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         Constants.datacollection_times = Integer.parseInt(values[position]);
                         break;
                     case R.id.spinner_imagecount:
-                        Utils.logd("spinner_imagecount:: " + values[position]);
+                        Utils.logd("spinner_imagecount: " + values[position]);
                         Constants.datacollection_image_count = Integer.parseInt(values[position]);
                         break;
                     default:
@@ -480,6 +504,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     // ********************************** End App Methods (Later can be put into separate classes) **********************************
+
 
     // Called when the app is created
     @Override

@@ -17,6 +17,16 @@
             android:textStyle="bold"
             android:paddingBottom="10dp" />
 
+        <!-- Role Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Role" />
+        <Spinner
+            android:id="@+id/spinner_role"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <!-- Environment Spinner -->
         <TextView
             android:layout_width="wrap_content"
