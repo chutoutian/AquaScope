@@ -47,6 +47,7 @@ public class Constants {
     }
 
     public static Experiment expMode = Experiment.testExp; // store current expMode
+    public static Bitmap testExpBitmap;
     public static ArrayList<Bitmap> testEnd2EndImageBitmaps = new ArrayList<>(); // store bitmap of all test images (bypass access assets in class other than the main class)
     public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
     ;

@@ -134,6 +134,11 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         Traditional test mode.
          */
         if (Constants.expMode == Constants.Experiment.testExp) {
+
+            if (Constants.user == Constants.User.Alice) {
+                Utils.imageSendPrepare(Constants.testExpBitmap, mImageView, TaskID);
+            }
+
             for (int i = 0; i < num_measurements; i++) {
                 Utils.logd("work " + i);
                 int flag = 0;
@@ -525,12 +530,12 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         final long startTime_encoding_signal = SystemClock.elapsedRealtime();
 
         byte[] embedding_bytes_test;
-        if (Constants.expMode == Constants.Experiment.testExp) {
-            embedding_bytes_test = new byte[]{31, 69, 72, -112, -19, -104, 60, -51, -84, -72, -112, 95, 45, -33, -118, 43, 33, 8, 111, -96, 127, 57, 37, -8, -39, -74, -91, 25, 54, -85, -123, 114, -84, -44, 92, 42, -21, -49, 90, 67, -59, 37, -103, 52, -30, -100, 50, -34, 30, 98, -22, 124, -95, -74, 97, -122, -38, 20, -45, 67, -66, 93, 117, -102, -19, 117, 118, 31, -48, -106, 125, 50, 84, 20, 40, 125, -30, 79, 22, -55};
-        } else {
-            byte[] embedding_bytes = Utils.Embedding2Bytes(Constants.encode_sequence);
-            embedding_bytes_test = embedding_bytes;
-        }
+//        if (Constants.expMode == Constants.Experiment.testExp) {
+//            embedding_bytes_test = new byte[]{31, 69, 72, -112, -19, -104, 60, -51, -84, -72, -112, 95, 45, -33, -118, 43, 33, 8, 111, -96, 127, 57, 37, -8, -39, -74, -91, 25, 54, -85, -123, 114, -84, -44, 92, 42, -21, -49, 90, 67, -59, 37, -103, 52, -30, -100, 50, -34, 30, 98, -22, 124, -95, -74, 97, -122, -38, 20, -45, 67, -66, 93, 117, -102, -19, 117, 118, 31, -48, -106, 125, 50, 84, 20, 40, 125, -30, 79, 22, -55};
+//        } else {
+        byte[] embedding_bytes = Utils.Embedding2Bytes(Constants.encode_sequence);
+        embedding_bytes_test = embedding_bytes;
+//        }
 
             short[] txsig = new short[0];
         if (Constants.scheme == Constants.Modulation.LoRa)

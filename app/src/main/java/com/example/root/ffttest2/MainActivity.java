@@ -251,6 +251,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 tempMBitmap = resultBitmap;
                 Constants.testEnd2EndImageBitmaps.add(tempMBitmap);
             }
+
+            // also load testExp image
+            String file = "7117_no_fish_2_f000002.jpg"; // TODO: hard coded here
+            int targetSize = compressImageSize;
+            Bitmap tempMBitmap = BitmapFactory.decodeStream(getAssets().open(file));
+            int sourceWidth = tempMBitmap.getWidth();
+            int sourceHeight = tempMBitmap.getHeight();
+            int s = Math.min(sourceWidth, sourceHeight);
+            float r = (float) targetSize / s;
+            int widthAfterScaled = Math.round(r * sourceWidth);
+            int heightAfterScaled = Math.round(r * sourceHeight);
+            tempMBitmap = Bitmap.createScaledBitmap(tempMBitmap, widthAfterScaled, heightAfterScaled, true);
+
+            // Calculate the coordinates to center crop the scaled bitmap
+            int x = (int) Math.round((widthAfterScaled - targetSize) / 2);
+            int y = (int) Math.round((heightAfterScaled - targetSize) / 2);
+            // Create a new bitmap and draw the center-cropped region
+            Bitmap resultBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(resultBitmap);
+            canvas.drawBitmap(tempMBitmap, -x, -y, null);
+            tempMBitmap = resultBitmap;
+            Constants.testExpBitmap = tempMBitmap;
+
         }  catch(Exception e){
             e.printStackTrace();
         }
