@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
@@ -212,7 +213,86 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             else if (Constants.user.equals(Constants.User.Bob)) {
                 work(0, true);
             }
-    }
+        }
+        else if (Constants.expMode == Constants.Experiment.dataCollection) {
+            if (Constants.user.equals(Constants.User.Alice)) {
+
+                // overwrite more settings
+                Constants.volume = 1.0f;
+                Constants.codeRate = Constants.CodeRate.C4_8;
+                Constants.expMode = Constants.Experiment.dataCollection;
+
+                Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
+                int current_instance_index = 1;
+
+                for (int i = 0; i < Constants.datacollection_image_count; i++) {
+                    // for each image
+
+                    // for each scheme
+                    for (int k = 0; k < Constants.all_datacollection_schemes.length; k++) {
+                        String scheme = Constants.all_datacollection_schemes[k];
+                        // set up scheme
+                        if (scheme == "proposed") {
+                            Constants.scheme = Constants.Modulation.LoRa;
+                            Constants.currentEqualizationMethod = Constants.NewEqualizationMethod.method5_tv_w_to_range;
+                        } else if (scheme == "css") {
+                            Constants.scheme = Constants.Modulation.LoRa;
+                            Constants.currentEqualizationMethod = Constants.NewEqualizationMethod.nouse;
+                        } else if (scheme == "ofdm_adapt") {
+                            Constants.scheme = Constants.Modulation.OFDM_freq_adapt;
+                        } else if (scheme == "ofdm_wo_adapt") {
+                            Constants.scheme = Constants.Modulation.OFDM_freq_all;
+                        }
+
+                        // for each time/instance
+                        for (int p = 0; p < Constants.datacollection_times; p++) {
+
+                            // set correct dir path for saving
+                            int image_id = i+1;
+
+                            // update the overlay text to show current progress
+                            int finalCurrent_instance_index = current_instance_index;
+                            int finalP = p+1;
+                            Constants.overlay_textview.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_total_instance_count - finalCurrent_instance_index)*Constants.datacollection_proposed_time + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP);
+                                }
+                            });
+
+                            Constants.currentDirPath = Utils.getExpInstanceLevelDirPath("image" + image_id, scheme, Constants.setup_description, p+1);
+                            // make folder for current sending information
+                            FileOperations.mkdir(av, Constants.currentDirPath);
+
+                            Bitmap mBitmap = testEnd2EndImageBitmaps.get(i);
+                            Utils.imageSendPrepare(mBitmap, mImageView, TaskID);
+
+                            work(0, true);
+                            try {
+                                Thread.sleep(Constants.end2endTestDelay); // 15 seconds sleep
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            current_instance_index += 1;
+                        }
+                    }
+                }
+
+                // enable UI
+                Constants.overlayView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (Constants.overlayView != null) {
+                            Constants.overlayView.setVisibility(View.GONE);
+                        }
+                    }
+                });
+
+            }
+            else if (Constants.user.equals(Constants.User.Bob)) {
+                work(0, true);
+            }
+        }
         return null;
     }
 

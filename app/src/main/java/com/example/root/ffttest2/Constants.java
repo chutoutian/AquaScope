@@ -148,12 +148,20 @@ public class Constants {
     public static String setup_description = "";
     public static int estimated_time_in_second = 0;
 
-    public static int datacollection_proposed_time = 15;
-    public static int datacollection_css_time = 15;
-    public static int datacollection_ofdm_adapt_time = 15;
-    public static int datacollection_ofdm_wo_adapt_time = 15;
+    public static int datacollection_proposed_time = 25;
+    public static int datacollection_css_time = 25;
+    public static int datacollection_ofdm_adapt_time = 25;
+    public static int datacollection_ofdm_wo_adapt_time = 25;
 
     public static View overlayView = null;
+
+    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_adapt", "ofdm_wo_adapt"};
+
+
+    public static String currentDirPath = "";
+
+    public static TextView overlay_textview = null;
+    public static int datacollection_total_instance_count = 0;
     // ****************************** End of Codec Related Global Variables ******************************
 
 

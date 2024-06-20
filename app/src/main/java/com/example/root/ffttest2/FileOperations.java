@@ -127,7 +127,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    writetofile(dir+"/"+ Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());
@@ -142,7 +142,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    String _ExternalFilesDir = dir+"/"+Utils.getDirName();
+                    String _ExternalFilesDir = dir+"/"+Constants.currentDirPath;
                     File directory = new File(_ExternalFilesDir);
                     if (!directory.exists()) {
                         directory.mkdirs();  // Create directory if it does not exist
@@ -360,7 +360,7 @@ public class FileOperations {
         Log.e("asdf","writing sensors "+Constants.acc.size()+","+Constants.gyro.size()+","+filename);
 
         try {
-            String dir = av.getExternalFilesDir(null).toString()+"/"+Utils.getDirName();
+            String dir = av.getExternalFilesDir(null).toString()+"/"+Constants.currentDirPath;
 
             File path = new File(dir);
             if (!path.exists()) {
@@ -462,7 +462,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    appendtofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    appendtofile(dir+"/"+Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());
@@ -477,7 +477,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    appendtofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    appendtofile(dir+"/"+Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());
@@ -491,7 +491,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    writetofile(dir+"/"+Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());
@@ -505,7 +505,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    writetofile(dir+"/"+Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());
@@ -519,7 +519,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir+"/"+Utils.getDirName(), buff, filename);
+                    writetofile(dir+"/"+Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());
@@ -533,7 +533,7 @@ public class FileOperations {
             public void run() {
                 try {
                     String dir = av.getExternalFilesDir(null).toString();
-                    writetofile(dir + "/" + Utils.getDirName(), buff, filename);
+                    writetofile(dir + "/" + Constants.currentDirPath, buff, filename);
 
                 } catch (Exception e) {
                     Log.e("asdf", e.toString());

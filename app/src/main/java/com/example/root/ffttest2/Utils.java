@@ -2,6 +2,7 @@ package com.example.root.ffttest2;
 
 import static com.example.root.ffttest2.Constants.LOG;
 import static com.example.root.ffttest2.Constants.XCORR_MAX_VAL_HEIGHT_FAC;
+import static com.example.root.ffttest2.Constants.currentDirPath;
 import static com.example.root.ffttest2.Constants.fbackTime;
 import static com.example.root.ffttest2.Constants.sample_num;
 
@@ -2138,7 +2139,8 @@ public class Utils {
     }
 
     public static String getDirName() {
-        return Constants.exp_num+"_"+Constants.ts;
+        Constants.currentDirPath = Constants.exp_num+"_"+Constants.ts;
+        return Constants.currentDirPath;
     }
 
     public static String getImageLevelDirPath(String imagename) {
@@ -2151,6 +2153,10 @@ public class Utils {
 
     public static String getSetupLevelDirPath(String imagename, String method, String setup_description) {
         return getMethodLevelDirPath(imagename, method) + "/" + setup_description;
+    }
+
+    public static String getExpInstanceLevelDirPath(String imagename, String method, String setup_description, int exp_id) {
+        return getSetupLevelDirPath(imagename, method, setup_description) + "/" + exp_id;
     }
 
     public static void update_setup_description() {

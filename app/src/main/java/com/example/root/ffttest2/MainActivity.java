@@ -263,7 +263,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_mobility, new String[]{"static", "slow", "fast"});
         setupSpinner(settingsDialog, R.id.spinner_depth, new String[]{"1m", "2m", "5m"});
         setupSpinner(settingsDialog, R.id.spinner_orientation, new String[]{"0", "90", "180"});
-        setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "5", "10", "20", "30"});
+        setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "2", "5", "10", "20", "30"});
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
 
         // Display the current time
@@ -278,12 +278,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         finishButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // overwrite the experiment mode
+                Constants.expMode = Constants.Experiment.dataCollection;
+                Constants.Send_Delay = 15000; // 15 S
+
                 // build file structure
                 Constants.ts = System.currentTimeMillis();
                 FileOperations.mkdir(av,Utils.getDirName());
                 Utils.update_setup_description();
                 for (int i = 1; i <= Constants.datacollection_image_count; i++) {
-                    String imagename = "Image" + i;
+                    String imagename = "image" + i;
                     FileOperations.mkdir(av,Utils.getImageLevelDirPath(imagename));
 
                     FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "proposed"));
@@ -292,11 +296,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "css"));
                     FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "css", Constants.setup_description));
 
+                    FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "ofdm_adapt"));
+                    FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "ofdm_adapt", Constants.setup_description));
+
                     FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "ofdm_wo_adapt"));
                     FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "ofdm_wo_adapt", Constants.setup_description));
 
-                    FileOperations.mkdir(av,Utils.getMethodLevelDirPath(imagename, "ofdm_adapt"));
-                    FileOperations.mkdir(av,Utils.getSetupLevelDirPath(imagename, "ofdm_adapt", Constants.setup_description));
                 }
                 // lock the screen and start the process
                 disableUserInput();
@@ -384,7 +389,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    private void disableUserInput() {
+    public void disableUserInput() {
         if (Constants.overlayView == null) {
             LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
             Constants.overlayView = inflater.inflate(R.layout.overlay_view, null);
@@ -395,15 +400,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     FrameLayout.LayoutParams.MATCH_PARENT
             );
             rootLayout.addView(Constants.overlayView, params);
+            Constants.overlay_textview = findViewById(R.id.overlay_text);
         }
         Constants.overlayView.setVisibility(View.VISIBLE);
     }
 
-    private void enableUserInput() {
-        if (Constants.overlayView != null) {
-            Constants.overlayView.setVisibility(View.GONE);
-        }
-    }
 
     private void load_bitmaps_for_end2endTest() {
         try {
@@ -697,27 +698,42 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     public static void startMethod(Activity av) {
-        started=true;
+        if (Constants.expMode == Constants.Experiment.dataCollection) {
+            started = true;
+            Constants.work = true;
+            String formattedNow = "";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+                formattedNow = now.format(formatter);
+            } else {
+                formattedNow = "not_available";
+            }
+            Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
+            Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            started = true;
 //        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
 //        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
 
-        Constants.ts = System.currentTimeMillis();
+            Constants.ts = System.currentTimeMillis();
 
-        Constants.work=true;
-        FileOperations.mkdir(av,Utils.getDirName());
+            Constants.work = true;
+            FileOperations.mkdir(av, Utils.getDirName());
 //        FileOperations.writetofile(av, Constants.ts+"", Utils.genName(Constants.SignalType.Timestamp,0)+".txt");
 
-        Constants.tv6.setText(Utils.trimmed_ts());
-        String formattedNow = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            LocalDateTime now = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-            formattedNow = now.format(formatter);
-        } else {
-            formattedNow = "not_available";
+            Constants.tv6.setText(Utils.trimmed_ts());
+            String formattedNow = "";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+                formattedNow = now.format(formatter);
+            } else {
+                formattedNow = "not_available";
+            }
+            Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
+            Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
-        Constants.task = new SendChirpAsyncTask(av, Constants.mattempts, Constants.sendButton, Constants.defaultBackground, Constants.testEnd2EndImageBitmaps, mImageView, mImageView2, formattedNow);
-        Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
 
@@ -1111,7 +1127,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
             }
         });
-
 
 
 
