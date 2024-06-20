@@ -97,6 +97,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <!-- Init Time Delay Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Init Time Delay" />
+        <Spinner
+            android:id="@+id/spinner_init_time_delay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <!-- Current Time TextView -->
         <TextView
             android:id="@+id/textview_current_time"

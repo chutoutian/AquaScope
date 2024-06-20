@@ -52,6 +52,8 @@ public class Constants {
     public static Boolean didLoadTestImages = false; // flag to guarantee bitmaps are only loaded once
     ;
     public static int end2endTestDelay = 15000; // sending delay between two test images (leave time for propagation and decode)
+    public static int dataCollectionSendingDelay = 15000; // sending delay between two test instances in data collection (leave time for propagation and decode)
+
     public static int end2endCamDelay = 3000; // sending delay between two captured images/ camera capture time interval (leave time for propagation and decode)
 
     // later maybe we can add a wrapper to merge these parts to one model
@@ -148,20 +150,25 @@ public class Constants {
     public static String setup_description = "";
     public static int estimated_time_in_second = 0;
 
-    public static int datacollection_proposed_time = 25;
+    // data collection related
+    public static int datacollection_init_delay_time = 25; // init delay time, time for put phone under water, can be set by the spinner
+    public static int datacollection_proposed_time = 25; // only use this // TODO: use others
     public static int datacollection_css_time = 25;
     public static int datacollection_ofdm_adapt_time = 25;
     public static int datacollection_ofdm_wo_adapt_time = 25;
+    public static boolean datacollection_init_sending = false;
 
     public static View overlayView = null;
 
-    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_adapt", "ofdm_wo_adapt"};
+    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"}; // first 3 time are predicable
 
 
     public static String currentDirPath = "";
 
     public static TextView overlay_textview = null;
     public static int datacollection_total_instance_count = 0;
+
+    public static long datacollection_send_start_time = 0;
     // ****************************** End of Codec Related Global Variables ******************************
 
 

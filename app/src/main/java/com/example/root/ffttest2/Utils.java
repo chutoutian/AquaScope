@@ -2164,7 +2164,7 @@ public class Utils {
     }
 
     public static void update_estimated_time() {
-        Constants.estimated_time_in_second = Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time +Constants.datacollection_css_time + Constants.datacollection_ofdm_adapt_time + Constants.datacollection_ofdm_wo_adapt_time);
+        Constants.estimated_time_in_second = Constants.datacollection_init_delay_time + Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time +Constants.datacollection_css_time + Constants.datacollection_ofdm_adapt_time + Constants.datacollection_ofdm_wo_adapt_time);
     }
 
     public static String convertSecondsToTime(int totalSeconds) {

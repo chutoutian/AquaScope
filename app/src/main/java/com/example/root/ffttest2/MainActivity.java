@@ -265,6 +265,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_orientation, new String[]{"0", "90", "180"});
         setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "2", "5", "10", "20", "30"});
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
+        setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
+
 
         // Display the current time
         TextView currentTimeTextView = settingsDialog.findViewById(R.id.textview_current_time);
@@ -280,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             public void onClick(View v) {
                 // overwrite the experiment mode
                 Constants.expMode = Constants.Experiment.dataCollection;
-                Constants.Send_Delay = 15000; // 15 S
+                Constants.Send_Delay = 5000; // 15 S the actual time is 25S controlled by datacollection_proposed_time
 
                 // build file structure
                 Constants.ts = System.currentTimeMillis();
@@ -309,6 +311,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 settingsDialog.dismiss();
 
                 // start running
+                // record the timestamp for sync when press the finish button
+                Constants.datacollection_send_start_time = SystemClock.elapsedRealtime();
+
                 // if Alice run start wrapper
                 if (Constants.user == Constants.User.Alice) {
                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
@@ -372,6 +377,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     case R.id.spinner_imagecount:
                         Utils.logd("spinner_imagecount: " + values[position]);
                         Constants.datacollection_image_count = Integer.parseInt(values[position]);
+                        break;
+                    case R.id.spinner_init_time_delay:
+                        Utils.logd("spinner_init_time_delay: " + values[position]);
+                        Constants.datacollection_init_delay_time = Integer.parseInt(values[position]);
                         break;
                     default:
                         break;

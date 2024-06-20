@@ -224,9 +224,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
                 int current_instance_index = 1;
+                Constants.datacollection_init_sending = true; // will be set false in the first speaker play
 
+                // for each image
                 for (int i = 0; i < Constants.datacollection_image_count; i++) {
-                    // for each image
 
                     // for each scheme
                     for (int k = 0; k < Constants.all_datacollection_schemes.length; k++) {
@@ -268,11 +269,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             Utils.imageSendPrepare(mBitmap, mImageView, TaskID);
 
                             work(0, true);
-                            try {
-                                Thread.sleep(Constants.end2endTestDelay); // 15 seconds sleep
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                            // move sleep before each speaker play
                             current_instance_index += 1;
                         }
                     }
@@ -351,6 +348,24 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     }
                     Constants.sp1 = new AudioSpeaker(av, sig, Constants.fs, 0, sig.length, false);
                     appendToLog(Constants.SignalType.Sounding.toString());
+
+                    // accurate sleep time for ofdm adapt
+                    if (chirpLoopNumber == 0 && Constants.expMode == Constants.Experiment.dataCollection) {
+                        try {
+                            long sleep_time = 0;
+                            if (Constants.datacollection_init_sending == true) {
+                                Constants.datacollection_init_sending = false;
+                                sleep_time = Constants.datacollection_init_delay_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_init_delay_time * 1000);
+                            } else {
+                                sleep_time = Constants.datacollection_proposed_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_proposed_time * 1000);
+                            }
+                            Utils.logd("Sleep Time " + sleep_time);
+                            Thread.sleep(sleep_time); // 15 seconds sleep
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                     Constants.sp1.play(Constants.volume);
 
                     int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
@@ -660,6 +675,24 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         final long startTime_send_signal = SystemClock.elapsedRealtime();
 
         Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs , 0, txsig.length, false); // this is where I leave to solve Mar. 19.
+
+        if (Constants.expMode == Constants.Experiment.dataCollection && Constants.scheme != Constants.Modulation.OFDM_freq_adapt) {
+            // accurate sleep time for ofdm all, css and proposed
+            try {
+                long sleep_time = 0;
+                if (Constants.datacollection_init_sending == true) {
+                    Constants.datacollection_init_sending = false;
+                    sleep_time = Constants.datacollection_init_delay_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_init_delay_time * 1000);
+                } else {
+                    sleep_time = Constants.datacollection_proposed_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_proposed_time * 1000);
+                }
+                Utils.logd("Sleep Time " + sleep_time);
+                Thread.sleep(sleep_time); // 15 seconds sleep
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         Constants.sp1.play(Constants.volume);
 
         int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
