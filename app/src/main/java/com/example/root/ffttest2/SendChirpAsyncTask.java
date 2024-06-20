@@ -223,8 +223,11 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 Constants.expMode = Constants.Experiment.dataCollection;
 
                 Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
-                int current_instance_index = 1;
-                Constants.datacollection_init_sending = true; // will be set false in the first speaker play
+                Constants.datacollection_current_instance_index = 0;
+
+                // generate delay map
+                Utils.datacollection_generate_delaymap();
+                Utils.logd("Sleep map: " + Arrays.toString(Constants.datacollection_time_delay_map));
 
                 // for each image
                 for (int i = 0; i < Constants.datacollection_image_count; i++) {
@@ -252,12 +255,12 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             int image_id = i+1;
 
                             // update the overlay text to show current progress
-                            int finalCurrent_instance_index = current_instance_index;
+                            int finalCurrent_instance_index = Constants.datacollection_current_instance_index + 1;
                             int finalP = p+1;
                             Constants.overlay_textview.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_total_instance_count - finalCurrent_instance_index)*Constants.datacollection_proposed_time + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP);
+                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_time_delay_map[Constants.datacollection_time_delay_map.length-1] - Constants.datacollection_time_delay_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP);
                                 }
                             });
 
@@ -270,8 +273,11 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                             work(0, true);
                             // move sleep before each speaker play
-                            current_instance_index += 1;
+                            Constants.datacollection_current_instance_index += 1;
                         }
+
+                        // switch scheme
+
                     }
                 }
 
@@ -353,12 +359,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     if (chirpLoopNumber == 0 && Constants.expMode == Constants.Experiment.dataCollection) {
                         try {
                             long sleep_time = 0;
-                            if (Constants.datacollection_init_sending == true) {
-                                Constants.datacollection_init_sending = false;
-                                sleep_time = Constants.datacollection_init_delay_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_init_delay_time * 1000);
-                            } else {
-                                sleep_time = Constants.datacollection_proposed_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_proposed_time * 1000);
-                            }
+                            int temp_sleep_target = Constants.datacollection_time_delay_map[Constants.datacollection_current_instance_index];
+                            sleep_time = temp_sleep_target * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time);
                             Utils.logd("Sleep Time " + sleep_time);
                             Thread.sleep(sleep_time); // 15 seconds sleep
                         } catch (Exception e) {
@@ -680,12 +682,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             // accurate sleep time for ofdm all, css and proposed
             try {
                 long sleep_time = 0;
-                if (Constants.datacollection_init_sending == true) {
-                    Constants.datacollection_init_sending = false;
-                    sleep_time = Constants.datacollection_init_delay_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_init_delay_time * 1000);
-                } else {
-                    sleep_time = Constants.datacollection_proposed_time * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time) % (Constants.datacollection_proposed_time * 1000);
-                }
+                int temp_sleep_target = Constants.datacollection_time_delay_map[Constants.datacollection_current_instance_index];
+                sleep_time = temp_sleep_target * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time);
+
                 Utils.logd("Sleep Time " + sleep_time);
                 Thread.sleep(sleep_time); // 15 seconds sleep
             } catch (Exception e) {

@@ -152,11 +152,14 @@ public class Constants {
 
     // data collection related
     public static int datacollection_init_delay_time = 25; // init delay time, time for put phone under water, can be set by the spinner
-    public static int datacollection_proposed_time = 25; // only use this // TODO: use others
+    public static int datacollection_proposed_time = 25; // only use this
     public static int datacollection_css_time = 25;
-    public static int datacollection_ofdm_adapt_time = 25;
+    public static int datacollection_ofdm_adapt_time = 30; // make it longer
     public static int datacollection_ofdm_wo_adapt_time = 25;
+    public static int datacollection_mode_switch_time = 20;
     public static boolean datacollection_init_sending = false;
+    public static int[] datacollection_time_delay_map;
+    public static int datacollection_current_instance_index=0;
 
     public static View overlayView = null;
 

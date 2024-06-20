@@ -5,6 +5,7 @@ import static com.example.root.ffttest2.Constants.XCORR_MAX_VAL_HEIGHT_FAC;
 import static com.example.root.ffttest2.Constants.currentDirPath;
 import static com.example.root.ffttest2.Constants.fbackTime;
 import static com.example.root.ffttest2.Constants.sample_num;
+import static com.example.root.ffttest2.Constants.scheme;
 
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -2164,7 +2165,7 @@ public class Utils {
     }
 
     public static void update_estimated_time() {
-        Constants.estimated_time_in_second = Constants.datacollection_init_delay_time + Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time +Constants.datacollection_css_time + Constants.datacollection_ofdm_adapt_time + Constants.datacollection_ofdm_wo_adapt_time);
+        Constants.estimated_time_in_second = Constants.datacollection_init_delay_time + Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time +Constants.datacollection_css_time + Constants.datacollection_ofdm_adapt_time + Constants.datacollection_ofdm_wo_adapt_time) + (Constants.all_datacollection_schemes.length * Constants.datacollection_image_count * Constants.datacollection_mode_switch_time);
     }
 
     public static String convertSecondsToTime(int totalSeconds) {
@@ -2789,6 +2790,45 @@ public class Utils {
             }
         }
         return result;
+    }
+
+    public static void datacollection_generate_delaymap() {
+        int size = 1 + Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
+        int[] delay_map = new int[size];
+        int accumulate_delay = 0;
+        int i = 0;
+        while (i < delay_map.length) {
+            if (i == 0) {
+                accumulate_delay += Constants.datacollection_init_delay_time;
+                delay_map[i] = accumulate_delay;
+                i++;
+                continue;
+            }
+            for (int k = 0; k < Constants.datacollection_image_count; k++) {
+                for (String scheme : Constants.all_datacollection_schemes) {
+                    for (int j = 0; j < Constants.datacollection_times; j++) {
+                        if (scheme == "proposed") {
+                            accumulate_delay += Constants.datacollection_proposed_time;
+                        } else if (scheme == "ofdm_adapt") {
+                            accumulate_delay += Constants.datacollection_ofdm_adapt_time;
+                        } else if (scheme == "ofdm_wo_adapt") {
+                            accumulate_delay += Constants.datacollection_ofdm_wo_adapt_time;
+                        } else if (scheme == "css") {
+                            accumulate_delay += Constants.datacollection_css_time;
+                        }
+                        if (j == Constants.datacollection_times-1) {
+                            accumulate_delay += Constants.datacollection_mode_switch_time;
+                        }
+                        delay_map[i] = accumulate_delay;
+                        i++;
+                        if (i >= delay_map.length) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        Constants.datacollection_time_delay_map = delay_map;
     }
 
 
