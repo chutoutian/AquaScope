@@ -313,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // start running
                 // record the timestamp for sync when press the finish button
                 Constants.datacollection_send_start_time = SystemClock.elapsedRealtime();
+                Constants.datacollection_receive_start_time = SystemClock.elapsedRealtime();
 
                 // if Alice run start wrapper
                 if (Constants.user == Constants.User.Alice) {
@@ -320,6 +321,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         @Override
                         public void run() {
                             startWrapper();
+                        }
+                    }, Constants.Send_Delay);
+                } else if (Constants.user == Constants.User.Bob) {
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            BobstartWrapper();
                         }
                     }, Constants.Send_Delay);
                 }
@@ -680,6 +688,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     public static void startWrapper() {
         Constants.user = Constants.User.Alice;
+        stopMethod();
+        Utils.log("start startmethod from startWrapper");
+        startMethod(av);
+    }
+
+    public static void BobstartWrapper() {
+        Constants.user = Constants.User.Bob;
         stopMethod();
         Utils.log("start startmethod from startWrapper");
         startMethod(av);

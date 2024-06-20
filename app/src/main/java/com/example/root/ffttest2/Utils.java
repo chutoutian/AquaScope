@@ -1980,6 +1980,267 @@ public class Utils {
         return null;
     }
 
+    public static double[] waitForData_with_timeout(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
+        String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
+        Utils.logd(filename);
+
+        Constants._OfflineRecorder = new OfflineRecorder(
+                MainActivity.av, Constants.fs, filename);
+        Constants._OfflineRecorder.start2();
+
+        int MAX_WINDOWS = 0;
+
+        int numWindowsLeft = 0;
+        double timeout = 0;
+        int len = 0;
+        int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+        long startTime_receive_signal = 0;
+        if (sigType.equals(Constants.SignalType.DataRx)) {
+            MAX_WINDOWS = 2; //
+            if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
+            {
+                if (Constants.IsCountingFish || Constants.IsDectectingFish)
+                {
+                    timeout = 3;
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+
+                }
+                else if(Constants.ImagingFish)
+                {
+                    timeout = 15;
+//                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*200); // TODO this can be more precise freq all and freq adapt will not have the same
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*300); // TODO this can be more precise freq all and freq adapt will not have the same
+
+                }
+            }
+            else if(Constants.scheme == Constants.Modulation.LoRa)
+            {
+                timeout = 15;
+                if (Constants.IsCountingFish || Constants.IsDectectingFish)
+                {
+                    len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*32;
+
+                }
+                else if(Constants.ImagingFish)
+                {
+                    if (Constants.SF == 7)
+                    {
+                        timeout = 120;
+                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*220;
+                    }
+                    else if (Constants.SF == 5 || Constants.SF == 6)
+                    {
+                        timeout = 20;
+                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 360; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
+                    }
+                    else if (Constants.SF == 4)
+                    {
+                        timeout = 120;
+                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*450;
+                    }
+                    else if (Constants.SF == 3)
+                    {
+                        timeout = 120;
+                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*600;
+                    }
+                }
+            }
+        }
+        else if (sigType.equals(Constants.SignalType.DataChirp))// just collect chirp for channel estimation
+        {
+            MAX_WINDOWS = 2; //
+            timeout = 15;
+            len = ChirpSamples+Constants.ChirpGap+Constants.fs;
+        }
+
+        int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
+        double[] tx_preamble = PreambleGen.preamble_d();
+
+        ArrayList<Double[]> sampleHistory = new ArrayList<>();
+        ArrayList<Double> valueHistory = new ArrayList<>();
+        ArrayList<Double> idxHistory = new ArrayList<>();
+        int synclag = 12000;
+        double[] sounding_signal = new double[]{}; // sounding_signal should be larger than the transmitted signal
+
+        if(Constants.ImagingFish)
+        {
+            if (sigType.equals(Constants.SignalType.DataRx))
+            {
+                if (Constants.scheme == Constants.Modulation.LoRa)
+                {
+                    if (Constants.SF == 7)
+                    {
+                        sounding_signal=new double[35*Constants.RecorderStepSize];
+                    }
+                    else if (Constants.SF == 6)
+                    {
+                        sounding_signal=new double[25*Constants.RecorderStepSize];
+                    }
+                    else if (Constants.SF == 5)
+                    {
+                        sounding_signal=new double[15*Constants.RecorderStepSize];
+                    }
+                    else if (Constants.SF == 4 ||Constants.SF == 3 )
+                    {
+                        sounding_signal = new double[10 * Constants.RecorderStepSize];
+                    }
+
+                }
+                else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
+                {
+//                    sounding_signal=new double[15*Constants.RecorderStepSize];
+                    sounding_signal=new double[25*Constants.RecorderStepSize];
+
+                }
+            }
+            else if (sigType.equals(Constants.SignalType.DataChirp))
+            {
+                sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
+            }
+        }
+        else {
+            sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
+        }
+
+        Utils.log("sig length "+sounding_signal.length+","+sigType.toString());
+        boolean valid_signal = false;
+//        boolean getOneMoreFlag = false;
+        int sounding_signal_counter=0;
+//        for (int i = 0; i < N; i++) { // actually here we can replace it with while true
+        int window_count = 0;
+        while (!Utils.check_pass_timeout()) {
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(window_count), TaskID));
+//            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
+//            Log.e("received signal ", "rec " + rec);
+            if (sigType.equals(Constants.SignalType.Sounding)||
+                    sigType.equals(Constants.SignalType.Feedback)||
+                    sigType.equals(Constants.SignalType.DataRx) || sigType.equals(Constants.SignalType.DataChirp)) {
+//                Log.e("fifo","loop "+i);
+
+                if (window_count<MAX_WINDOWS) {
+                    sampleHistory.add(rec);
+//                    continue;
+                }
+                else {
+                    if (numWindowsLeft==0) { // do xcorr, signal finder
+                        double[] out = null; // will be reset, so out's size will not explode
+                        out = Utils.concat(sampleHistory.get(sampleHistory.size() - 1 ), rec);
+                        //out = Utils.concat_array_list(sampleHistory,MAX_WINDOWS-1,rec);
+
+                        double[] filt = Utils.copyArray(out);
+                        filt = Utils.filter(filt);
+
+                        //value,idx
+                        double[] xcorr_out = Utils.xcorr_online(tx_preamble, filt);
+                        if (sigType.equals(Constants.SignalType.DataRx)){
+                            Utils.log("xcorr_out" + xcorr_out[0] + ' ' +  xcorr_out[1]);
+                        }
+
+                        long t1 = System.currentTimeMillis();
+                        Utils.log(String.format("Listening........ (%.2f, %d)",xcorr_out[2],window_count));
+
+                        sampleHistory.add(rec);
+                        valueHistory.add(xcorr_out[0]);
+                        idxHistory.add(xcorr_out[1]);
+
+                        if (xcorr_out[0] != -1) {
+                            // init the Receiver_Latency_Str all three protocols
+                            Constants.Receiver_Latency_Str = "";
+                            String formattedNow = "";
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                LocalDateTime now = LocalDateTime.now();
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+                                formattedNow = now.format(formatter);
+                            } else {
+                                formattedNow = "not_available";
+                            }
+                            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + formattedNow + "\n" + Constants.scheme.toString() + "\n";
+                            // receiver t1 - receive signal
+                            startTime_receive_signal = SystemClock.elapsedRealtime();
+
+                            if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
+                                Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
+                                //Utils.log("need more windows" + xcorr_out[1] + len + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS);
+                                if (sigType.equals(Constants.SignalType.DataChirp))
+                                {
+                                    numWindowsLeft = MAX_WINDOWS - 1;
+                                }
+                                else
+                                {
+                                    numWindowsLeft = (int) (xcorr_out[1] + len + synclag - Constants.RecorderStepSize*MAX_WINDOWS) / Constants.RecorderStepSize + 1;
+                                }
+
+                                Utils.log("need more windows" + xcorr_out[1] + ' ' + len + ' ' + synclag + ' ' +  Constants.RecorderStepSize*MAX_WINDOWS + ' ' + numWindowsLeft);
+
+//                                Log.e("copy","copying "+out[t_idx]+","+out[t_idx+1]+","+out[t_idx+2]+","+out[t_idx+3]+","+out[t_idx+4]);
+                                for (int j = (int)xcorr_out[1]; j < out.length; j++) {
+                                    sounding_signal[sounding_signal_counter++]=out[j];
+                                }
+
+                                // plot Spec and SNR
+                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
+
+                                Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
+                            }
+                            else {
+                                Utils.logd("good! "+filt.length+","+xcorr_out[1]+","+filt.length);
+                                Utils.log("good");
+                                int counter=0;
+                                for (int k = (int) xcorr_out[1]; k < out.length; k++) {
+                                    sounding_signal[counter++] = out[k];
+                                }
+//                                sounding_signal = Utils.segment(filt, (int) xcorr_out[1], filt.length - 1);
+                                valid_signal = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (sounding_signal_counter>0){
+//                        Utils.log("another window");
+                        Utils.logd("another window from "+sounding_signal_counter+","+(sounding_signal_counter+rec.length)+","+sounding_signal.length);
+
+//                        double[] filt2 = Utils.copyArray2(rec);
+//                        filt2 = Utils.filter(filt2);
+
+                        for (int j = 0; j < rec.length; j++) {
+                            sounding_signal[sounding_signal_counter++]=rec[j];
+                        }
+                        numWindowsLeft -= 1;
+                        if (numWindowsLeft==0){
+                            valid_signal=true;
+                            break;
+                        }
+                    }
+
+                    if(sampleHistory.size() >= 6){ // here make sure it will not explode
+                        sampleHistory.remove(0);
+                        valueHistory.remove(0);
+                        idxHistory.remove(0);
+                    }
+                }
+                window_count = window_count + 1;
+
+            }
+        }
+        if (Utils.check_pass_timeout()) {
+            Utils.logd("Pass time out waiting data " + Constants.scheme.name() + ": " + Constants.datacollection_current_instance_index + " " + Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]);
+        }
+        Constants._OfflineRecorder.halt2();
+
+        if (valid_signal) {
+            //return Utils.filter(sounding_signal);
+            // receiver t1 - receive signal
+            final long inferenceTime_receive_signal = SystemClock.elapsedRealtime() - startTime_receive_signal;
+            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
+            Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+
+
+            return sounding_signal;
+
+        }
+        return null;
+    }
+
     public static int xcorr_m2(double[] preamble, double[] filt, double[] sig, int sig_len, Constants.SignalType sigType) {
         int seglen=48000;
         int moveamount=24000;
@@ -2830,6 +3091,99 @@ public class Utils {
         }
         Constants.datacollection_time_delay_map = delay_map;
     }
+
+    public static void datacollection_generate_time_out_map() {
+        int size = 1 + Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
+        int[] delay_map = new int[size-1];
+        char[] receiver_res = new char[size-1];
+        for (int p = 0; p < receiver_res.length; p++) {
+            receiver_res[p] = '0';
+        }
+        Constants.datacollection_receiver_res = receiver_res;
+        int accumulate_delay = 0;
+        int i = 0;
+        while (i < delay_map.length) {
+            for (int k = 0; k < Constants.datacollection_image_count; k++) {
+                for (String scheme : Constants.all_datacollection_schemes) {
+                    for (int j = 0; j < Constants.datacollection_times; j++) {
+
+                        if (i == 0) {
+                            accumulate_delay += Constants.datacollection_init_delay_time;
+                            if (scheme == "proposed") {
+                                accumulate_delay += Constants.datacollection_proposed_time;
+                            } else if (scheme == "ofdm_adapt") {
+                                accumulate_delay += Constants.datacollection_ofdm_adapt_time;
+                            } else if (scheme == "ofdm_wo_adapt") {
+                                accumulate_delay += Constants.datacollection_ofdm_wo_adapt_time;
+                            } else if (scheme == "css") {
+                                accumulate_delay += Constants.datacollection_css_time;
+                            }
+                            delay_map[i] = accumulate_delay - Constants.receive_time_offset;
+                            i++;
+                            if (i >= delay_map.length) {
+                                break;
+                            }
+                            continue;
+                        }
+
+                        if (scheme == "proposed") {
+                            accumulate_delay += Constants.datacollection_proposed_time;
+                        } else if (scheme == "ofdm_adapt") {
+                            accumulate_delay += Constants.datacollection_ofdm_adapt_time;
+                        } else if (scheme == "ofdm_wo_adapt") {
+                            accumulate_delay += Constants.datacollection_ofdm_wo_adapt_time;
+                        } else if (scheme == "css") {
+                            accumulate_delay += Constants.datacollection_css_time;
+                        }
+                        if (j == 0) {
+                            accumulate_delay += Constants.datacollection_mode_switch_time;
+                        }
+
+                        delay_map[i] = accumulate_delay - Constants.receive_time_offset;
+                        i++;
+                        if (i >= delay_map.length) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        Constants.datacollection_time_out_map = delay_map;
+    }
+
+    public static boolean check_pass_timeout() {
+        if (SystemClock.elapsedRealtime() - Constants.datacollection_receive_start_time > Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]*1000) {
+            return true;
+        }
+        return false;
+    }
+
+    public static void update_receiver_res(boolean issuccess) {
+        if (issuccess) {
+            Constants.datacollection_receiver_res[Constants.datacollection_current_instance_index] = 'Y';
+        } else {
+            Constants.datacollection_receiver_res[Constants.datacollection_current_instance_index] = 'X';
+        }
+    }
+
+    public static String get_receiver_res_str() {
+
+        if (Constants.datacollection_receiver_res == null || Constants.datacollection_receiver_res.length == 0) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Constants.datacollection_receiver_res.length; i++) {
+            sb.append(Constants.datacollection_receiver_res[i]);
+            if (i < Constants.datacollection_receiver_res.length - 1) {
+                sb.append('_');
+            }
+        }
+
+        return sb.toString();
+    }
+
 
 
 

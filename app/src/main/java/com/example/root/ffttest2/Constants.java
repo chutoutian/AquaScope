@@ -157,8 +157,8 @@ public class Constants {
     public static int datacollection_ofdm_adapt_time = 30; // make it longer
     public static int datacollection_ofdm_wo_adapt_time = 25;
     public static int datacollection_mode_switch_time = 20;
-    public static boolean datacollection_init_sending = false;
     public static int[] datacollection_time_delay_map;
+    public static int[] datacollection_time_out_map;
     public static int datacollection_current_instance_index=0;
 
     public static View overlayView = null;
@@ -172,6 +172,10 @@ public class Constants {
     public static int datacollection_total_instance_count = 0;
 
     public static long datacollection_send_start_time = 0;
+    public static long datacollection_receive_start_time = 0;
+    public static int receive_time_offset = 8; // allow 5 seconds offset
+
+    public static char[] datacollection_receiver_res;
     // ****************************** End of Codec Related Global Variables ******************************
 
 
@@ -238,7 +242,8 @@ public class Constants {
         Recovered_Bitmap,
         Send_Embedding_Sequence,
         Rx_Embedding_Recovered,
-        SNR_Raw_Data
+        SNR_Raw_Data,
+        Receiver_Success_Indicator
     }
     public enum EstSignalType {
         Chirp,

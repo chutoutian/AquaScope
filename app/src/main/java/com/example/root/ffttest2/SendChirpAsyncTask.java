@@ -250,10 +250,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                         // for each time/instance
                         for (int p = 0; p < Constants.datacollection_times; p++) {
-
                             // set correct dir path for saving
                             int image_id = i+1;
-
                             // update the overlay text to show current progress
                             int finalCurrent_instance_index = Constants.datacollection_current_instance_index + 1;
                             int finalP = p+1;
@@ -280,6 +278,9 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                     }
                 }
+                // change it back to testExp
+                Constants.expMode = Constants.Experiment.testExp;
+
 
                 // enable UI
                 Constants.overlayView.post(new Runnable() {
@@ -293,7 +294,99 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
             }
             else if (Constants.user.equals(Constants.User.Bob)) {
-                work(0, true);
+                // overwrite more settings
+                Constants.volume = 1.0f;
+                Constants.codeRate = Constants.CodeRate.C4_8;
+                Constants.expMode = Constants.Experiment.dataCollection;
+
+                Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
+                Constants.datacollection_current_instance_index = 0;
+
+                // generate delay map
+                Utils.datacollection_generate_time_out_map();
+                Utils.logd("Time offset map: " + Arrays.toString(Constants.datacollection_time_out_map));
+
+                // for each image
+                for (int i = 0; i < Constants.datacollection_image_count; i++) {
+                    // for each scheme
+                    for (int k = 0; k < Constants.all_datacollection_schemes.length; k++) {
+                        String scheme = Constants.all_datacollection_schemes[k];
+                        // set up scheme
+                        if (scheme == "proposed") {
+                            Constants.scheme = Constants.Modulation.LoRa;
+                            Constants.currentEqualizationMethod = Constants.NewEqualizationMethod.method5_tv_w_to_range;
+                        } else if (scheme == "css") {
+                            Constants.scheme = Constants.Modulation.LoRa;
+                            Constants.currentEqualizationMethod = Constants.NewEqualizationMethod.nouse;
+                        } else if (scheme == "ofdm_adapt") {
+                            Constants.scheme = Constants.Modulation.OFDM_freq_adapt;
+                        } else if (scheme == "ofdm_wo_adapt") {
+                            Constants.scheme = Constants.Modulation.OFDM_freq_all;
+                        }
+
+                        // for each time/instance
+                        for (int p = 0; p < Constants.datacollection_times; p++) {
+                            // set correct dir path for saving
+                            int image_id = i+1;
+                            // update the overlay text to show current progress
+                            int finalCurrent_instance_index = Constants.datacollection_current_instance_index + 1;
+                            int finalP = p+1;
+                            Constants.overlay_textview.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length-1] - Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                }
+                            });
+
+                            Constants.currentDirPath = Utils.getExpInstanceLevelDirPath("image" + image_id, scheme, Constants.setup_description, p+1);
+                            // make folder for current sending information
+                            FileOperations.mkdir(av, Constants.currentDirPath);
+
+//                            Bitmap mBitmap = testEnd2EndImageBitmaps.get(i);
+//                            Utils.imageSendPrepare(mBitmap, mImageView, TaskID);
+
+//                            work(0, true);
+                            int res = work_receive_with_timeout(0, true);
+                            Utils.logd("Res of " + Constants.datacollection_current_instance_index + " " + res);
+                            if (res == 0) {
+                                Utils.update_receiver_res(true);
+                            } else {
+                                Utils.update_receiver_res(false);
+                            }
+
+                            Constants.overlay_textview.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (res == 0) {
+                                        Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                    } else {
+                                        Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                    }
+                                }
+                            });
+                            // move sleep before each speaker play
+                            Constants.datacollection_current_instance_index += 1;
+                        }
+                        // switch scheme
+                        Utils.logd("Receiver switch to " + Constants.scheme.name());
+                    }
+                }
+                Constants.currentDirPath = Utils.getDirName();
+                FileOperations.writetofile(MainActivity.av, Utils.get_receiver_res_str(),
+                        Constants.SignalType.Receiver_Success_Indicator.toString() + ".txt");
+
+                // change it back to testExp
+                Constants.expMode = Constants.Experiment.testExp;
+
+                // enable UI
+                Constants.overlayView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (Constants.overlayView != null) {
+                            Constants.overlayView.setVisibility(View.GONE);
+                        }
+                    }
+                });
             }
         }
         return null;
@@ -529,6 +622,261 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     }
                 }
                 return 0;
+            }
+        }
+        else if (Constants.scheme == Constants.Modulation.Noise) {
+            Utils.listen_to_noise(Constants.SignalType.DataNoise,m_attempt,0,TaskID);
+            av.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Utils.sendNotification(av, "Notification","Noise collected", R.drawable.warning2);
+
+                }
+            });
+        }
+        else if (Constants.scheme == Constants.Modulation.Chirp) {
+            if (Constants.user.equals(Constants.User.Alice)) {
+                sendChirp(m_attempt,Constants.SignalType.DataChirp);
+                try {
+                    Thread.sleep(5000);
+                } catch (Exception e) {
+                    Log.e("asdf", e.toString());
+                }
+            }
+            else if (Constants.user.equals(Constants.User.Bob)){
+                double[] chirp_signal = Utils.waitForData(Constants.SignalType.DataChirp, m_attempt, 0, TaskID); // sync, when the receiver is receiving the sound (after detecting sound) and processing the sound (demodulate, decode), all other signal will be ignored
+                if (chirp_signal != null)
+                {
+                    if (Constants.allowLog) {
+                        StringBuilder noiseBuilder = new StringBuilder();
+                        for (int j = 0; j < chirp_signal.length; j++) {
+                            noiseBuilder.append(chirp_signal[j]);
+                            noiseBuilder.append(",");
+                        }
+                        String raw_chirp_signal = noiseBuilder.toString();
+                        if (raw_chirp_signal.endsWith(",")) {
+                            raw_chirp_signal = raw_chirp_signal.substring(0, raw_chirp_signal.length() - 1);
+                        }
+                        Utils.log("raw_chirp =>" + raw_chirp_signal);
+
+                        FileOperations.writetofile(MainActivity.av, raw_chirp_signal + "",
+                                Utils.genName(Constants.SignalType.DataChirp, m_attempt, 0) + ".txt");
+                    }
+                    av.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Utils.sendNotification(av, "Notification","Chirp collected", R.drawable.warning2);
+
+                        }
+                    });
+                }
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+
+    public int work_receive_with_timeout(int m_attempt, boolean skipSleep) {
+        if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt) {
+            double[] tx_preamble = PreambleGen.preamble_d();
+            if (Constants.user.equals(Constants.User.Alice)) {
+                // $ ofdm time get valid bin time
+                final long get_valid_bin_startTime = SystemClock.elapsedRealtime();
+
+                int chirpLoopNumber = 0;
+                double[] feedback_signal = null;
+                do {
+                    short[] sig = PreambleGen.sounding_signal_s();
+                    if (Constants.allowLog) {
+                        FileOperations.writetofile(MainActivity.av, sig, Utils.genName(Constants.SignalType.Sounding, m_attempt) + ".txt");
+                    }
+                    Constants.sp1 = new AudioSpeaker(av, sig, Constants.fs, 0, sig.length, false);
+                    appendToLog(Constants.SignalType.Sounding.toString());
+
+                    // accurate sleep time for ofdm adapt
+                    if (chirpLoopNumber == 0 && Constants.expMode == Constants.Experiment.dataCollection) {
+                        try {
+                            long sleep_time = 0;
+                            int temp_sleep_target = Constants.datacollection_time_delay_map[Constants.datacollection_current_instance_index];
+                            sleep_time = temp_sleep_target * 1000 - (SystemClock.elapsedRealtime() - Constants.datacollection_send_start_time);
+                            Utils.logd("Sleep Time " + sleep_time);
+                            Thread.sleep(sleep_time); // 15 seconds sleep
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    Constants.sp1.play(Constants.volume);
+
+                    int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
+                    sleep(sig_len+Constants.SendPad);
+
+                    feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber, TaskID);
+                    chirpLoopNumber++;
+                    if (chirpLoopNumber >= 3 || !Constants.work) {
+                        return -1;
+                    }
+                } while (feedback_signal == null);
+
+                double[] seg = Utils.segment(feedback_signal,0,24000-1);
+                double[] xcorr_out = Utils.xcorr_online(tx_preamble, seg);
+
+                int[] valid_bins = FeedbackSignal.extractSignalHelper(feedback_signal, (int)xcorr_out[1], m_attempt);
+
+                // $ ofdm time get valid bin time
+                final long validBinTime = SystemClock.elapsedRealtime() - get_valid_bin_startTime;
+                Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender get valid bin (ms): " + validBinTime + "\n";
+                Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
+
+                if (Constants.SEND_DATA) {
+                    appendToLog(Constants.SignalType.Data.toString());
+                    if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+                        sendData(valid_bins, m_attempt);
+                    }
+                    if (skipSleep == false) {
+                        try {
+                            Thread.sleep(Constants.SendInterval);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                return 0;
+            }
+            else if (Constants.user.equals(Constants.User.Bob)) {
+                int chirpLoopNumber = 0;
+                int[] valid_bins = null;
+                double[] sounding_signal = null;
+                do {
+                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber, TaskID);
+                    if (sounding_signal == null) {
+                        return -1;
+                    }
+
+                    double[] seg = Utils.segment(sounding_signal,0,24000-1);
+                    double[] xcorr_out = Utils.xcorr_online(tx_preamble, seg);
+
+                    valid_bins = ChannelEstimate.extractSignal_withsymbol_helper(av, sounding_signal, (int)xcorr_out[1], m_attempt);
+                    chirpLoopNumber++;
+
+                    if (!Constants.work) {
+                        return -1;
+                    }
+
+                } while (valid_bins == null || valid_bins.length == 0 || valid_bins[0] == -1 && !Utils.check_pass_timeout());
+
+                if (Utils.check_pass_timeout()) {
+                    Utils.logd("Pass time out waiting init" + Constants.scheme.name() + ": " + Constants.datacollection_current_instance_index + " " + Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]);
+                }
+
+                short[] feedback = FeedbackSignal.encodeFeedbackSignal(valid_bins[0], valid_bins[valid_bins.length - 1],
+                        Constants.fbackTime, true, m_attempt);
+
+                Constants.sp1 = new AudioSpeaker(av, feedback, Constants.fs, 0, feedback.length, false);
+                appendToLog(Constants.SignalType.Feedback.toString());
+                Constants.sp1.play(Constants.volume);
+
+                int stime = (int) ((feedback.length / (double) Constants.fs) * 1000);
+                sleep(stime+Constants.SendPad);
+
+                double[] data_signal = null;
+                if (Constants.SEND_DATA) {
+                    data_signal = Utils.waitForData_with_timeout(Constants.SignalType.DataRx, m_attempt, 0, TaskID);
+                }
+                if (data_signal!=null) {
+                    long[] embeddings = Decoder.decode_helper(av, data_signal, valid_bins,m_attempt);
+                    // recover
+                    long[] prediction = Utils.transformer_recover(embeddings);
+
+                    // decode 1, before recover
+                    Utils.decode_image_receiver(embeddings, mImageView, true);
+
+                    // decode 2, after recover
+                    Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                    // save receiver latency to file
+                    Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+                    FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
+                            Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
+                    return 0;
+                } else {
+                    return -1; // fail to receive data
+                }
+            }
+        }
+        else if (Constants.scheme == Constants.Modulation.LoRa || Constants.scheme == Constants.Modulation.OFDM_freq_all){
+            if (Constants.user.equals(Constants.User.Alice)) {
+                int[] valid_bins = new int[]{20,49};
+                if (Constants.SEND_DATA) {
+                    if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+                        sendData(valid_bins, m_attempt);
+                    }
+                    if (skipSleep == false) {
+                        try {
+                            Thread.sleep(Constants.SendInterval);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            else if (Constants.user.equals(Constants.User.Bob)){
+                int[] valid_bins = new int[]{20,49}; // TODO: fixed for 1000 - 2500?
+
+                double[] data_signal = null;
+                if (Constants.SEND_DATA) {
+                    // need new packet detection algorithms
+                    data_signal = Utils.waitForData_with_timeout(Constants.SignalType.DataRx, m_attempt, 0, TaskID);
+                }
+                if (data_signal!=null) {
+                    if (Constants.scheme == Constants.Modulation.LoRa)
+                    {
+                        // get embedding
+                        long[] embeddings = Decoder.decoding(av,data_signal,m_attempt);
+
+                        // recover
+                        long[] prediction = Utils.transformer_recover(embeddings);
+
+                        // decode 1, before recover
+                        Utils.decode_image_receiver(embeddings, mImageView, true);
+
+                        // decode 2, after recover
+                        Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                        // save receiver latency to file
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+                        FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
+                                Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
+
+                        // finish
+                        if (Constants.allowLog) {
+                            FileOperations.writetofile(MainActivity.av, Constants.SF + "\n" + Constants.BW + "\n" + Constants.CodeRate_LoRA + "\n" + Constants.FC,
+                                    Utils.genName(Constants.SignalType.AdaptParams, 0) + ".txt");
+                        }
+                    }
+                    else if (Constants.scheme == Constants.Modulation.OFDM_freq_all)
+                    {
+                        long[] embeddings = Decoder.decode_helper(av,data_signal,valid_bins,m_attempt);
+                        // recover
+                        long[] prediction = Utils.transformer_recover(embeddings);
+
+                        // decode 1, before recover
+                        Utils.decode_image_receiver(embeddings, mImageView, true);
+
+                        // decode 2, after recover
+                        Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                        // save receiver latency to file
+                        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+                        FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
+                                Utils.genName(Constants.SignalType.Latency_Receiver, m_attempt) + ".txt");
+
+                    }
+                    return 0;
+                } else {
+                    return -1;
+                }
             }
         }
         else if (Constants.scheme == Constants.Modulation.Noise) {
