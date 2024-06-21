@@ -164,6 +164,7 @@ public class Constants {
     public static View overlayView = null;
 
     public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"}; // first 3 time are predicable
+//    public static String[] all_datacollection_schemes = {"ofdm_adapt"}; // first 3 time are predicable
 
 
     public static String currentDirPath = "";
@@ -176,6 +177,8 @@ public class Constants {
     public static int receive_time_offset = 8; // allow 5 seconds offset
 
     public static char[] datacollection_receiver_res;
+
+    public static int after_experiment_sleep_time = 5000;
     // ****************************** End of Codec Related Global Variables ******************************
 
 

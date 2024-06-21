@@ -255,10 +255,11 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             // update the overlay text to show current progress
                             int finalCurrent_instance_index = Constants.datacollection_current_instance_index + 1;
                             int finalP = p+1;
+                            int temp_index = Constants.datacollection_current_instance_index;
                             Constants.overlay_textview.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_time_delay_map[Constants.datacollection_time_delay_map.length-1] - Constants.datacollection_time_delay_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP);
+                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_time_delay_map[Constants.datacollection_time_delay_map.length-1] - Constants.datacollection_time_delay_map[temp_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP);
                                 }
                             });
 
@@ -280,6 +281,13 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 }
                 // change it back to testExp
                 Constants.expMode = Constants.Experiment.testExp;
+
+                // delay 5 seconds and goes back
+                try {
+                    Thread.sleep(Constants.after_experiment_sleep_time); // 15 seconds sleep
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
 
                 // enable UI
@@ -331,10 +339,12 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                             // update the overlay text to show current progress
                             int finalCurrent_instance_index = Constants.datacollection_current_instance_index + 1;
                             int finalP = p+1;
+
+                            int saved_index = Constants.datacollection_current_instance_index;
                             Constants.overlay_textview.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length-1] - Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                    Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count +"\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length-1] - Constants.datacollection_time_out_map[saved_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
                                 }
                             });
 
@@ -354,13 +364,14 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                 Utils.update_receiver_res(false);
                             }
 
+
                             Constants.overlay_textview.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     if (res == 0) {
-                                        Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                        Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[saved_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
                                     } else {
-                                        Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                        Constants.overlay_textview.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[saved_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
                                     }
                                 }
                             });
@@ -377,6 +388,13 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 // change it back to testExp
                 Constants.expMode = Constants.Experiment.testExp;
+
+                // delay 5 seconds and goes back
+                try {
+                    Thread.sleep(Constants.after_experiment_sleep_time); // 15 seconds sleep
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
                 // enable UI
                 Constants.overlayView.post(new Runnable() {
@@ -749,7 +767,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 int[] valid_bins = null;
                 double[] sounding_signal = null;
                 do {
-                    sounding_signal = Utils.waitForChirp(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber, TaskID);
+                    sounding_signal = Utils.waitForChirp_with_timeout(Constants.SignalType.Sounding, m_attempt, chirpLoopNumber, TaskID);
                     if (sounding_signal == null) {
                         return -1;
                     }
@@ -764,7 +782,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         return -1;
                     }
 
-                } while (valid_bins == null || valid_bins.length == 0 || valid_bins[0] == -1 && !Utils.check_pass_timeout());
+                } while (valid_bins == null || valid_bins.length == 0 || valid_bins[0] == -1);
 
                 if (Utils.check_pass_timeout()) {
                     Utils.logd("Pass time out waiting init" + Constants.scheme.name() + ": " + Constants.datacollection_current_instance_index + " " + Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]);

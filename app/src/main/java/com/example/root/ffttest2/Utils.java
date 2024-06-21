@@ -1679,6 +1679,155 @@ public class Utils {
         return null;
     }
 
+
+    public static double[] waitForChirp_with_timeout(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
+        String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
+        Log.e("fifo",filename);
+
+        Constants._OfflineRecorder = new OfflineRecorder(
+                MainActivity.av, Constants.fs, filename);
+        Constants._OfflineRecorder.start2();
+
+        int MAX_WINDOWS = 0;
+
+        int numWindowsLeft = 0;
+        double timeout = 0;
+        int len = 0;
+        int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+        if (sigType.equals(Constants.SignalType.Sounding)) {
+            if (Constants.Ns==960||Constants.Ns==1920) {
+                MAX_WINDOWS = 2;
+            }
+            else if (Constants.Ns==4800) {
+                MAX_WINDOWS=3;
+            }
+            else if (Constants.Ns==9600) {
+                MAX_WINDOWS=3;
+            }
+            timeout = 30;
+            len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*Constants.chanest_symreps);
+        }
+        else if (sigType.equals(Constants.SignalType.Feedback)) {
+            MAX_WINDOWS = 2;
+            if (Constants.Ns==960||Constants.Ns==1920) {
+                timeout = 5;
+            }
+            else if (Constants.Ns==4800) {
+                timeout=7;
+            }
+            else if (Constants.Ns==9600) {
+                timeout=7;
+            }
+            len = (int)(ChirpSamples+Constants.ChirpGap+((fbackTime/1000.0)*Constants.fs));
+        }
+
+        int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
+        double[] tx_preamble = PreambleGen.preamble_d();
+        ArrayList<Double[]> sampleHistory = new ArrayList<>();
+        ArrayList<Double> valueHistory = new ArrayList<>();
+        ArrayList<Double> idxHistory = new ArrayList<>();
+        int synclag = 12000;
+        double[] sounding_signal = new double[]{};
+        sounding_signal=new double[(MAX_WINDOWS+1)*Constants.RecorderStepSize];
+        Log.e("len","sig length "+sounding_signal.length+","+sigType.toString());
+        boolean valid_signal = false;
+//        boolean getOneMoreFlag = false;
+        int sounding_signal_counter=0;
+        int window_count = 0;
+        while (!Utils.check_pass_timeout()) {
+            Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(window_count), TaskID));
+//            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
+
+            if (sigType.equals(Constants.SignalType.Sounding)||
+                    sigType.equals(Constants.SignalType.Feedback)||
+                    sigType.equals(Constants.SignalType.DataRx) ) {
+//                Log.e("fifo","loop "+i);
+
+                if (window_count<MAX_WINDOWS) {
+                    sampleHistory.add(rec);
+//                    continue;
+                }
+                else {
+                    if (numWindowsLeft==0) {
+                        double[] out = null;
+                        out = Utils.concat(sampleHistory.get(sampleHistory.size() - 1), rec);
+
+                        double[] filt = Utils.copyArray(out);
+                        filt = Utils.filter(filt);
+
+                        //value,idx
+                        double[] xcorr_out = Utils.xcorr_online(tx_preamble, filt);
+
+                        long t1 = System.currentTimeMillis();
+//                        Utils.log(String.format("Listening... (%.2f)",xcorr_out[2]));
+                        Utils.log(String.format("Listening........ (%.2f, %d)",xcorr_out[2],window_count));
+
+                        sampleHistory.add(rec);
+                        valueHistory.add(xcorr_out[0]);
+                        idxHistory.add(xcorr_out[1]);
+
+                        if (xcorr_out[0] != -1) {
+                            if (xcorr_out[1] + len + synclag > Constants.RecorderStepSize*MAX_WINDOWS) {
+                                Log.e("copy","one more flag "+xcorr_out[1]+","+(xcorr_out[1] + len + synclag));
+
+                                numWindowsLeft = MAX_WINDOWS-1;
+
+//                                Log.e("copy","copying "+out[t_idx]+","+out[t_idx+1]+","+out[t_idx+2]+","+out[t_idx+3]+","+out[t_idx+4]);
+                                for (int j = (int)xcorr_out[1]; j < out.length; j++) {
+                                    sounding_signal[sounding_signal_counter++]=out[j];
+                                }
+
+                                Log.e("copy", "copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
+                            } else {
+                                Log.e("copy","good! "+filt.length+","+xcorr_out[1]+","+filt.length);
+//                                Utils.log("good");
+                                int counter=0;
+                                for (int k = (int) xcorr_out[1]; k < out.length; k++) {
+                                    sounding_signal[counter++] = out[k];
+                                }
+//                                sounding_signal = Utils.segment(filt, (int) xcorr_out[1], filt.length - 1);
+                                valid_signal = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (sounding_signal_counter>0){
+//                        Utils.log("another window");
+                        Log.e("copy","another window from "+sounding_signal_counter+","+(sounding_signal_counter+rec.length)+","+sounding_signal.length);
+
+//                        double[] filt2 = Utils.copyArray2(rec);
+//                        filt2 = Utils.filter(filt2);
+
+                        for (int j = 0; j < rec.length; j++) {
+                            sounding_signal[sounding_signal_counter++]=rec[j];
+                        }
+                        numWindowsLeft -= 1;
+                        if (numWindowsLeft==0){
+                            valid_signal=true;
+                            break;
+                        }
+                    }
+
+                    if(sampleHistory.size() >= 6){
+                        sampleHistory.remove(0);
+                        valueHistory.remove(0);
+                        idxHistory.remove(0);
+                    }
+
+                }
+                window_count = window_count + 1;
+
+            }
+        }
+
+        Constants._OfflineRecorder.halt2();
+
+        if (valid_signal) {
+            return Utils.filter(sounding_signal);
+        }
+        return null;
+    }
+
     public static void listen_to_noise(Constants.SignalType sigType, int m_attempt, int chirpLoopNumber, String TaskID) {
 
         String filename = Utils.genName(sigType, m_attempt, chirpLoopNumber);
