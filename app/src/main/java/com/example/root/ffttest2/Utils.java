@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -1998,6 +1999,10 @@ public class Utils {
         int sounding_signal_counter=0;
 //        for (int i = 0; i < N; i++) { // actually here we can replace it with while true
         int window_count = 0;
+
+        // reset sensor
+        Utils.reset_sensor();
+
         while (true) {
             Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(window_count), TaskID));
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
@@ -2114,6 +2119,11 @@ public class Utils {
         }
 
         Constants._OfflineRecorder.halt2();
+
+        // write sensor
+        Utils.stop_sensor();
+        FileOperations.writeSensors(MainActivity.av, Utils.genName(Constants.SignalType.Receiver_Sensor, 0) + ".txt");
+
 
         if (valid_signal) {
             //return Utils.filter(sounding_signal);
@@ -2257,6 +2267,8 @@ public class Utils {
         int sounding_signal_counter=0;
 //        for (int i = 0; i < N; i++) { // actually here we can replace it with while true
         int window_count = 0;
+        // start sensor
+        Utils.reset_sensor();
         while (!Utils.check_pass_timeout()) {
             Double[] rec = Utils.convert2(Constants._OfflineRecorder.get_FIFO(String.valueOf(window_count), TaskID));
 //            Log.e("timer1",m_attempt+","+rec.length+","+i+","+N+","+(System.currentTimeMillis()-t1)+"");
@@ -2375,6 +2387,10 @@ public class Utils {
             Utils.logd("Pass time out waiting data " + Constants.scheme.name() + ": " + Constants.datacollection_current_instance_index + " " + Constants.datacollection_time_out_map[Constants.datacollection_current_instance_index]);
         }
         Constants._OfflineRecorder.halt2();
+
+        // write sensor
+        Utils.stop_sensor();
+        FileOperations.writeSensors(MainActivity.av, Utils.genName(Constants.SignalType.Receiver_Sensor, 0) + ".txt");
 
         if (valid_signal) {
             //return Utils.filter(sounding_signal);
@@ -3331,6 +3347,16 @@ public class Utils {
         }
 
         return sb.toString();
+    }
+
+    public static void reset_sensor() {
+        Constants.acc = new LinkedList<>();
+        Constants.gyro = new LinkedList<>();
+        Constants.sensorFlag = true;
+    }
+
+    public static void stop_sensor() {
+        Constants.sensorFlag = false;
     }
 
 

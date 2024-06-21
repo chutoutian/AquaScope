@@ -246,7 +246,9 @@ public class Constants {
         Send_Embedding_Sequence,
         Rx_Embedding_Recovered,
         SNR_Raw_Data,
-        Receiver_Success_Indicator
+        Receiver_Success_Indicator,
+        Receiver_Sensor,
+        Sender_Sensor
     }
     public enum EstSignalType {
         Chirp,

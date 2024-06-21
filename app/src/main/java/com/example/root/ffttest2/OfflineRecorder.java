@@ -167,9 +167,9 @@ public class OfflineRecorder extends Thread {
     }
 
     public void fifo_read() {
-        Constants.acc = new LinkedList<>();
-        Constants.gyro = new LinkedList<>();
-        Constants.sensorFlag=true;
+//        Constants.acc = new LinkedList<>();
+//        Constants.gyro = new LinkedList<>();
+//        Constants.sensorFlag=true;
 
         int MAX_SAVE_FIFO = 48000*2;
         int remove_num = 0;
@@ -233,7 +233,7 @@ public class OfflineRecorder extends Thread {
                 rec.stop();
                 rec.release();
             }
-            Constants.sensorFlag=false;
+//            Constants.sensorFlag=false;
             // save the remaining data to the disk
             int new_length = save_FIFO.size() - write_pointer;
             short[] save_buffer = new short[new_length];
@@ -335,7 +335,7 @@ public class OfflineRecorder extends Thread {
                     save_buffer2[j-write_pointer] = save_FIFO2.get(j);
                 }
 
-                Constants.sensorFlag=false;
+//                Constants.sensorFlag=false;
 //                Log.e("fifo","append 2 "+new_length);
                 if (Constants.IO) {
 

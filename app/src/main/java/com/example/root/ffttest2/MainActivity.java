@@ -659,15 +659,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onPause() {
         super.onPause();
         Utils.logd("onpause");
-//        sensorManager.unregisterListener(this);
+        sensorManager.unregisterListener(this);
         stopMethod();
     }
 
     protected void onResume() {
         super.onResume();
         Utils.logd("onresume");
-//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
-//        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
         FullScreencall();
 
         Constants.user  = Constants.User.Bob;
@@ -737,8 +737,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Constants.task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         } else {
             started = true;
-//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
-//        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
+//            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+//            sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
 
             Constants.ts = System.currentTimeMillis();
 

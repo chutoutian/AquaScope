@@ -17,6 +17,7 @@ import org.pytorch.IValue;
 import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -86,7 +87,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
     protected void onPostExecute(Void unused) {
         super.onPostExecute(unused);
 
-        MainActivity.unreg(av);
+//        MainActivity.unreg(av);
 
         if (Constants.timer!=null) {
             Constants.timer.cancel();
@@ -479,10 +480,17 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         }
                     }
 
+                    // reset sensor
+//                    Utils.reset_sensor();
+
                     Constants.sp1.play(Constants.volume);
 
                     int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
                     sleep(sig_len+Constants.SendPad);
+
+                    // stop sensor and write to file
+//                    Utils.stop_sensor();
+//                    FileOperations.writeSensors(av, Utils.genName(Constants.SignalType.Sender_Sensor, 0));
 
                     feedback_signal = Utils.waitForChirp(Constants.SignalType.Feedback, m_attempt, chirpLoopNumber, TaskID);
                     chirpLoopNumber++;
@@ -951,8 +959,6 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
     public static void sendChirp(int m_attempt, Constants.SignalType sigType)
     {
-
-
         int siglen = Constants.FS / 2;
         siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         short[] txsig = new short[siglen];
@@ -1057,11 +1063,17 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 e.printStackTrace();
             }
         }
+        // reset sensor
+        Utils.reset_sensor();
 
         Constants.sp1.play(Constants.volume);
 
         int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
         sleep(sleepTime + Constants.SendPad);
+
+        // write sensor
+        Utils.stop_sensor();
+        FileOperations.writeSensors(MainActivity.av, Utils.genName(Constants.SignalType.Sender_Sensor, 0) + ".txt");
 
         // sender t4 - send signal
         final long inferenceTime_send_signal = SystemClock.elapsedRealtime() - startTime_send_signal;
