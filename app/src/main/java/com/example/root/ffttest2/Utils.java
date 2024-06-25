@@ -2073,7 +2073,7 @@ public class Utils {
                                 }
 
                                 // plot Spec and SNR
-                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
+//                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
 
                                 Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
                             }
@@ -2339,7 +2339,7 @@ public class Utils {
                                 }
 
                                 // plot Spec and SNR
-                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
+//                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
 
                                 Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
                             }
