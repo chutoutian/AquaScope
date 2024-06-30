@@ -179,6 +179,8 @@ public class Constants {
     public static char[] datacollection_receiver_res;
 
     public static int after_experiment_sleep_time = 5000;
+
+    public static int gap_from_spinner = 0;
     // ****************************** End of Codec Related Global Variables ******************************
 
 
@@ -1053,7 +1055,10 @@ public class Constants {
         if (Constants.ADD_GAP)
         {
             // TODO: remove gap?
-            Gap = (int)(Ns_lora * 0.05);
+
+//            Gap = (int)(Ns_lora * 0.05);
+            Gap = (int)(Ns_lora * ((float)Constants.gap_from_spinner)/((float)100));
+
         }
 
         Equalization_Gap = Constants.Equalization_Range * (Constants.Ns + Constants.Gap) - Constants.Ns_Equalization;

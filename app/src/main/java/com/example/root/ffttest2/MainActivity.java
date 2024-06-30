@@ -243,6 +243,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         return false;
     }
     private void showSettingsDialog() {
+
+
+
         // Create the dialog
         final Dialog settingsDialog = new Dialog(this);
         settingsDialog.requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove the title
@@ -266,6 +269,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "2", "5", "10", "20", "30"});
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
         setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
+        setupSpinner(settingsDialog, R.id.spinner_gap_setting, new String[]{"0", "5", "10", "25", "50"});
 
 
         // Display the current time
@@ -280,6 +284,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         finishButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                // set up gap (default 0)
+                if (Constants.ADD_GAP)
+                {
+                    Constants.Gap = (int)(Constants.Ns_lora * ((float)Constants.gap_from_spinner)/((float)100));
+                }
+
                 // overwrite the experiment mode
                 Constants.expMode = Constants.Experiment.dataCollection;
                 Constants.Send_Delay = 5000; // 15 S the actual time is 25S controlled by datacollection_proposed_time
@@ -389,6 +400,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     case R.id.spinner_init_time_delay:
                         Utils.logd("spinner_init_time_delay: " + values[position]);
                         Constants.datacollection_init_delay_time = Integer.parseInt(values[position]);
+                        break;
+                    case R.id.spinner_gap_setting:
+                        Utils.logd("spinner_gap_setting: " + values[position]);
+                        Constants.gap_from_spinner = Integer.parseInt(values[position]);
+                        if (Constants.ADD_GAP)
+                        {
+                            Constants.Gap = (int)(Constants.Ns_lora * ((float)Constants.gap_from_spinner)/((float)100));
+                        }
                         break;
                     default:
                         break;

@@ -1922,7 +1922,7 @@ public class Utils {
                     else if (Constants.SF == 5 || Constants.SF == 6)
                     {
                         timeout = 20;
-                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 360; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
+                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 450; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
                     }
                     else if (Constants.SF == 4)
                     {
@@ -1969,7 +1969,7 @@ public class Utils {
                     }
                     else if (Constants.SF == 5)
                     {
-                        sounding_signal=new double[15*Constants.RecorderStepSize];
+                        sounding_signal=new double[25*Constants.RecorderStepSize];
                     }
                     else if (Constants.SF == 4 ||Constants.SF == 3 )
                     {
@@ -2190,7 +2190,7 @@ public class Utils {
                     else if (Constants.SF == 5 || Constants.SF == 6)
                     {
                         timeout = 20;
-                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 360; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
+                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 450; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
                     }
                     else if (Constants.SF == 4)
                     {
@@ -2237,7 +2237,7 @@ public class Utils {
                     }
                     else if (Constants.SF == 5)
                     {
-                        sounding_signal=new double[15*Constants.RecorderStepSize];
+                        sounding_signal=new double[25*Constants.RecorderStepSize];
                     }
                     else if (Constants.SF == 4 ||Constants.SF == 3 )
                     {
@@ -2587,7 +2587,7 @@ public class Utils {
     }
 
     public static void update_setup_description() {
-        Constants.setup_description = Constants.datacollection_env + "_" + Constants.datacollection_distance + "_" + Constants.datacollection_mobility + "_" + Constants.datacollection_depth + "_" + Constants.datacollection_orientation;
+        Constants.setup_description = Constants.datacollection_env + "_" + Constants.datacollection_distance + "_" + Constants.datacollection_mobility + "_" + Constants.datacollection_depth + "_" + Constants.datacollection_orientation + "_" + Constants.gap_from_spinner;
     }
 
     public static void update_estimated_time() {

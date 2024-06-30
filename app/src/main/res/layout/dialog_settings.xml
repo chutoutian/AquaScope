@@ -107,6 +107,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <!-- Gap Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gap" />
+        <Spinner
+            android:id="@+id/spinner_gap_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <!-- Current Time TextView -->
         <TextView
             android:id="@+id/textview_current_time"
