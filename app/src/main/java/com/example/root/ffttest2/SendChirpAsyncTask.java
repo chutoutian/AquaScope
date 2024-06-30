@@ -455,8 +455,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             double[] tx_preamble = PreambleGen.preamble_d();
             if (Constants.user.equals(Constants.User.Alice)) {
                 // $ ofdm time get valid bin time
-                final long get_valid_bin_startTime = SystemClock.elapsedRealtime();
-
+                long get_valid_bin_startTime = 0;
                 int chirpLoopNumber = 0;
                 double[] feedback_signal = null;
                 do {
@@ -483,6 +482,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     // reset sensor
 //                    Utils.reset_sensor();
 
+                    get_valid_bin_startTime = SystemClock.elapsedRealtime();
+
                     Constants.sp1.play(Constants.volume);
 
                     int sig_len = (int)(((double)sig.length/Constants.fs)*1000);
@@ -505,7 +506,14 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                 int[] valid_bins = FeedbackSignal.extractSignalHelper(feedback_signal, (int)xcorr_out[1], m_attempt);
 
                 // $ ofdm time get valid bin time
-                final long validBinTime = SystemClock.elapsedRealtime() - get_valid_bin_startTime;
+                long validBinTime = 0;
+                if (Constants.SEND_DATA) {
+                    if (valid_bins.length >= 1 && valid_bins[0] != -1) {
+                        validBinTime = SystemClock.elapsedRealtime() - get_valid_bin_startTime; // if feedback received
+                    } else {
+                        validBinTime = -1; // if no feedback received
+                    }
+                }
                 Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender get valid bin (ms): " + validBinTime + "\n";
                 Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
 
@@ -1046,7 +1054,6 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         }
 
         // sender t4 - send signal
-        final long startTime_send_signal = SystemClock.elapsedRealtime();
 
         Constants.sp1 = new AudioSpeaker(MainActivity.av, txsig, Constants.fs , 0, txsig.length, false); // this is where I leave to solve Mar. 19.
 
@@ -1066,17 +1073,21 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         // reset sensor
         Utils.reset_sensor();
 
+        final long startTime_send_signal = SystemClock.elapsedRealtime();
+
         Constants.sp1.play(Constants.volume);
 
         int sleepTime = (int) (((double) txsig.length / Constants.fs) * 1000);
         sleep(sleepTime + Constants.SendPad);
 
+        // sender t4 - send signal
+        final long inferenceTime_send_signal = SystemClock.elapsedRealtime() - startTime_send_signal;
+
         // write sensor
         Utils.stop_sensor();
         FileOperations.writeSensors(MainActivity.av, Utils.genName(Constants.SignalType.Sender_Sensor, 0) + ".txt");
 
-        // sender t4 - send signal
-        final long inferenceTime_send_signal = SystemClock.elapsedRealtime() - startTime_send_signal;
+
         Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender send signal (ms): " + inferenceTime_send_signal + "\n";
         Utils.logd("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
         FileOperations.writetofile(MainActivity.av, Constants.Sender_Latency_Str,
