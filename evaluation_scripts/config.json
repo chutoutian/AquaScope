@@ -1,0 +1,17 @@
+{
+    "metric": "psnr",
+    "base_folder": "06292024",
+    "setup": "gap",
+    "input_metadata": ["sent", "received"],
+    "fig_type": "box",
+    "multi_images": true,
+    "selected_images": [],
+    "kwargs": {
+        "location": "air",
+        "distance": 3,
+        "motion_pattern": "static",
+        "depth": 1,
+        "direction": 0,
+        "gap": 0
+    }
+}
