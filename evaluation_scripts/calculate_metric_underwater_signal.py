@@ -2,6 +2,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import cumfreq
+import json
+import argparse
+from collections import defaultdict
 
 preamble_tim = 195
 fs = 48000
@@ -185,6 +188,44 @@ def get_preamble2(rec, start_point,gt_symbols):
 
     return snrs
 
+def plot_graph(data, kwargs, setup, fig_type='line', multi_images = True):
+    title = f"{data['metric']} of {kwargs['location']}_{kwargs['distance']}m_{kwargs['motion_pattern']}_{kwargs['depth']}m_{kwargs['direction']}_{kwargs['gap']}_{data['input_types'][0]}_{data['input_types'][1]}"
+    if multi_images == True and fig_type == 'line':
+        plot_line(data, title, setup)
+    # elif multi_images == True and fig_type == 'point':
+    #     plot_points(data, title, setup)
+    elif multi_images == True and fig_type == 'box':
+        plot_box(data, title, setup)
+    elif multi_images == True and fig_type == 'bar':
+        plot_bar(data, title, setup)
+    else: 
+        raise Exception("Plot unavailable. Either change multi_images or fig_type.")
+
+def load_config_from_json(file_path):
+    with open(file_path, 'r') as file:
+        config = json.load(file)
+    return config
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Process some inputs.')
+    parser.add_argument('--config', type=str, required=True, help='Path to the JSON config file.')
+    
+    args = parser.parse_args()
+    
+    config = load_config_from_json(args.config)
+    
+    # Extracting the values
+    metric = config['metric']
+    base_folder = config['base_folder']
+    setup = config['setup']
+    input_metadata = config['input_metadata']
+    fig_type = config['fig_type']
+    multi_images = config['multi_images']
+    kwargs = config['kwargs']
+    selected_images = config['selected_images']
+
+    return metric, base_folder, setup, input_metadata, fig_type, multi_images, kwargs, selected_images
+
 
 def embedding_to_bits_bytes(embedding):
     binary_string_builder = []
@@ -318,45 +359,116 @@ def plot_cdf_sensor(data_dict, metric, location, motion_pattern, distance, depth
         plt.savefig(f"underwater_figures/{metric}_{location}_{distance}_{motion_pattern}_{depth}_{direction}_{direction_label}.png")
         plt.show()
 
-def plot_bar(data, setup,other_params, metric):
-    x  = np.arange(len(data['x_labels']))  # the label locations
-    width = 0.2  # the width of the bars
+def plot_bar(data, title, setup_label):
+    colors = ['blue', 'green', 'red', 'purple']
+    x_labels = data['x_labels']
+    labels = data['schemes']
+    metric = data['metric']
+    
+    fig, ax = plt.subplots()
+    
+    x = np.arange(len(x_labels))  # x positions for the labels
+    width = 0.2  # width of the bars
+    
+    for i, (color, label) in enumerate(zip(colors, labels)):
+        y = [np.mean(data[f'{metric}_val'][label][setup]) for setup in x_labels]
+        y_err = [np.std(data[f'{metric}_val'][label][setup]) for setup in x_labels]
+        
+        ax.bar(x + i*width, y, width, yerr=y_err, color=color, label=label, capsize=5, alpha=0.7)
 
-    fig, ax = plt.subplots(figsize=(12, 8))
-    for i, scheme in enumerate(data['schemes']):
-        ax.bar(x + i * width, data['error_rates'][scheme], width, label=scheme) ## 
+    ax.set_xticks(x + width * (len(labels) - 1) / 2)
+    ax.set_xticklabels(x_labels)
+    
+    # Set the title and labels
+    ax.set_title(title)
+    ax.set_xlabel(setup_label.capitalize())
+    ax.set_ylabel(metric.upper())
+    
+    # Create legend
+    ax.legend(loc='upper right')
 
-    ax.set_xlabel(setup.capitalize())
-    ax.set_ylabel(f'Average {metric}')
-    ax.set_title(f'Average {metric} vs {setup.capitalize()}')
-    ax.set_xticks(x + width * (len(data['schemes']) / 2 - 0.5))
-    ax.set_xticklabels(data['x_labels'])
-    ax.legend()
-
-    plt.grid(True)
-    plt.savefig(f"underwater_figures/bar_{metric}_by_{setup}.png")
+    # Save the plot
+    plt.savefig(f"underwater_figures/bar_{metric}_by_{setup_label}.png")
     plt.show()
 
-def plot_line(data, setup, other_params, metric):
-    x = np.arange(len(data['x_labels']))  # the label locations
+def plot_line(data, title, setup_label):
+    colors = ['blue', 'green', 'red', 'purple']
+    x_labels = data['x_labels']
+    labels = data['schemes']
+    metric = data['metric']
+    
+    fig, ax = plt.subplots()
+    
+    x = np.arange(len(x_labels))  # x positions for the labels
+    
+    for i, (color, label) in enumerate(zip(colors, labels)):
+        y = [np.mean(data[f'{metric}_val'][label][setup]) for setup in x_labels]
+        y_err = [np.std(data[f'{metric}_val'][label][setup]) for setup in x_labels]
+        
+        ax.errorbar(x, y, yerr=y_err, color=color, label=label, fmt='-o', capsize=5)
 
-    fig, ax = plt.subplots(figsize=(12, 8))
-    for scheme in data['schemes']:
-        ax.plot(x, data['error_rates'][scheme], marker='o', label=scheme)
-
-    # Remove the focus_param from other_params
-    other_params_for_title = {k: v for k, v in other_params.items() if k != setup}
-    other_params_str = "_".join([str(v) for v in other_params_for_title.values()])
-
-    ax.set_xlabel(setup.capitalize())
-    ax.set_ylabel(f'Average {metric}')
-    ax.set_title(f'Average {metric} vs {setup.capitalize()} at {other_params_str}')
     ax.set_xticks(x)
-    ax.set_xticklabels(data['x_labels'])
-    ax.legend()
+    ax.set_xticklabels(x_labels)
+    
+    # Set the title and labels
+    ax.set_title(title)
+    ax.set_xlabel(setup_label.capitalize())
+    ax.set_ylabel(metric.upper())
+    
+    # Create legend
+    ax.legend(loc='upper right')
 
-    plt.grid(True)
-    plt.savefig(f"underwater_figures/line_{metric}_by_{setup}.png")
+    # Save the plot
+    plt.savefig(f"underwater_figures/line_{metric}_by_{setup_label}.png")
+    plt.show()
+
+def plot_box(data, title, setup_label):
+    data_points = [[] for _ in range(len(data['schemes']))]
+
+        
+    colors = ['blue', 'green', 'red', 'purple']
+    x_labels = data['x_labels']
+    labels = data['schemes']
+    metric = data['metric']
+    
+    for i, scheme in enumerate(data['schemes']):
+        for setup in data['x_labels']:
+            data_points[i].append(data[f'{metric}_val'][scheme][setup])
+    
+    fig, ax = plt.subplots()
+
+
+    positions = np.arange(len(x_labels)) * (len(labels) + 1) + 1
+    width = 0.6
+    
+    for i, (color, label) in enumerate(zip(colors, labels)):
+        psnr_data = [data_points[i][j] for j in range(len(x_labels))]
+        pos = positions + i - (len(labels) - 1) / 2.0
+        bp = ax.boxplot(psnr_data, positions=pos, widths=width, patch_artist=True)
+        
+        for box in bp['boxes']:
+            box.set(facecolor=color)
+        for whisker in bp['whiskers']:
+            whisker.set(color=color)
+        for cap in bp['caps']:
+            cap.set(color=color)
+        for median in bp['medians']:
+            median.set(color=color)
+        for flier in bp['fliers']:
+            flier.set(markerfacecolor=color, marker='o', alpha=0.75)
+
+    ax.legend([plt.Line2D([0], [0], color=color, lw=4) for color in colors], labels, loc='upper right')
+
+    ax.set_xticks(positions)
+    ax.set_xticklabels(x_labels)
+    
+    # Set the title and labels
+    ax.set_title(title)
+    ax.set_xlabel(setup_label.capitalize())
+    ax.set_ylabel(metric.upper())
+
+    # Save the plot
+    plt.savefig(f"underwater_figures/box_{metric}_by_{setup_label}.png")
     plt.show()
 
 
@@ -413,23 +525,12 @@ def generate_cdf(location, distance, motion_pattern, depth, direction, metric, b
 
     
 
-def generate_bar_line(focus_param, other_params, metric, base_folder, fig_type):
+def calculate_metric(setup, metric, base_folder, fig_type, input_metadata, kwargs, multi_images = True, selected_images=[]):
 
     schemes = ['css', 'ofdm_adapt', 'ofdm_wo_adapt', 'proposed']
+    schemes = ['ofdm_adapt', 'proposed']
 
-    setups = {
-        'location': ['pool'],
-        'distance': [1],
-        'motion_pattern': ['static'],
-        'depth': [1],
-        'direction': [0]
-    }  
-
-
-    focus_values = setups.get(focus_param, [])
-    
-    data = {'x_labels': focus_values, 'schemes': schemes, 'error_rates': {scheme: [] for scheme in schemes}}
-
+    data = {'x_labels': setups[setup], 'schemes': schemes, 'metric': metric, f'{metric}_val': {scheme:defaultdict(list) for scheme in schemes}, 'input_types': input_metadata}
 
     image_folders = [folder for folder in os.listdir(base_folder) if os.path.isdir(os.path.join(base_folder, folder))]
 
@@ -437,16 +538,14 @@ def generate_bar_line(focus_param, other_params, metric, base_folder, fig_type):
         ground_truth_path = os.path.join(base_folder, image_folder, 'groundtruth', 'Alice-Send_Embedding_Sequence-0.txt')
         ground_truth_embedding = read_embedding(ground_truth_path)
         ground_truth_bits, ground_truth_bytes = embedding_to_bits_bytes(ground_truth_embedding)
-        
-        for s in focus_values:
-            kwargs = other_params.copy()
-            kwargs[focus_param] = s
+        for s in setups[setup]:
+            kwargs[setup] = s
             for scheme in schemes:
-                folder_name = f"{kwargs['location']}_{kwargs['distance']}m_{kwargs['motion_pattern']}_{kwargs['depth']}m_{kwargs['direction']}"
+                folder_name = f"{kwargs['location']}_{kwargs['distance']}m_{kwargs['motion_pattern']}_{kwargs['depth']}m_{kwargs['direction']}_{kwargs['gap']}"
                 scheme_folder = os.path.join(base_folder, image_folder, scheme, folder_name)
                 if not os.path.isdir(scheme_folder):
                     continue
-                error_rates = []
+                #error_rates = []
                 for sample_folder in os.listdir(scheme_folder):
                     if sample_folder == '.DS_Store':
                         continue
@@ -456,22 +555,23 @@ def generate_bar_line(focus_param, other_params, metric, base_folder, fig_type):
                         recovered_bits, recovered_bytes = embedding_to_bits_bytes(recovered_embedding)
                         if metric == 'Byte_Error_Rate':
                             error_rate = calculate_byte_error_rate(ground_truth_bytes, recovered_bytes)
+                            data[f'{metric}_val'][scheme][s].append(error_rate)
                         elif metric == 'Bit_Error_Rate':
                             error_rate = calculate_bit_error_rate(ground_truth_bits, recovered_bits)
+                            data[f'{metric}_val'][scheme][s].append(error_rate)
                         elif metric == 'Embedding_Error_Rate':
                             error_rate = calculate_embedding_error_rate(ground_truth_embedding, recovered_embedding)
+                            data[f'{metric}_val'][scheme][s].append(error_rate)
                         else:
                             raise ValueError("Invalid metric specified. Use 'BER' for Bit Error Rate or 'ByER' for Byte Error Rate.")
-                        error_rates.append(error_rate)
-                if error_rates:
-                    data['error_rates'][scheme].append(np.mean(error_rates))
-                else:
-                    data['error_rates'][scheme].append(0)  # Handle cases with no data
+                        #error_rates.append(error_rate)
+                    else:
+                        data[f'{metric}_val'][scheme][s].append(0)
+        if not multi_images:
+                plot_graph(data, kwargs, setup, fig_type, multi_images)    # one graph one image folder, y axis = metric, x axis = setup
+    if multi_images:
+        plot_graph(data, kwargs, setup, fig_type, multi_images) # 
 
-    if fig_type == 'line':
-        plot_line(data, focus_param, other_params, metric)
-    elif fig_type == 'bar':
-        plot_bar(data,focus_param, other_params, metric)
 
 def generate_snr(location, distance, motion_pattern, depth, direction, base_folder):
     image_folders = [folder for folder in os.listdir(base_folder) if os.path.isdir(os.path.join(base_folder, folder))]
@@ -536,18 +636,20 @@ def generate_snr2(location, distance, motion_pattern, depth, direction, base_fol
 if __name__ == '__main__':
     
     
-    default_setup = {
-    'location': 'pool',
-    'distance': 1,
-    'motion_pattern': 'static',
-    'depth': 1,
-    'direction': 0
+    setups = {
+        'location': ['bridge'],
+        'distance': [1,3,5,10],
+        'motion_pattern': ['static', 'slow', 'fast'],
+        'depth': [1, 2, 5],
+        'direction': [0, 30, 60],
+        'gap': [10,25]
     }
+    metric, base_folder, setup, input_metadata, fig_type, multi_images, kwargs, selected_images = parse_arguments()
 
-    different_quanlity = ['Byte_Error_Rate', 'Bit_Error_Rate', 'Embedding_Error_Rate', 'acc','gyro']
+    calculate_metric(setup, metric, base_folder, fig_type, input_metadata, kwargs, multi_images, selected_images)
+    # generate_cdf('bridge', '10m', 'static','1m','0','25','Byte_Error_Rate','07032024')
 
-    
-    #generate_bar_line('distance', default_setup,'Byte_Error_Rate','06282024_arc_pool_experiment/06282024_arc_pool','line')
+
     
     #generate_cdf('pool', '1m', 'static','1m','0','acc','06282024_arc_pool_experiment/06282024_arc_pool')
     
@@ -555,7 +657,7 @@ if __name__ == '__main__':
     #generate_snr2('pool', '1m', 'static', '1m', '0','06282024_arc_pool_experiment/06282024_arc_pool')
     
     ##  draw the snr figure
-    generate_snr('pool', '1m', 'static', '1m', '0','06282024_arc_pool_experiment/06282024_arc_pool')
+    ## generate_snr('pool', '1m', 'static', '1m', '0','06282024_arc_pool_experiment/06282024_arc_pool')
 
     
 
