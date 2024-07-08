@@ -135,7 +135,7 @@ def load_config_from_json(file_path):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process some inputs.')
-    parser.add_argument('--config', type=str, required=True, help='Path to the JSON config file.')
+    parser.add_argument('-c','--config', type=str, required=True, help='Path to the JSON config file.')
     
     args = parser.parse_args()
     
@@ -150,8 +150,11 @@ def parse_arguments():
     multi_images = config['multi_images']
     kwargs = config['kwargs']
     selected_images = config['selected_images']
+    setups = config['setups']
+    type_to_filename = config['type_to_filename']
+    output_path = config['output_path']
 
-    return metric, base_folder, setup, input_metadata, fig_type, multi_images, kwargs, selected_images
+    return metric, base_folder, setup, input_metadata, fig_type, multi_images, kwargs, selected_images, setups, type_to_filename, output_path
 
 def lpips_function(img0, img1, net='alex'):
     img0, img1 = img0.to(device), img1.to(device)
@@ -208,24 +211,7 @@ def calculate_metric(setup, metric, base_folder, fig_type, input_metadata, kwarg
 if __name__ == '__main__':
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    setups = {
-        'location': ['air'],
-        'distance': [1],
-        'motion_pattern': ['static', 'slow', 'fast'],
-        'depth': [1, 2, 5],
-        'direction': [0, 30, 60],
-        'gap': [0,5,10, 25,50]
-    }
-
-    type_to_filename = {
-            "raw": "Alice-Raw_Input_Bitmap-0.png",
-            "sent": "Alice-Sent_Gt_Bitmap-0.png",
-            "received": "Bob-Received_Bitmap-0.png",
-            "recovered": "Bob-Recovered_Bitmap-0.png"
-        }
-    
-    metric, base_folder, setup, input_metadata, fig_type, multi_images, kwargs, selected_images = parse_arguments()
+    metric, base_folder, setup, input_metadata, fig_type, multi_images, kwargs, selected_images, setups, type_to_filename, output_path = parse_arguments()
 
     if input_metadata[0] not in ['raw', 'sent']:
         raise Exception("Please enter a reference type.")
@@ -238,8 +224,8 @@ if __name__ == '__main__':
     if setup not in setups.keys():
         raise Exception("Unrecognized setup type.")
     
-    if not os.path.exists('underwater_figures'):
-        os.mkdir('underwater_figures')
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
     
     calculate_metric(setup, metric, base_folder, fig_type, input_metadata, kwargs, multi_images, selected_images)
 

@@ -6,6 +6,7 @@
     "fig_type": "box",
     "multi_images": true,
     "selected_images": [],
+    "output_path": "underwater_figures",
     "kwargs": {
         "location": "air",
         "distance": 3,
@@ -13,5 +14,19 @@
         "depth": 1,
         "direction": 0,
         "gap": 0
+    },
+    "setups": {
+        "location": ["air"],
+        "distance": [1],
+        "motion_pattern": ["static", "slow", "fast"],
+        "depth": [1, 2, 5],
+        "direction": [0, 30, 60],
+        "gap": [0, 5, 10, 25, 50]
+    },
+    "type_to_filename": {
+        "raw": "Alice-Raw_Input_Bitmap-0.png",
+        "sent": "Alice-Sent_Gt_Bitmap-0.png",
+        "received": "Bob-Received_Bitmap-0.png",
+        "recovered": "Bob-Recovered_Bitmap-0.png"
     }
 }
