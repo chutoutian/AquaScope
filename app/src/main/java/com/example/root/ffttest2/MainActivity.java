@@ -88,6 +88,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+// for json
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     // ********************************** Start App Variable Definition **********************************
@@ -271,6 +279,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
         setupSpinner(settingsDialog, R.id.spinner_gap_setting, new String[]{"0", "5", "10", "25", "50"});
         setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_ofdmA", "css_ofdmWO","all"});
+        setupSpinner(settingsDialog, R.id.spinner_cbsize_setting, new String[]{"1024", "256"});
 
 
 
@@ -287,10 +296,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void onClick(View v) {
 
+                // update computing variables
                 // set up gap (default 0)
                 if (Constants.ADD_GAP)
                 {
                     Constants.Gap = (int)(Constants.Ns_lora * ((float)Constants.gap_from_spinner)/((float)100));
+                }
+
+                // set up embedding bytes
+                // can be more elegant, e.g., use on change
+                if (Constants.codebookSize == "1024") {
+                    Constants.EmbeddindBytes = 80;
+                    Constants.maxbits = 640;
+                } else if (Constants.codebookSize == "256") {
+                    Constants.EmbeddindBytes = 64;
+                    Constants.maxbits = 512;
+                } else {
+                    Constants.EmbeddindBytes = 80;
+                    Constants.maxbits = 640;
                 }
 
                 // overwrite the experiment mode
@@ -434,6 +457,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                 break;
                         }
                         break;
+                    case R.id.spinner_cbsize_setting:
+                        Utils.logd("spinner_cbsize_setting: " + values[position]);
+                        Constants.codebookSize = values[position];
+
+
+                        break;
+
                     default:
                         break;
                 }
@@ -564,6 +594,32 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Utils.logd("Image Files: " + Arrays.toString(imageFiles));
         Utils.logd("Ptl Files: " + Arrays.toString(ptlFiles));
     }
+
+
+    private Map<Integer, Integer> load_json(String json_path) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            // Load JSON file into a Map with String keys
+            Map<String, Integer> dataStrKeys = objectMapper.readValue(getAssets().open(json_path), Map.class);
+
+            // Convert the Map to have Integer keys
+            Map<Integer, Integer> dataIntKeys = new HashMap<>();
+            for (Map.Entry<String, Integer> entry : dataStrKeys.entrySet()) {
+                dataIntKeys.put(Integer.parseInt(entry.getKey()), entry.getValue());
+            }
+
+            // Access data from the Map with Integer keys
+            return dataIntKeys;
+//            Utils.logd("Key 1: " + Constants.cb_1024_to_256.get(1));
+//            Utils.logd("Key 2: " + Constants.cb_1024_to_256.get(2));
+//            Utils.logd("Key 3: " + Constants.cb_1024_to_256.get(3));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
 
     // ********************************** End App Methods (Later can be put into separate classes) **********************************
 
@@ -1411,6 +1467,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Constants.spinner3 = (Spinner) findViewById(R.id.spinner3);
         Constants.spinner4 = (Spinner) findViewById(R.id.spinner4);
         Constants.spinner5 = (Spinner) findViewById(R.id.spinner5);
+        Constants.spinnerCB = (Spinner) findViewById(R.id.spinnerCB);
         Constants.sendButton = (Button) findViewById(R.id.sendbutton);
         Constants.readyButton = (Button) findViewById(R.id.readyButton);
 
@@ -1624,6 +1681,46 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Constants.currentEqualizationMethod = Constants.NewEqualizationMethod.valueOf(arrayList5.get(position));
+            }
+            @Override
+            public void onNothingSelected(AdapterView <?> parent) {
+            }
+        });
+
+        // codebook size
+        // step 1 load related codebooks
+        Constants.cb_1024_to_256 = load_json("codebook_1024_to_256.json"); // map 1024 to 256
+        Constants.cb_256_to_1024 = load_json("codebook_256_to_1024.json"); // map 256 to 1024
+
+        // step 2 add ui
+        ArrayList<String> arrayList6 = new ArrayList<>();
+        arrayList6.add("1024");
+        arrayList6.add("256");
+
+        ArrayAdapter<String> arrayAdapter6 = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, arrayList6);
+        arrayAdapter6.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Constants.spinnerCB.setAdapter(arrayAdapter6);
+        // set default
+        int defaultPositionSpinnerCB = arrayAdapter6.getPosition("1024");
+        Constants.spinnerCB.setSelection(defaultPositionSpinnerCB);
+        Constants.spinnerCB.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Constants.codebookSize = arrayList6.get(position);
+                Utils.logd("Codebook Size is set to " + Constants.codebookSize);
+
+                // can be more elegant, e.g., use on change
+                if (Constants.codebookSize == "1024") {
+                    Constants.EmbeddindBytes = 80;
+                    Constants.maxbits = 640;
+                } else if (Constants.codebookSize == "256") {
+                    Constants.EmbeddindBytes = 64;
+                    Constants.maxbits = 512;
+                } else {
+                    Constants.EmbeddindBytes = 80;
+                    Constants.maxbits = 640;
+                }
             }
             @Override
             public void onNothingSelected(AdapterView <?> parent) {

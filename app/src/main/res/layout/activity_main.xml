@@ -1181,6 +1181,23 @@
             app:layout_constraintVertical_bias="0.0" />
 
         <TextView
+            android:id="@+id/textViewCB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Codebook Size"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView22" />
+
+        <Spinner
+            android:id="@+id/spinnerCB"
+            android:layout_width="206dp"
+            android:layout_height="30dp"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewCB"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/textViewCB" />
+
+        <TextView
             android:id="@+id/fishExist"
             android:layout_width="50dp"
             android:layout_height="17dp"
@@ -1370,7 +1387,7 @@
             android:layout_marginTop="16dp"
             android:text="  Log"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView22" />
+            app:layout_constraintTop_toBottomOf="@+id/textViewCB" />
 
         <Switch
             android:id="@+id/chirptypecontroller"

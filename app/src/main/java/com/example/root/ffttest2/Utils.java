@@ -755,11 +755,21 @@ public class Utils {
     public static byte[] Embedding2Bytes(long[] embedding) {
         StringBuilder binaryStringBuilder = new StringBuilder();
 
+
         // Step 1: Convert all long integers to a single binary string with each being a 10-bit segment
         for (long value : embedding) {
             // Mask with 0x3FF to ensure only the lowest 10 bits are used
-            String binaryString = String.format("%10s", Long.toBinaryString(value & 0x3FF)).replace(' ', '0');
-            binaryStringBuilder.append(binaryString);
+            if (Constants.codebookSize == "1024") {
+                String binaryString = String.format("%10s", Long.toBinaryString(value & 0x3FF)).replace(' ', '0');
+                binaryStringBuilder.append(binaryString);
+            } else if (Constants.codebookSize == "256") {
+                // 0711 need to adapt to 8 bit
+                String binaryString = String.format("%8s", Long.toBinaryString(value & 0xFF)).replace(' ', '0');
+                binaryStringBuilder.append(binaryString);
+            } else {
+                String binaryString = String.format("%10s", Long.toBinaryString(value & 0x3FF)).replace(' ', '0');
+                binaryStringBuilder.append(binaryString);
+            }
         }
 
         // Step 2: Convert the binary string into a byte array
@@ -790,16 +800,42 @@ public class Utils {
 
         // The complete binary string
         String allBits = binaryStringBuilder.toString();
-        int numInts = allBits.length() / 10; // Calculate how many 10-bit integers are needed
 
-        long[] longs = new long[numInts];
-        for (int i = 0, intIndex = 0; i + 10 <= allBits.length(); i += 10, intIndex++) {
-            String intString = allBits.substring(i, i + 10);
-            long newLong = Long.parseLong(intString, 2);
-            longs[intIndex] = newLong;
+        if (Constants.codebookSize == "1024") {
+            int numInts = allBits.length() / 10; // Calculate how many 10-bit integers are needed
+
+            long[] longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 10 <= allBits.length(); i += 10, intIndex++) {
+                String intString = allBits.substring(i, i + 10);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+            }
+
+            return longs;
+        } else if (Constants.codebookSize == "256") {
+            // 0711 need to adapt to 8 bit
+            int numInts = allBits.length() / 8; // Calculate how many 8-bit integers are needed
+
+            long[] longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 8 <= allBits.length(); i += 8, intIndex++) {
+                String intString = allBits.substring(i, i + 8);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+            }
+
+            return longs;
+        } else {
+            int numInts = allBits.length() / 10; // Calculate how many 10-bit integers are needed
+
+            long[] longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 10 <= allBits.length(); i += 10, intIndex++) {
+                String intString = allBits.substring(i, i + 10);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+            }
+
+            return longs;
         }
-
-        return longs;
     }
 
 
@@ -851,16 +887,16 @@ public class Utils {
     public static void logd(String s) {
         if (Constants.allowLog) {
             Log.d(Constants.LOG, s);
-            (MainActivity.av).runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (Constants.debugPane.getText().toString().length() > 400) {
-                        Constants.debugPane.setText("");
-                    }
-                    Constants.debugPane.setText(Constants.debugPane.getText() + "\n" + s);
-                    scrollToBottom();
-                }
-            });
+//            (MainActivity.av).runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    if (Constants.debugPane.getText().toString().length() > 400) {
+//                        Constants.debugPane.setText("");
+//                    }
+//                    Constants.debugPane.setText(Constants.debugPane.getText() + "\n" + s);
+//                    scrollToBottom();
+//                }
+//            });
         }
     }
 
@@ -2747,14 +2783,58 @@ public class Utils {
         Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
         outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
         outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
-        final long[] results = outTensors.getDataAsLongArray();
+        long[] results = outTensors.getDataAsLongArray();
 
         Constants.encode_sequence = results;
+
+        // Beitong0711: decide if we want to use code 1024 or 256
+        if (Constants.codebookSize == "1024") {
+            Utils.logd("use codebook 1024 do nothing");
+        } else if (Constants.codebookSize == "256") {
+            Utils.logd("use codebook 256 remapping the sequence");
+            long[] results_256 = new long[results.length];
+            for (int i = 0; i < results.length; i++) {
+                if (Constants.cb_1024_to_256.containsKey((int) results[i])) {
+                    results_256[i] = Constants.cb_1024_to_256.get((int) results[i]);
+                } else {
+                    // Handle the case where the key is not found
+                    Utils.logd("Key " + results[i] + " not found in dataIntKeys.");
+                    results_256[i] = 175; // or some other default value
+                }
+            }
+            Constants.encode_sequence = results_256;
+            results = results_256;
+        } else {
+            Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing");
+        }
+
 
         return results;
     }
 
     public static Bitmap decode_image(long[] results) {
+
+        // Beitong0711: decide if we want to use code 1024 or 256
+        if (Constants.codebookSize == "1024") {
+            Utils.logd("decode use codebook 1024 do nothing");
+        } else if (Constants.codebookSize == "256") {
+            Utils.logd("decode use codebook 256 remapping the sequence");
+            long[] results_1024 = new long[results.length];
+            for (int i = 0; i < results.length; i++) {
+                if (Constants.cb_256_to_1024.containsKey((int) results[i])) {
+                    results_1024[i] = Constants.cb_256_to_1024.get((int) results[i]);
+                } else {
+                    // Handle the case where the key is not found
+                    Utils.logd("Key " + results[i] + " not found in dataIntKeys.");
+                    results_1024[i] = 0; // or some other default value
+                }
+            }
+            results = results_1024;
+        } else {
+            Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing to decode");
+        }
+
+
         Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
         Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
         outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
@@ -2777,6 +2857,30 @@ public class Utils {
     }
 
     public static void decode_image_receiver(long[] results, ImageView mImageView, boolean before) {
+
+        // Beitong0711: decide if we want to use code 1024 or 256
+        if (Constants.codebookSize == "1024") {
+            Utils.logd("decode use codebook 1024 do nothing");
+        } else if (Constants.codebookSize == "256") {
+            Utils.logd("decode use codebook 256 remapping the sequence");
+            long[] results_1024 = new long[results.length];
+            for (int i = 0; i < results.length; i++) {
+                if (Constants.cb_256_to_1024.containsKey((int) results[i])) {
+                    results_1024[i] = Constants.cb_256_to_1024.get((int) results[i]);
+                } else {
+                    // Handle the case where the key is not found
+                    Utils.logd("Key " + results[i] + " not found in dataIntKeys.");
+                    results_1024[i] = 0; // or some other default value
+                }
+            }
+            results = results_1024;
+        } else {
+            Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing to decode");
+        }
+
+
+
+
         // receiver t6 decode image 1 (before recover)
         final long startTime_decode_image = SystemClock.elapsedRealtime();
         Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
@@ -2828,6 +2932,11 @@ public class Utils {
 
 
     public static long[] transformer_recover(long[] embeddings) {
+
+        if (Constants.codebookSize == "256") {
+            // Beitong0711 skip recover for now
+            return embeddings;
+        }
 
         // receiver t5 transformer recover
         final long startTime_transformer_recover = SystemClock.elapsedRealtime();

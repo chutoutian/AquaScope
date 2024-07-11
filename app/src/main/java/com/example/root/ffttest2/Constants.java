@@ -180,7 +180,15 @@ public class Constants {
 
     public static int after_experiment_sleep_time = 5000;
 
-    public static int gap_from_spinner = 0;
+    public static int gap_from_spinner = 25;
+
+    public static String codebookSize = "1024"; // default 1024
+
+    public static Map<Integer, Integer> cb_1024_to_256 = null;
+    public static Map<Integer, Integer> cb_256_to_1024 = null;
+
+
+
     // ****************************** End of Codec Related Global Variables ******************************
 
 
@@ -425,7 +433,7 @@ public class Constants {
     //public static int maxbits=5;
     public static int exp_num=5;
     public static int SNR_THRESH = 10; //unused
-    public static Spinner spinner,spinner2,spinner3,spinner4, spinner5;
+    public static Spinner spinner,spinner2,spinner3,spinner4, spinner5, spinnerCB;
     public static CodeRate codeRate = CodeRate.None;
     public static int DATA_LEN = 32;
     public static int mattempts=1;

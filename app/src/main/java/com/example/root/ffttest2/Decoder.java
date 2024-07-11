@@ -11,6 +11,7 @@ import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
 public class Decoder {
+    // for ofdm decoding
     public static long[]  decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
 
         // write the raw data into file
@@ -1184,7 +1185,8 @@ public class Decoder {
             bytes[i] = (byte) (firstNibble | secondNibble);
         }
 
-        int len = 80;
+        // Beitong07112024 change it to not hardcoding
+        int len = Constants.EmbeddindBytes;
         // dewhitening
         byte[] data = SymbolGeneration.dewhiten(Arrays.copyOfRange(bytes, 0, len ));
 

@@ -117,6 +117,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <!-- Method Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Method" />
+        <Spinner
+            android:id="@+id/spinner_method_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- CodebookSize Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CodebookSize" />
+        <Spinner
+            android:id="@+id/spinner_cbsize_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <!-- Current Time TextView -->
         <TextView
             android:id="@+id/textview_current_time"
