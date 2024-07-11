@@ -2590,8 +2590,16 @@ public class Utils {
         Constants.setup_description = Constants.datacollection_env + "_" + Constants.datacollection_distance + "_" + Constants.datacollection_mobility + "_" + Constants.datacollection_depth + "_" + Constants.datacollection_orientation + "_" + Constants.gap_from_spinner;
     }
 
+    public static int check_in_used_datacollection_scheme(String method) {
+        for (String s : Constants.all_datacollection_schemes) {
+            if (s.equals(method)) {
+                return 1;
+            }
+        }
+        return 0;
+    }
     public static void update_estimated_time() {
-        Constants.estimated_time_in_second = Constants.datacollection_init_delay_time + Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time +Constants.datacollection_css_time + Constants.datacollection_ofdm_adapt_time + Constants.datacollection_ofdm_wo_adapt_time) + (Constants.all_datacollection_schemes.length * Constants.datacollection_image_count * Constants.datacollection_mode_switch_time);
+        Constants.estimated_time_in_second = Constants.datacollection_init_delay_time + Constants.datacollection_times * Constants.datacollection_image_count * (Constants.datacollection_proposed_time * check_in_used_datacollection_scheme("proposed") +Constants.datacollection_css_time * check_in_used_datacollection_scheme("css") + Constants.datacollection_ofdm_adapt_time * check_in_used_datacollection_scheme("ofdm_adapt") + Constants.datacollection_ofdm_wo_adapt_time * check_in_used_datacollection_scheme("ofdm_wo_adapt")) + (Constants.all_datacollection_schemes.length * Constants.datacollection_image_count * Constants.datacollection_mode_switch_time);
     }
 
     public static String convertSecondsToTime(int totalSeconds) {
