@@ -163,8 +163,8 @@ public class Constants {
 
     public static View overlayView = null;
 
-    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"}; // first 3 time are predicable
-//    public static String[] all_datacollection_schemes = {"ofdm_adapt"}; // first 3 time are predicable
+//    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"}; // first 3 time are predicable
+    public static String[] all_datacollection_schemes = {"proposed"};
 
 
     public static String currentDirPath = "";

@@ -270,6 +270,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
         setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
         setupSpinner(settingsDialog, R.id.spinner_gap_setting, new String[]{"0", "5", "10", "25", "50"});
+        setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_ofdmA", "css_ofdmWO","all"});
+
 
 
         // Display the current time
@@ -407,6 +409,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         if (Constants.ADD_GAP)
                         {
                             Constants.Gap = (int)(Constants.Ns_lora * ((float)Constants.gap_from_spinner)/((float)100));
+                        }
+                        break;
+                    case R.id.spinner_method_setting:
+                        Utils.logd("spinner_method_setting: " + values[position]);
+                        switch (values[position]) {
+                            case "proposed":
+                                Constants.all_datacollection_schemes = new String[]{"proposed"};
+                                break;
+                            case "ofdmA":
+                                Constants.all_datacollection_schemes = new String[]{"ofdm_adapt"};
+                                break;
+                            case "proposed_ofdmA":
+                                Constants.all_datacollection_schemes = new String[]{"proposed", "ofdm_adapt"};
+                                break;
+                            case "css_ofdmWO":
+                                Constants.all_datacollection_schemes = new String[]{"css", "ofdm_wo_adapt"};
+                                break;
+                            case "all":
+                                Constants.all_datacollection_schemes = new String[]{"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"};
+                                break;
+                            default:
+                                Constants.all_datacollection_schemes = new String[]{"proposed"};
+                                break;
                         }
                         break;
                     default:
