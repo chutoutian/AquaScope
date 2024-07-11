@@ -187,6 +187,8 @@ public class Constants {
     public static Map<Integer, Integer> cb_1024_to_256 = null;
     public static Map<Integer, Integer> cb_256_to_1024 = null;
 
+    public static double soundSpeed = 340;
+
 
 
     // ****************************** End of Codec Related Global Variables ******************************

@@ -993,7 +993,7 @@ public class Decoder {
             }
 
             double max_relative_speed = 2;
-            double sound_speed = 340;
+            double sound_speed = Constants.soundSpeed;
             double to_change_limit_factor = 1.5;
             int to_change_limit = (int)Math.ceil((double)section_len / (double)Constants.FS * max_relative_speed / sound_speed * (double)Constants.FS * to_change_limit_factor);
 
