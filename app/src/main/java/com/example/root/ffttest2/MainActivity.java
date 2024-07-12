@@ -589,6 +589,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (Constants.mTransformer == null) {
                 Constants.mTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
             }
+
+            if (Constants.mTransformer_256 == null) {
+                Constants.mTransformer_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_2_optimized.ptl"));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

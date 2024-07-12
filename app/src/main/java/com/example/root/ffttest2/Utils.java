@@ -2933,10 +2933,10 @@ public class Utils {
 
     public static long[] transformer_recover(long[] embeddings) {
 
-        if (Constants.codebookSize == "256") {
-            // Beitong0711 skip recover for now
-            return embeddings;
-        }
+//        if (Constants.codebookSize == "256") {
+//            // Beitong0711 skip recover for now
+//            return embeddings;
+//        }
 
         // receiver t5 transformer recover
         final long startTime_transformer_recover = SystemClock.elapsedRealtime();
@@ -2949,7 +2949,12 @@ public class Utils {
         Utils.log("shape: " + Arrays.toString(inputTensorTransformer.shape()));
         final long startTimeTransformer = SystemClock.elapsedRealtime();
         for (int p = 0; p < Constants.recover_round; p++) {
-            IValue result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+            IValue result;
+            if (Constants.codebookSize == "256") {
+                result = Constants.mTransformer_256.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+            } else {
+                result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+            }
             if (result.isTuple()) {
                 // Get the tuple and extract the tensors
                 IValue[] outputs = result.toTuple();

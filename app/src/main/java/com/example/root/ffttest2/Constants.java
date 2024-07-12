@@ -66,6 +66,7 @@ public class Constants {
     public static Module mDecoder3 = null; // decoder part 3
 
     public static Module mTransformer = null; // recover transformer
+    public static Module mTransformer_256 = null; // recover transformer
 
     public static int recover_round = 1;
 
