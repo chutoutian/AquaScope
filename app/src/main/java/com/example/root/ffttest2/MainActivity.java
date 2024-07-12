@@ -316,6 +316,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     Constants.maxbits = 640;
                 }
 
+                // set up sound speed
+                if (Constants.datacollection_env == "air") {
+                    Constants.soundSpeed = 340; // sound speed in air
+                } else {
+                    Constants.soundSpeed = 1500; // sound speed in water
+                }
+
                 // overwrite the experiment mode
                 Constants.expMode = Constants.Experiment.dataCollection;
                 Constants.Send_Delay = 5000; // 15 S the actual time is 25S controlled by datacollection_proposed_time
@@ -397,6 +404,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     case R.id.spinner_env:
                         Utils.logd("spinner_env: " + values[position]);
                         Constants.datacollection_env = values[position];
+                        if (Constants.datacollection_env == "air") {
+                            Constants.soundSpeed = 340;
+                        } else {
+                            Constants.soundSpeed = 340;
+                        }
                         break;
                     case R.id.spinner_distance:
                         Utils.logd("spinner_distance: " + values[position]);
