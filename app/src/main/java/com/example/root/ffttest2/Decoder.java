@@ -184,95 +184,168 @@ public class Decoder {
         double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+4) * (Constants.Ns_lora + Constants.Gap)-1);
 
 
-        start = 0;
-        double[][] downversion_preamble = Utils.downversion(data_remove_preamble);
-        //double[][] data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,(Constants.Ns_lora + Constants.Gap));
+
+        // new 0711 we will not use the timeoffset in our latest method
+        if (Constants.scheme == Constants.Modulation.LoRa && Constants.currentEqualizationMethod != Constants.NewEqualizationMethod.method5_tv_w_to_range) {
+            start = 0;
+
+            double[][] downversion_preamble = Utils.downversion(data_remove_preamble);
+            //double[][] data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,(Constants.Ns_lora + Constants.Gap));
 
 //         check downversion_preamble
-        if (Constants.allowLog) {
-            StringBuilder downversion_preambleBuilder = new StringBuilder();
-            for (int j = 0; j < 20; j++) {
-                downversion_preambleBuilder.append(downversion_preamble[0][j]);
-                downversion_preambleBuilder.append(",");
-                downversion_preambleBuilder.append(downversion_preamble[1][j]);
-                downversion_preambleBuilder.append(",");
+            if (Constants.allowLog) {
+                StringBuilder downversion_preambleBuilder = new StringBuilder();
+                for (int j = 0; j < 20; j++) {
+                    downversion_preambleBuilder.append(downversion_preamble[0][j]);
+                    downversion_preambleBuilder.append(",");
+                    downversion_preambleBuilder.append(downversion_preamble[1][j]);
+                    downversion_preambleBuilder.append(",");
+                }
+                String downversion_preamble_str = downversion_preambleBuilder.toString();
+                Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
             }
-            String downversion_preamble_str = downversion_preambleBuilder.toString();
-            Utils.log("downversion first 10, check filter => " + downversion_preamble_str);
-        }
 
-        double[] index_count_test = new double[4];
-        //double[] pks = new double[4];
-        for (int i = 0 ; i < 2 ; i++)
-        {
-            double[][] preamble = Utils.segment2(downversion_preamble,start , start + Constants.Ns_lora - 1);
-            double[][] preamble_downsample = Utils.downsample(preamble, 2* Constants.Sample_Lora, Constants.Ns_lora);
-            start = start + Constants.Ns_lora + Constants.Gap;
-            double[] index_upchirp = Utils.dechirp_test(preamble_downsample,false, true);
-            int index_tmp = Utils.MaxIndex(index_upchirp);
-            //double index_tmp_test = (((double)index_tmp + 10 * Constants.Sample_Lora - 1 ) / 10)% Constants.Sample_Lora; // which one is better?
-            double index_tmp_test = ((double)index_tmp  / 10.0)% Constants.Sample_Lora;
-            index_count_test[i] = index_tmp_test;
-            //pks[i] = Utils.MaxValue(index_upchirp);
-        }
+            double[] index_count_test = new double[4];
+            //double[] pks = new double[4];
+            for (int i = 0; i < 2; i++) {
+                double[][] preamble = Utils.segment2(downversion_preamble, start, start + Constants.Ns_lora - 1);
+                double[][] preamble_downsample = Utils.downsample(preamble, 2 * Constants.Sample_Lora, Constants.Ns_lora);
+                start = start + Constants.Ns_lora + Constants.Gap;
+                double[] index_upchirp = Utils.dechirp_test(preamble_downsample, false, true);
+                int index_tmp = Utils.MaxIndex(index_upchirp);
+                //double index_tmp_test = (((double)index_tmp + 10 * Constants.Sample_Lora - 1 ) / 10)% Constants.Sample_Lora; // which one is better?
+                double index_tmp_test = ((double) index_tmp / 10.0) % Constants.Sample_Lora;
+                index_count_test[i] = index_tmp_test;
+                //pks[i] = Utils.MaxValue(index_upchirp);
+            }
 
-        for (int i = 2 ; i < 4 ; i++)
-        {
-            double[][] preamble = Utils.segment2(downversion_preamble,start , start + Constants.Ns_lora - 1);
-            double[][] preamble_downsample = Utils.downsample(preamble, 2* Constants.Sample_Lora, Constants.Ns_lora);
-            start = start + Constants.Ns_lora + Constants.Gap;
-            double[] index_downchirp = Utils.dechirp_test(preamble_downsample,true, true);
-            int index_tmp = Utils.MaxIndex(index_downchirp);
-            //double index_tmp_test = (((double)index_tmp + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
-            double index_tmp_test = ((double)index_tmp  / 10.0)% Constants.Sample_Lora;
-            index_count_test[i] = index_tmp_test;
-            //pks[i] = Utils.MaxValue(index_downchirp);
-        }
-        // frequency and time synchronization
-        double[] off_set = Utils.synchronization2(index_count_test[1], index_count_test[3]);
-//        double[] off_set2 = Utils.synchronization2(index_count_test[0], index_count_test[2]);
+            for (int i = 2; i < 4; i++) {
+                double[][] preamble = Utils.segment2(downversion_preamble, start, start + Constants.Ns_lora - 1);
+                double[][] preamble_downsample = Utils.downsample(preamble, 2 * Constants.Sample_Lora, Constants.Ns_lora);
+                start = start + Constants.Ns_lora + Constants.Gap;
+                double[] index_downchirp = Utils.dechirp_test(preamble_downsample, true, true);
+                int index_tmp = Utils.MaxIndex(index_downchirp);
+                //double index_tmp_test = (((double)index_tmp + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
+                double index_tmp_test = ((double) index_tmp / 10.0) % Constants.Sample_Lora;
+                index_count_test[i] = index_tmp_test;
+                //pks[i] = Utils.MaxValue(index_downchirp);
+            }
+            // frequency and time synchronization
+            double[] off_set = Utils.synchronization2(index_count_test[1], index_count_test[3]);
+//      double[] off_set2 = Utils.synchronization2(index_count_test[0], index_count_test[2]);
 
 
-        Utils.log("first index  =>" + index_count_test[1]);
-        Utils.log("second index  =>" + index_count_test[3]);
-        Utils.log("cfo =>" + off_set[0]);
-        Utils.log("to =>" + off_set[1]);
+            Utils.log("first index  =>" + index_count_test[1]);
+            Utils.log("second index  =>" + index_count_test[3]);
+            Utils.log("cfo =>" + off_set[0]);
+            Utils.log("to =>" + off_set[1]);
 
-        //Constants.CFO = off_set[0] * Constants.BW / Constants.Sample_Lora; confirmed
+            //Constants.CFO = off_set[0] * Constants.BW / Constants.Sample_Lora; confirmed
 //        int time_offset = (int)Math.round(Math.abs(off_set[1]) * Constants.Ns_lora / Constants.Sample_Lora); // remove abs
-        int time_offset = (int)Math.round(off_set[1] * Constants.Ns_lora / Constants.Sample_Lora);
+            int time_offset = (int) Math.round(off_set[1] * Constants.Ns_lora / Constants.Sample_Lora);
 
-        double[] data_remove_preamble_shift = Utils.segment(data,ptime+Constants.ChirpGap + 4* (Constants.Ns_lora + Constants.Gap) +time_offset,ptime+Constants.ChirpGap +time_offset+ (numsyms+4) * (Constants.Ns_lora+ Constants.Gap)-1);
-        downversion_preamble = Utils.downversion(data_remove_preamble_shift);
-        //data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,Constants.Ns_lora);
-        start = 0;
+            double[] data_remove_preamble_shift = Utils.segment(data, ptime + Constants.ChirpGap + 4 * (Constants.Ns_lora + Constants.Gap) + time_offset, ptime + Constants.ChirpGap + time_offset + (numsyms + 4) * (Constants.Ns_lora + Constants.Gap) - 1);
+
+            downversion_preamble = Utils.downversion(data_remove_preamble_shift);
+            //data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,Constants.Ns_lora);
+            start = 0;
 
 
-        int[] detected_index_cfo = new int[numsyms + 4];
+            int[] detected_index_cfo = new int[numsyms + 4];
 
-        for (int j =0 ; j< 4; j++)
-        {
-            detected_index_cfo[j] = (int)Math.round(index_count_test[j]);
+            for (int j = 0; j < 4; j++) {
+                detected_index_cfo[j] = (int) Math.round(index_count_test[j]);
+            }
+
+            // extract each symbol
+            for (int i = 0; i < numsyms; i++) {
+                double[][] sym = Utils.segment2(downversion_preamble, start, start + Constants.Ns_lora - 1);
+                double[][] sym_downsample = Utils.downsample(sym, 2 * Constants.Sample_Lora, Constants.Ns_lora);
+                start = start + Constants.Ns_lora + Constants.Gap;
+                double[] index = Utils.dechirp_test(sym_downsample, false, false);
+                double sym_index = Utils.MaxIndex(index);
+                //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
+                double index_tmp_test = (sym_index / 10.0) % Constants.Sample_Lora;
+                index_tmp_test = index_tmp_test - off_set[0];
+                index_tmp_test = Math.round(index_tmp_test) % Constants.Sample_Lora;
+
+                detected_index_cfo[i + 4] = (int) index_tmp_test;
+
+            }
+            // write to file and display in log
+            if (Constants.allowLog) {
+                String all_symbol_cfo = "";
+                for (int i = 0; i < detected_index_cfo.length; i++) {
+                    all_symbol_cfo += (detected_index_cfo[i] + ",");
+                }
+                Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
+                if (all_symbol_cfo.endsWith(",")) {
+                    all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
+                }
+                FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
+                        Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
+            }
+
+
+            return detected_index_cfo;
+        }
+        else {
+            // method 5
+            int time_offset = 0;
+            double[] data_remove_preamble_shift = Utils.segment(data, ptime + Constants.ChirpGap + 4 * (Constants.Ns_lora + Constants.Gap) + time_offset, ptime + Constants.ChirpGap + time_offset + (numsyms + 4) * (Constants.Ns_lora + Constants.Gap) - 1);
+
+//            int delay2 = 86;  // for the specific center 0 and offset freq 1k, and FS 48000
+            int delay2 = (int) Math.ceil(3.6*Constants.FS/1000.0)-1;
+            delay2 = delay2%2 + delay2;
+            delay2 = (int) delay2 / 2;
+            double[][] downversion_preamble = Utils.downversion(data_remove_preamble_shift);
+            downversion_preamble[0] = Utils.segment(downversion_preamble[0], delay2, downversion_preamble[0].length-1);
+            downversion_preamble[1] = Utils.segment(downversion_preamble[1], delay2, downversion_preamble[1].length-1);
+
+            //data_downsample = Utils.downsample(downversion_preamble,2 * Constants.Sample_Lora,Constants.Ns_lora);
+            start = 0;
+
+
+            int[] detected_index_cfo = new int[numsyms + 4];
+
+            for (int j = 0; j < 4; j++) {
+                detected_index_cfo[j] = 0; // fake
+            }
+
+            // extract each symbol
+            for (int i = 0; i < numsyms; i++) {
+                double[][] sym = Utils.segment2(downversion_preamble, start, start + Constants.Ns_lora - 1);
+                double[][] sym_downsample = Utils.downsample(sym, 2 * Constants.Sample_Lora, Constants.Ns_lora);
+                start = start + Constants.Ns_lora + Constants.Gap;
+                double[] index = Utils.dechirp_test(sym_downsample, false, false);
+                double sym_index = Utils.MaxIndex(index);
+                //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
+                double index_tmp_test = (sym_index / 10.0) % Constants.Sample_Lora;
+                index_tmp_test = Math.round(index_tmp_test) % Constants.Sample_Lora;
+
+                detected_index_cfo[i + 4] = (int) index_tmp_test;
+
+            }
+            // write to file and display in log
+            if (Constants.allowLog) {
+                String all_symbol_cfo = "";
+                for (int i = 0; i < detected_index_cfo.length; i++) {
+                    all_symbol_cfo += (detected_index_cfo[i] + ",");
+                }
+                Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
+                if (all_symbol_cfo.endsWith(",")) {
+                    all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
+                }
+                FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
+                        Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
+            }
+
+
+            return detected_index_cfo;
+
         }
 
-
-
-        // extract each symbol
-        for (int i = 0; i < numsyms; i++) {
-            double[][] sym = Utils.segment2(downversion_preamble, start , start  + Constants.Ns_lora - 1);
-            double[][] sym_downsample = Utils.downsample(sym, 2* Constants.Sample_Lora, Constants.Ns_lora);
-            start = start  + Constants.Ns_lora + Constants.Gap;
-            double[] index = Utils.dechirp_test(sym_downsample,false, false);
-            double sym_index = Utils.MaxIndex(index);
-            //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
-            double index_tmp_test = (sym_index  / 10.0)% Constants.Sample_Lora;
-            index_tmp_test = index_tmp_test - off_set[0];
-            index_tmp_test = Math.round(index_tmp_test) % Constants.Sample_Lora;
-
-            detected_index_cfo[i+4] = (int)index_tmp_test;
-
-        }
-        // remove the mid preamble
+// remove the mid preamble
 //        for (int i = numsyms/ 2 ; i < numsyms/ 2 + 2 ; i++)
 //        {
 //            double[][] preamble = Utils.segment2(downversion_preamble,start , start + Constants.Ns_lora - 1);
@@ -330,24 +403,6 @@ public class Decoder {
 //
 //        }
 
-
-
-        // write to file and display in log
-        if (Constants.allowLog) {
-            String all_symbol_cfo = "";
-            for (int i = 0; i < detected_index_cfo.length; i++) {
-                all_symbol_cfo += (detected_index_cfo[i] + ",");
-            }
-            Utils.log("all_symbols_cfo =>" + all_symbol_cfo);
-            if (all_symbol_cfo.endsWith(",")) {
-                all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
-            }
-            FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
-                    Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
-        }
-
-
-        return detected_index_cfo;
     }
 
     public static Matrix timeEqualizerEstimation(Matrix tx, Matrix rx, int tapNum) {
@@ -958,19 +1013,19 @@ public class Decoder {
             Matrix symbolTx_to = new Matrix(sendingSignalArray_to, 1);
             double[] temp_received_data_to = Utils.segment(equalization_data2, pkgIdx - offset_to, pkgIdx + lenRx_to - offset_to - 1);
             Matrix symbolRx_to = new Matrix(temp_received_data_to, 1).transpose();
-            double[] to_recover_data = Utils.segment(equalization_data2,start_to-offset_to, start_to+to_len+tapNum_to-1-offset_to-1);
-            Matrix dataBad = new Matrix(to_recover_data, 1).transpose();
+//            double[] to_recover_data = Utils.segment(equalization_data2,start_to-offset_to, start_to+to_len+tapNum_to-1-offset_to-1);
+//            Matrix dataBad = new Matrix(to_recover_data, 1).transpose();
 
             Matrix g_to = timeEqualizerEstimation(symbolTx_to, symbolRx_to, tapNum_to);
-            if (g_to != null) {
-                // Recover the transmitted signal
-                Matrix tx = timeEqualizerRecover(dataBad, g_to);
-                double[] temp_output_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
-                System.arraycopy(temp_output_data, 0, output_data, start_to, to_len);
-                Utils.log("TO Equalizer estimation success.");
-            } else {
-                Utils.log("TO Equalizer estimation failed.");
-            }
+//            if (g_to != null) {
+//                // Recover the transmitted signal
+//                Matrix tx = timeEqualizerRecover(dataBad, g_to);
+//                double[] temp_output_data = tx.getColumnPackedCopy(); // Convert Matrix to double[]
+//                System.arraycopy(temp_output_data, 0, output_data, start_to, to_len);
+//                Utils.log("TO Equalizer estimation success.");
+//            } else {
+//                Utils.log("TO Equalizer estimation failed.");
+//            }
 
             // find correct timestamps for each segment (key innovation, handle time varied channel)
             int Ns = Constants.Ns_lora;

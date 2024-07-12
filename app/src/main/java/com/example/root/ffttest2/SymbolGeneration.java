@@ -115,7 +115,9 @@ public class SymbolGeneration {
         if (preamble) {
             siglen += ((Constants.preambleTime/1000.0)*Constants.fs)+Constants.ChirpGap;
         }
+
         siglen += (Constants.Ns_lora + Constants.Gap) * 4;
+
         if (Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method3_tv_wo_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method4_tv_w_to || Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method5_tv_w_to_range) {
             siglen += (Constants.Ns_lora + Constants.Gap) * (Math.floor(sym.length / Constants.Equalization2_Range)+1); // TODO: should add one more preamble at the end
         }
@@ -136,8 +138,52 @@ public class SymbolGeneration {
         // add downchirp and upchirp
         short[] preamble_up_1 = Utils.GeneratePreamble_LoRa(true, 0, true);
         short[] preamble_up_2 = Utils.GeneratePreamble_LoRa(true, 0, true);
-        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false,0, true);
+        short[] preamble_down_1 = Utils.GeneratePreamble_LoRa(false, 0, true);
         short[] preamble_down_2 = Utils.GeneratePreamble_LoRa(false, 0, true);
+
+        if (Constants.scheme == Constants.Modulation.LoRa && Constants.currentEqualizationMethod != Constants.NewEqualizationMethod.method5_tv_w_to_range) {
+            for (Short s : preamble_up_1) {
+                txsig[counter++] = s;
+            }
+            counter += Constants.Gap;
+
+            for (Short s : preamble_up_2) {
+                txsig[counter++] = s;
+            }
+            counter += Constants.Gap;
+
+            for (Short s : preamble_down_1) {
+                txsig[counter++] = s;
+            }
+            counter += Constants.Gap;
+
+            for (Short s : preamble_down_2) {
+                txsig[counter++] = s;
+            }
+            counter += Constants.Gap;
+        } else if (Constants.scheme == Constants.Modulation.LoRa && Constants.currentEqualizationMethod == Constants.NewEqualizationMethod.method5_tv_w_to_range) {
+            // change to to a long gap
+            for (Short s : preamble_up_1) {
+                txsig[counter++] = 0;
+            }
+            counter += Constants.Gap;
+
+            for (Short s : preamble_up_2) {
+                txsig[counter++] = 0;
+            }
+            counter += Constants.Gap;
+
+            for (Short s : preamble_down_1) {
+                txsig[counter++] = 0;
+            }
+            counter += Constants.Gap;
+
+            for (Short s : preamble_down_2) {
+                txsig[counter++] = 0;
+            }
+            counter += Constants.Gap;
+
+        }
 
         short[] equalization_preamble = Utils.GenerateEqualizationPreamble_LoRa();
 //        short[] equalization2_preamble = Utils.GeneratePreamble_LoRa(true, 0, true);
@@ -148,27 +194,6 @@ public class SymbolGeneration {
 //        for (Short s: equalization_preamble) {
 //            Utils.logd("short s:" + s);
 //        }
-
-
-        for (Short s : preamble_up_1) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (Short s : preamble_up_2) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (Short s : preamble_down_1) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
-
-        for (Short s : preamble_down_2) {
-            txsig[counter++] = s;
-        }
-        counter += Constants.Gap;
 
         counter_equalization = counter;
 
