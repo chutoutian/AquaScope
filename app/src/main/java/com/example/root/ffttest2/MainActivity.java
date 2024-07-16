@@ -269,7 +269,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // Populate the spinners
         setupSpinner(settingsDialog, R.id.spinner_role, new String[]{"sender", "receiver"});
-        setupSpinner(settingsDialog, R.id.spinner_env, new String[]{"air", "bridge", "pool"});
+        setupSpinner(settingsDialog, R.id.spinner_env, new String[]{"air", "bridge", "pool", "boat"});
         setupSpinner(settingsDialog, R.id.spinner_distance, new String[]{"1m", "3m", "5m", "10m", "15m", "20m"});
         setupSpinner(settingsDialog, R.id.spinner_mobility, new String[]{"static", "slow", "fast"});
         setupSpinner(settingsDialog, R.id.spinner_depth, new String[]{"1m", "2m", "5m"});
