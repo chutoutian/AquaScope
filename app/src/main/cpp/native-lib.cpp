@@ -15,6 +15,8 @@
 
 #include <android/log.h>
 
+#define LOG_TAG "FFT_DEBUG"
+
 std::string jstring2string(JNIEnv *env, jstring jStr);
 
 // This class implements both a Viterbi Decoder and a Convolutional Encoder.
@@ -483,11 +485,12 @@ JNIEXPORT jobjectArray JNICALL
 Java_com_example_root_ffttest2_Utils_fftcomplexoutnative_1double(JNIEnv *env, jobject thiz,
                                                                    jdoubleArray data, jint N) {
 
-    fftw_complex *in , *out;
-    fftw_plan p;
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Allocating memory for input and output arrays");
+    fftw_complex *in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    fftw_complex *out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
 
-    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
-    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Initializing input and output arrays");
 
     for (int i = 0; i < N; i++) {
         in[i][0] = 0;
@@ -496,35 +499,73 @@ Java_com_example_root_ffttest2_Utils_fftcomplexoutnative_1double(JNIEnv *env, jo
         out[i][1] = 0;
     }
 
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Copying data from Java array to input array");
     jdouble *doubleArray = env->GetDoubleArrayElements(data, NULL);
     int datalen = env -> GetArrayLength(data);
+    if (datalen > N) {
+        datalen = N;
+        __android_log_print(ANDROID_LOG_WARN, LOG_TAG, "Input data length exceeds N, truncating data to fit");
+    }
     for (int i = 0; i < datalen; i++) {
         in[i][0] = doubleArray[i];
     }
 
-    p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Creating FFTW plan");
+    fftw_plan p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    if (p == NULL) {
+        fftw_free(in);
+        fftw_free(out);
+        env->ReleaseDoubleArrayElements(data, doubleArray, 0);
+        jclass exc = env->FindClass("java/lang/Exception");
+        env->ThrowNew(exc, "Failed to create FFTW plan");
+        __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "FFTW plan creation failed");
+        return NULL;
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Executing FFTW plan");
     fftw_execute(p);
 
-    jdouble real[N];
-    jdouble imag[N];
+    //jdouble real[N];
+    //jdouble imag[N];
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Allocating memory for result arrays");
+    jdouble* real = new jdouble[N];
+    jdouble* imag = new jdouble[N];
+
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Copying data from output array to result arrays");
     for (int i = 0; i < N; i++) {
         real[i] = out[i][0];
         imag[i] = out[i][1];
     }
 
+
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Creating Java arrays to hold the results");
     jdoubleArray realResult;
     jdoubleArray imagResult;
     realResult = env->NewDoubleArray(N);
     imagResult = env->NewDoubleArray(N);
+
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Copying data to Java arrays");
     env->SetDoubleArrayRegion(realResult, 0, N, real);
     env->SetDoubleArrayRegion(imagResult, 0, N, imag);
 
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Creating Java object array to hold the result arrays");
     jobjectArray outarray = env->NewObjectArray(2, env->GetObjectClass(realResult), 0);
     env->SetObjectArrayElement(outarray, 0, realResult);
     env->SetObjectArrayElement(outarray, 1, imagResult);
 
-    fftw_destroy_plan(p);
+
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Cleaning up");
+    if (p!=NULL)
+    {
+        fftw_destroy_plan(p); //
+    }
+    //fftw_destroy_plan(p);
     fftw_free(in); fftw_free(out);
+
+    delete[] real;
+    delete[] imag;
+
+    env->ReleaseDoubleArrayElements(data,doubleArray,0);
 
     return outarray;
 }
