@@ -585,6 +585,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (Constants.mDecoder3 == null) {
                 Constants.mDecoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "decoder.ptl"));
             }
+            if (Constants.mEmbedding_256 == null) { // corresponding to mDecoder1
+                Constants.mEmbedding_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "embedding_256_optimized.ptl"));
+            }
 
             if (Constants.mTransformer == null) {
                 Constants.mTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
@@ -985,7 +988,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             });
         }
         else if (currentModelName.equals("VQGANDecode")) {
-
+            // 1024 codebook
             // default workable indices
             long[] indices = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
             // randomly generate indices every two clicks

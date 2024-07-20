@@ -64,6 +64,7 @@ public class Constants {
     public static Module mDecoder1 = null; // decoder part 1
     public static Module mDecoder2 = null; // decoder part 2
     public static Module mDecoder3 = null; // decoder part 3
+    public static Module mEmbedding_256 = null;
 
     public static Module mTransformer = null; // recover transformer
     public static Module mTransformer_256 = null; // recover transformer

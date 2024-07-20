@@ -2836,7 +2836,15 @@ public class Utils {
 
 
         Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
-        Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        Tensor outTensorsdecode;
+        if (Constants.codebookSize == "1024") {
+            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        } else if (Constants.codebookSize == "256") {
+            outTensorsdecode = Constants.mEmbedding_256.forward(IValue.from(inputTensordecode)).toTensor();
+        } else {
+            Utils.logd("wrong codebookSize. Still use codebook 1024 setting");
+            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        }
         outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
         outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
         final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
@@ -2878,13 +2886,18 @@ public class Utils {
             Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing to decode");
         }
 
-
-
-
         // receiver t6 decode image 1 (before recover)
         final long startTime_decode_image = SystemClock.elapsedRealtime();
         Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
-        Tensor outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        Tensor outTensorsdecode;
+        if (Constants.codebookSize == "1024") {
+            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        } else if (Constants.codebookSize == "256") {
+            outTensorsdecode = Constants.mEmbedding_256.forward(IValue.from(inputTensordecode)).toTensor();
+        } else {
+            Utils.logd("wrong codebookSize. Still use codebook 1024 setting");
+            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+        }
         outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
         outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
         final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
