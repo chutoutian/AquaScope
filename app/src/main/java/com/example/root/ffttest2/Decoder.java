@@ -268,7 +268,9 @@ public class Decoder {
                 double index_tmp_test = (sym_index / 10.0) % Constants.Sample_Lora;
                 index_tmp_test = index_tmp_test - off_set[0];
                 index_tmp_test = Math.round(index_tmp_test) % Constants.Sample_Lora;
-
+                if (index_tmp_test < 0) {
+                    index_tmp_test += Constants.Sample_Lora;
+                }
                 detected_index_cfo[i + 4] = (int) index_tmp_test;
 
             }
