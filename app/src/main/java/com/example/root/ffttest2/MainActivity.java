@@ -512,7 +512,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void load_bitmaps_for_end2endTest() {
         try {
             String[] testEnd2EndImageFiles = getAssets().list("sendTestImages");
-            for (String file : testEnd2EndImageFiles) {
+            String[] fullPaths = new String[testEnd2EndImageFiles.length];
+
+            // Construct the full path for each file
+            for (int i = 0; i < testEnd2EndImageFiles.length; i++) {
+                fullPaths[i] = "sendTestImages/" + testEnd2EndImageFiles[i];
+            }
+            for (String file : fullPaths) {
                 int targetSize = compressImageSize;
                 Bitmap tempMBitmap = BitmapFactory.decodeStream(getAssets().open(file));
                 int sourceWidth = tempMBitmap.getWidth();
