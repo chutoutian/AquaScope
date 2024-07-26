@@ -247,6 +247,7 @@ public class Constants {
         RxBits,
         Rx_Raw_Symbols,
         Rx_Symbols,
+        Sent_Symbols,
         Rx_Embedding,
         Battery_Level,
         Timestamp,
@@ -287,6 +288,7 @@ public class Constants {
     }
 
     public static Modulation scheme = Modulation.LoRa;
+
     public static boolean CRC = false; // CRC = 1 if CRC Check is enabled else 0
 
     public static int SF = 5; //  now support SF = 4-7

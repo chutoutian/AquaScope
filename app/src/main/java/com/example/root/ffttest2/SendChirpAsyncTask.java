@@ -1023,6 +1023,20 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             Constants.Sender_Latency_Str = Constants.Sender_Latency_Str + "sender encode signal (ms): " + inferenceTime_encoding_signal + "\n";
             Utils.log("Sender_Latency_Str: " + Constants.Sender_Latency_Str);
 
+            // save sent symbols
+            if (Constants.allowLog) {
+                String all_sent_symbol = "";
+                for (int i = 0; i < encoded_symbol.length; i++) {
+                    all_sent_symbol += (encoded_symbol[i] + ",");
+                }
+                Utils.log("all_sent_symbol =>" + all_sent_symbol);
+                if (all_sent_symbol.endsWith(",")) {
+                    all_sent_symbol = all_sent_symbol.substring(0, all_sent_symbol.length() - 1);
+                }
+                FileOperations.writetofile(MainActivity.av, all_sent_symbol + "",
+                        Utils.genName(Constants.SignalType.Sent_Symbols, m_attempt) + ".txt");
+            }
+
             // sender t3 - generate signal
             final long startTime_generate_signal = SystemClock.elapsedRealtime();
             txsig = SymbolGeneration.generateDataSymbols_LoRa(encoded_symbol,true,m_attempt);
