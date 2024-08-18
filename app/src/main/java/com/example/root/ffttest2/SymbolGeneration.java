@@ -606,19 +606,11 @@ public class SymbolGeneration {
     public static int[] encode_LoRa(byte[] payload, int m_attempt){
 
         byte[] data;
-        if (Constants.CRC) {
-            byte[] crcBytes = calc_crc(payload); // calc_crc needs to be implemented
-            data = new byte[payload.length + crcBytes.length];
-            System.arraycopy(payload, 0, data, 0, payload.length);
-            System.arraycopy(crcBytes, 0, data, payload.length, crcBytes.length);
-        }
-        else {
-            data = payload;
-        }
+        data = payload;
 
         int plen = payload.length;
         int sym_num = calc_sym_num(plen); // calc_sym_num needs to be implemented
-        int nibble_num = Constants.SF - 2 + (sym_num - 8) / (Constants.CodeRate_LoRA + 4) * (Constants.SF - 2 * Constants.LDR);
+        int nibble_num = Constants.SF - 2 + (sym_num - 8) / (Constants.CodeRate_LoRA + 4) * Constants.SF;
         byte[] data_w = new byte[(int)Math.ceil((double)(nibble_num - 2 * data.length) / 2) + data.length];
         System.arraycopy(data, 0, data_w, 0, data.length);
         for (int i = data.length; i < data_w.length; i++) {
@@ -648,7 +640,7 @@ public class SymbolGeneration {
         }
 
 
-        int ppm = Constants.SF - 2 * Constants.LDR;
+        int ppm = Constants.SF;
         int rdd = Constants.CodeRate_LoRA + 4;
         for (int i = Constants.SF - 1 -1; i < codewords.length - ppm + 1; i += ppm) {
             byte[] subset = Arrays.copyOfRange(codewords, i, i+ppm);
@@ -714,9 +706,9 @@ public class SymbolGeneration {
     }
     public static int calc_sym_num(int plen) {
         // Implementation needed
-        int crcFactor = Constants.CRC ? 1 : 0; // Convert CRC flag to an integer factor
+        //int crcFactor = Constants.CRC ? 1 : 0; // Convert CRC flag to an integer factor
         int headerFactor = Constants.HasHead ? 0 : 1; // Convert header presence flag to an integer factor for subtraction
-        return 8 + Math.max((4 + Constants.CodeRate_LoRA) * (int) Math.ceil((double) (2 * plen - Constants.SF + 7 + 4 * crcFactor - 5 * headerFactor) / (double) (Constants.SF - 2 * Constants.LDR )), 0);
+        return 8 + Math.max((4 + Constants.CodeRate_LoRA) * (int) Math.ceil((double) (2 * plen - Constants.SF + 7  - 5 * headerFactor) / (double) Constants.SF), 0);
     }
 
     private static byte[] whiten(byte[] data, int plen) {
