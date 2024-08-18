@@ -296,7 +296,7 @@ public class Constants {
     public static int Sample_Lora = 32;
 
     public static int CodeRate_LoRA = 4; // (code rate = 4/8 (1:4/5 2:4/6 3:4/7 4:4/8))
-    public static int LDR = 0;
+    //public static int LDR = 0;
 
     public static int BW = 2000; // bandwidth 125kHz which should be changed in the acoustic system (12.5kHz for testing)
 
@@ -929,7 +929,7 @@ public class Constants {
         et6.setText(Constants.BW+"");
         //Constants.FC=prefs.getInt("FC",Constants.FC);
         et7.setText(Constants.FC+"");
-        Constants.SF =prefs.getInt("SF",Constants.SF);  //this code of line is used to remember the last setting
+        //Constants.SF =prefs.getInt("SF",Constants.SF);  //this code of line is used to remember the last setting
         et8.setText(Constants.SF +"");
 
         Constants.mattempts=prefs.getInt("mattempts",Constants.mattempts);

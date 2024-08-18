@@ -47,7 +47,7 @@ public class ChannelEstimate {
         for (int i = 0; i < Constants.chanest_symreps; i++) {
             Log.e("asdf","fft "+cc+","+(cc+Constants.Ns-1)+","+rx_symbols.length);
             double[] seg = Utils.segment(rx_symbols,cc,cc+Constants.Ns-1);
-            double[][] spec = Utils.fftcomplexoutnative_double(seg,seg.length); // TODO: Bug here ?
+            double[][] spec = Utils.fftcomplexoutnative_double(seg,seg.length);
 
             int bin_counter=0;
             for (Integer bin : Constants.valid_carrier_default) {

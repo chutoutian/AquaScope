@@ -1918,31 +1918,55 @@ public class Utils {
         int MAX_WINDOWS = 0;
 
         int numWindowsLeft = 0;
-        double timeout = 0;
+        //double timeout = 0;
         int len = 0;
         int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+
+        String temp = "";
+        for (int i = 0; i < Constants.maxbits; i++) {
+            temp+="0";
+        }
+        int maxcodedbits = Constants.maxbits;
+        if (Constants.CODING) {
+            maxcodedbits = Utils.encode(temp, Constants.cc[0],Constants.cc[1],Constants.cc[2]).length();
+        }
+
+
+        int sym_num = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes);
+
         long startTime_receive_signal = 0;
         if (sigType.equals(Constants.SignalType.DataRx)) {
             MAX_WINDOWS = 2; //
-            if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
+            if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt)
             {
                 if (Constants.IsCountingFish || Constants.IsDectectingFish)
                 {
-                    timeout = 3;
                     len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
 
                 }
                 else if(Constants.ImagingFish)
                 {
-                    timeout = 15;
-//                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*200); // TODO this can be more precise freq all and freq adapt will not have the same
-                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*300); // TODO this can be more precise freq all and freq adapt will not have the same
+                    int numrounds = (int) Math.ceil((double)maxcodedbits/2); // TODO: later set the default bandwidth
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*numrounds); // assume smallest bin number is 2, then 1300 / 2 = 650 rounds
 
+                }
+            }
+            else if (Constants.scheme == Constants.Modulation.OFDM_freq_all)
+            {
+                if (Constants.IsCountingFish || Constants.IsDectectingFish)
+                {
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+
+                }
+                else if(Constants.ImagingFish)
+                {
+                    int numrounds = (int) Math.ceil((double)maxcodedbits/30); // TODO: later set the default bandwidth
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*numrounds);
                 }
             }
             else if(Constants.scheme == Constants.Modulation.LoRa)
             {
-                timeout = 15;
+                //timeout = 15;
                 if (Constants.IsCountingFish || Constants.IsDectectingFish)
                 {
                     len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*32;
@@ -1950,37 +1974,21 @@ public class Utils {
                 }
                 else if(Constants.ImagingFish)
                 {
-                    if (Constants.SF == 7)
-                    {
-                        timeout = 120;
-                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*220;
-                    }
-                    else if (Constants.SF == 5 || Constants.SF == 6)
-                    {
-                        timeout = 20;
-                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 450; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
-                    }
-                    else if (Constants.SF == 4)
-                    {
-                        timeout = 120;
-                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*450;
-                    }
-                    else if (Constants.SF == 3)
-                    {
-                        timeout = 120;
-                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*600;
-                    }
+                        //timeout = 20;
+                    len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * (sym_num + 4 );
+                    len += (Constants.Ns_lora + Constants.Gap) * (Math.floor(sym_num / Constants.Equalization2_Range)+1);
+                    len += (Constants.Ns_lora + Constants.Gap) * 20; // add some redundancy to avoid collecting noise
                 }
             }
         }
         else if (sigType.equals(Constants.SignalType.DataChirp))// just collect chirp for channel estimation
         {
             MAX_WINDOWS = 2; //
-            timeout = 15;
+            //timeout = 15;
             len = ChirpSamples+Constants.ChirpGap+Constants.fs;
         }
 
-        int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
+        //int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
         double[] tx_preamble = PreambleGen.preamble_d();
 
         ArrayList<Double[]> sampleHistory = new ArrayList<>();
@@ -1993,32 +2001,8 @@ public class Utils {
         {
             if (sigType.equals(Constants.SignalType.DataRx))
             {
-                if (Constants.scheme == Constants.Modulation.LoRa)
-                {
-                    if (Constants.SF == 7)
-                    {
-                        sounding_signal=new double[35*Constants.RecorderStepSize];
-                    }
-                    else if (Constants.SF == 6)
-                    {
-                        sounding_signal=new double[25*Constants.RecorderStepSize];
-                    }
-                    else if (Constants.SF == 5)
-                    {
-                        sounding_signal=new double[25*Constants.RecorderStepSize];
-                    }
-                    else if (Constants.SF == 4 ||Constants.SF == 3 )
-                    {
-                        sounding_signal = new double[10 * Constants.RecorderStepSize];
-                    }
+                sounding_signal=new double[40*Constants.RecorderStepSize]; // set 40 that can cover LoRa SF <= 6 and OFDM with at lest 2 bins, I don't think we need SF = 7 which is too slow.
 
-                }
-                else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
-                {
-//                    sounding_signal=new double[15*Constants.RecorderStepSize];
-                    sounding_signal=new double[25*Constants.RecorderStepSize];
-
-                }
             }
             else if (sigType.equals(Constants.SignalType.DataChirp))
             {
@@ -2186,31 +2170,57 @@ public class Utils {
         int MAX_WINDOWS = 0;
 
         int numWindowsLeft = 0;
-        double timeout = 0;
+        //double timeout = 0;
         int len = 0;
         int ChirpSamples = (int)((Constants.preambleTime/1000.0)*Constants.fs);
+
+        String temp = "";
+        for (int i = 0; i < Constants.maxbits; i++) {
+            temp+="0";
+        }
+        int maxcodedbits = Constants.maxbits;
+        if (Constants.CODING) {
+            maxcodedbits = Utils.encode(temp, Constants.cc[0],Constants.cc[1],Constants.cc[2]).length();
+        }
+
+
+
         long startTime_receive_signal = 0;
         if (sigType.equals(Constants.SignalType.DataRx)) {
             MAX_WINDOWS = 2; //
-            if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
+            if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt)
             {
                 if (Constants.IsCountingFish || Constants.IsDectectingFish)
                 {
-                    timeout = 3;
+                    //timeout = 3;
                     len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
 
                 }
                 else if(Constants.ImagingFish)
                 {
-                    timeout = 15;
-//                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*200); // TODO this can be more precise freq all and freq adapt will not have the same
-                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*300); // TODO this can be more precise freq all and freq adapt will not have the same
+                    int numrounds = (int) Math.ceil((double)maxcodedbits/2); // 30 bins 1500hz for OFDM_wo_adapt
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*numrounds);
+
+                }
+            }
+            else if (Constants.scheme == Constants.Modulation.OFDM_freq_all)
+            {
+                if (Constants.IsCountingFish || Constants.IsDectectingFish)
+                {
+                    //timeout = 3;
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*32);
+
+                }
+                else if(Constants.ImagingFish)
+                {
+                    int numrounds = (int) Math.ceil((double)maxcodedbits/30); // 30 bins 1500hz for OFDM_wo_adapt
+                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*numrounds);
 
                 }
             }
             else if(Constants.scheme == Constants.Modulation.LoRa)
             {
-                timeout = 15;
+                //timeout = 15;
                 if (Constants.IsCountingFish || Constants.IsDectectingFish)
                 {
                     len = ChirpSamples+Constants.ChirpGap+Constants.Ns_lora*32;
@@ -2218,37 +2228,21 @@ public class Utils {
                 }
                 else if(Constants.ImagingFish)
                 {
-                    if (Constants.SF == 7)
-                    {
-                        timeout = 120;
-                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*220;
-                    }
-                    else if (Constants.SF == 5 || Constants.SF == 6)
-                    {
-                        timeout = 20;
-                        len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * 450; // TODO: hardcoded for inserting preamble, make sure there is enough space when we insert preamble every 3 symbols
-                    }
-                    else if (Constants.SF == 4)
-                    {
-                        timeout = 120;
-                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*450;
-                    }
-                    else if (Constants.SF == 3)
-                    {
-                        timeout = 120;
-                        len = ChirpSamples+Constants.ChirpGap+(Constants.Ns_lora+ Constants.Gap)*600;
-                    }
+                    //timeout = 20;
+                    len = ChirpSamples + Constants.ChirpGap +(Constants.Ns_lora+ Constants.Gap) * (SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes) + 4 );
+                    len += (Constants.Ns_lora + Constants.Gap) * (Math.floor(264 / Constants.Equalization2_Range)+1);
+                    len += (Constants.Ns_lora + Constants.Gap) * 20; // add some redundancy to avoid collecting noise
                 }
             }
         }
         else if (sigType.equals(Constants.SignalType.DataChirp))// just collect chirp for channel estimation
         {
             MAX_WINDOWS = 2; //
-            timeout = 15;
+            //timeout = 15;
             len = ChirpSamples+Constants.ChirpGap+Constants.fs;
         }
 
-        int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
+        //int N = (int)(timeout*(Constants.fs/Constants.RecorderStepSize));
         double[] tx_preamble = PreambleGen.preamble_d();
 
         ArrayList<Double[]> sampleHistory = new ArrayList<>();
@@ -2261,32 +2255,7 @@ public class Utils {
         {
             if (sigType.equals(Constants.SignalType.DataRx))
             {
-                if (Constants.scheme == Constants.Modulation.LoRa)
-                {
-                    if (Constants.SF == 7)
-                    {
-                        sounding_signal=new double[35*Constants.RecorderStepSize];
-                    }
-                    else if (Constants.SF == 6)
-                    {
-                        sounding_signal=new double[25*Constants.RecorderStepSize];
-                    }
-                    else if (Constants.SF == 5)
-                    {
-                        sounding_signal=new double[25*Constants.RecorderStepSize];
-                    }
-                    else if (Constants.SF == 4 ||Constants.SF == 3 )
-                    {
-                        sounding_signal = new double[10 * Constants.RecorderStepSize];
-                    }
-
-                }
-                else if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt || Constants.scheme == Constants.Modulation.OFDM_freq_all)
-                {
-//                    sounding_signal=new double[15*Constants.RecorderStepSize];
-                    sounding_signal=new double[25*Constants.RecorderStepSize];
-
-                }
+                sounding_signal=new double[40*Constants.RecorderStepSize];
             }
             else if (sigType.equals(Constants.SignalType.DataChirp))
             {
@@ -3506,7 +3475,7 @@ public class Utils {
     public static native double[] fftnative_double(double data[], int N);
     public static native double[] fftnative_short(short data[], int N);
     public static native double[][] fftcomplexinoutnative_double(double data[][], int N);
-    public static native double[][] fftcomplexoutnative_double(double data[], int N);
+    public static native double[][] fftcomplexoutnative_double(double data[], int N);  // TODO: APP Crush due to large length of data. Keep tracking this issues.
     public static native double[][] fftcomplexoutnative_short(short data[], int N);
     public static native double[] ifftnative(double data[][]);
     public static native double[][] ifftnative2(double data[][]);
