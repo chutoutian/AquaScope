@@ -74,7 +74,7 @@ import org.pytorch.LiteModuleLoader;
 import org.pytorch.Module;
 import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
-
+import org.pytorch.Device;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private TextView inferenceTimeTextView;
     private TextView fishExistTextView;
     private static final int CLASSNUM = 2;
-    private int compressImageSize = 128;
+    private int compressImageSize = 256;
     private Random random = new Random();
     private boolean isShouldRandom = false;
     private int recover_round = 1;
@@ -571,37 +571,56 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void load_all_image_codec_models() {
         try {
-            if (Constants.mEncoder1 == null) {
-                Constants.mEncoder1 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
-            }
-            if (Constants.mEncoder2 == null) {
-                Constants.mEncoder2 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
-            }
-            if (Constants.mEncoder3 == null) {
-                Constants.mEncoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
-            }
+//            if (Constants.mEncoder1 == null) {
+//                Constants.mEncoder1 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "encoder_optimized.ptl"));
+//            }
+//            if (Constants.mEncoder2 == null) {
+//                Constants.mEncoder2 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "quant_conv_optimized.ptl"));
+//            }
+//            if (Constants.mEncoder3 == null) {
+//                Constants.mEncoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "quantize_optimized.ptl"));
+//            }
+//
+//            // later we can separate encoder and decoder users
+//            if (Constants.mDecoder1 == null) {
+//                Constants.mDecoder1 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
+//            }
+//            if (Constants.mDecoder2 == null) {
+//                Constants.mDecoder2 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
+//            }
+//            if (Constants.mDecoder3 == null) {
+//                Constants.mDecoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "decoder.ptl"));
+//            }
+//            if (Constants.mEmbedding_256 == null) { // corresponding to mDecoder1
+//                Constants.mEmbedding_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "embedding_256_optimized.ptl"));
+//            }
+//
+//            if (Constants.mTransformer == null) {
+//                Constants.mTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
+//            }
+//
+//            if (Constants.mTransformer_256 == null) {
+//                Constants.mTransformer_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_2_optimized.ptl"));
+//            }
 
-            // later we can separate encoder and decoder users
-            if (Constants.mDecoder1 == null) {
-                Constants.mDecoder1 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "embedding_optimized.ptl"));
-            }
-            if (Constants.mDecoder2 == null) {
-                Constants.mDecoder2 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "post_quant_conv_optimized.ptl"));
-            }
-            if (Constants.mDecoder3 == null) {
-                Constants.mDecoder3 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "decoder.ptl"));
-            }
-            if (Constants.mEmbedding_256 == null) { // corresponding to mDecoder1
-                Constants.mEmbedding_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "embedding_256_optimized.ptl"));
-            }
+//            if (Constants.newEncoder == null) {
+////                Constants.newEncoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myEncode_vulkan_optimized.ptl"), null, Device.VULKAN);
+//                Constants.newEncoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myEncode_optimized.ptl"));
+//
+//            }
 
-            if (Constants.mTransformer == null) {
-                Constants.mTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_optimized.ptl"));
-            }
+            if (Constants.newDecoder == null) {
+                Constants.newDecoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myDecode_vulkan_optimized.ptl"), null, Device.VULKAN);
+//                Constants.newDecoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myDecode_normal.ptl"));
 
-            if (Constants.mTransformer_256 == null) {
-                Constants.mTransformer_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_2_optimized.ptl"));
             }
+//
+//            if (Constants.newTransformer == null) {
+////                Constants.newTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myRecover_vulkan_optimized.ptl"), null, Device.VULKAN);
+//                Constants.newTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myRecover_optimized.ptl"));
+//
+//            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -952,30 +971,167 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     // Called when run model button is pressed
     public void run() {
+//        if (currentModelName.equals("VQGANEncode")) {
+//            float[] mu = {0.0f, 0.0f, 0.0f};
+//            float[] std = {1.0f, 1.0f, 1.0f};
+//            final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
+//                    mu, std);
+//
+//
+//            // Convert the PyTorch tensor to a float array
+//            float[] tempArray = tempInputTensor.getDataAsFloatArray();
+//
+//            // Apply the operation x = 2 * x - 1 to the float array
+//            for (int i = 0; i < tempArray.length; i++) {
+//                tempArray[i] = 2.0f * tempArray[i] - 1.0f;
+//            }
+//
+//            // Convert the float array back to a PyTorch tensor
+//            Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
+//            final long startTime = SystemClock.elapsedRealtime();
+//            // run model
+//            Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
+////            final float[] intResult = outTensors.getDataAsFloatArray();
+////            Log.d("tbt", Arrays.toString(intResult));
+//            outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
+//            outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+//            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+//            Log.d("tbt",  "inference time (ms): " + inferenceTime);
+//            final long[] results = outTensors.getDataAsLongArray();
+////            Constants.SegFish = results;
+//
+//            Log.d("tbt", "result: " + Arrays.toString(results));
+//            Log.d("tbt", "result length: " + results.length );
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+////                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
+//                    runModelButton.setEnabled(true);
+//                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+//                    inferenceTimeTextView.setText(inferenceTime+" ms");
+//                }
+//            });
+//        }
+//        else if (currentModelName.equals("VQGANDecode")) {
+//            // 1024 codebook
+//            // default workable indices
+//            long[] indices = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
+//            // randomly generate indices every two clicks
+//            if (isShouldRandom == true) {
+//                for (int i = 0; i < indices.length; i++) {
+//                    indices[i] = random.nextInt(1024);
+//                }
+//                isShouldRandom = false;
+//            } else {
+//                isShouldRandom = true;
+//            }
+//
+//            final long startTime = SystemClock.elapsedRealtime();
+//            Tensor inputTensor = Tensor.fromBlob(indices, new long[]{64});
+//            Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
+////            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+//            final float[] embedding_res = outTensors.getDataAsFloatArray();
+//
+//            outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
+////            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+//            outTensors = Constants.mDecoder3.forward(IValue.from(outTensors)).toTensor();
+////            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
+//            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+//            Log.d("tbt",  "inference time (ms): " + inferenceTime);
+//
+//            final byte[] rgbData = outTensors.getDataAsUnsignedByteArray();
+//            int[] argbPixels = new int[compressImageSize * compressImageSize]; // Array to hold ARGB pixel data.
+//            int pixelIndex = 0;
+//            int argbIndex = 0;
+//            for (int y = 0; y < compressImageSize; y++) {
+//                for (int x = 0; x < compressImageSize; x++) {
+//                    int r = rgbData[pixelIndex++] & 0xFF; // Red component
+//                    int g = rgbData[pixelIndex++] & 0xFF; // Green component
+//                    int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+////                    Log.d("tbt", "r " + rgbData[pixelIndex-3] + " g " + rgbData[pixelIndex-2] + " b " + rgbData[pixelIndex-1]);
+//                    // Combine these into an ARGB color with full opacity.
+//                    int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+//                    argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+//                }
+//            }
+//            mBitmap = Bitmap.createBitmap(argbPixels, compressImageSize, compressImageSize, Bitmap.Config.ARGB_8888);
+//
+//            Log.d("tbt", "result length: " + rgbData.length );
+//
+//
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+////                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
+//                    mImageView.setImageBitmap(mBitmap);
+//                    runModelButton.setEnabled(true);
+//                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+//                    inferenceTimeTextView.setText(inferenceTime+" ms");
+//                }
+//            });
+//        }
+//        else if (currentModelName.equals("transformer_optimized.ptl")) {
+//            long[] gt = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
+//            long[] data = new long[] {425,320,854,388,264,972,965,188,713,1019,515,936,184,253,589,928,1000,810,710,213,610,720,381,628,856,854,646,92,247,642,558,835,784,601,400,907,297,813,902,611,937,970,462,810,571,417,308,546,633,432,323,168,469,865,1012,658,725,544,873,41,868,548,737,393};
+//            Tensor inputTensor = Tensor.fromBlob(data, new long[]{1, 64});
+//            Tensor inputTensor2 = Tensor.fromBlob(data, new long[]{1, 64});
+//            Log.d("tbt", "shape: " + Arrays.toString(inputTensor.shape()));
+//            final long startTime = SystemClock.elapsedRealtime();
+//            for (int p = 0; p < Constants.recover_round; p++) {
+//                IValue result = Constants.mTransformer.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
+//                if (result.isTuple()) {
+//                    // Get the tuple and extract the tensors
+//                    IValue[] outputs = result.toTuple();
+//                    Tensor prediction_tensor = outputs[0].toTensor();
+//                    Tensor target = outputs[1].toTensor();
+//                    long[] prediction = prediction_tensor.getDataAsLongArray();
+//                    int differenceCount = 0;
+//                    int differenceCount_gt = 0;
+//                    for (int i = 0; i < gt.length; i++) {
+//                        if (data[i] != gt[i]) {
+//                            differenceCount++;
+//                        }
+//                    }
+//                    for (int i = 0; i < gt.length; i++) {
+//                        if (prediction[i] != gt[i]) {
+//                            differenceCount_gt++;
+//                        }
+//                    }
+////                    Log.d("tbt", "input: " + Arrays.toString(data));
+//                    Log.d("tbt", "gt: " + Arrays.toString(gt));
+////
+//                    Log.d("tbt", "result: " + Arrays.toString(prediction));
+//                    Log.d("tbt", "difference count before recovery: " + differenceCount);
+//                    Log.d("tbt", "difference count after recovery: " + differenceCount_gt);
+//
+//                    Log.d("tbt", "result length: " + prediction.length);
+//                    inputTensor = Tensor.fromBlob(prediction, new long[]{1, 64});
+//                    inputTensor2 = Tensor.fromBlob(prediction, new long[]{1, 64});;
+//                }
+//            }
+//            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+//            Log.d("tbt", "inference time (ms): " + inferenceTime);
+//
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    //                    fishCountTextView.setText(String.valueOf(Math.round(results[0])));
+//                    runModelButton.setEnabled(true);
+//                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+//                    inferenceTimeTextView.setText(inferenceTime + " ms");
+//                }
+//            });
+//        }
         if (currentModelName.equals("VQGANEncode")) {
             float[] mu = {0.0f, 0.0f, 0.0f};
             float[] std = {1.0f, 1.0f, 1.0f};
             final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     mu, std);
 
-
-            // Convert the PyTorch tensor to a float array
-            float[] tempArray = tempInputTensor.getDataAsFloatArray();
-
-            // Apply the operation x = 2 * x - 1 to the float array
-            for (int i = 0; i < tempArray.length; i++) {
-                tempArray[i] = 2.0f * tempArray[i] - 1.0f;
-            }
-
-            // Convert the float array back to a PyTorch tensor
-            Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
+//            Tensor inputTensor = tempInputTensor; // Adjust the shape as needed
             final long startTime = SystemClock.elapsedRealtime();
             // run model
-            Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
-//            final float[] intResult = outTensors.getDataAsFloatArray();
-//            Log.d("tbt", Arrays.toString(intResult));
-            outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
-            outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+            Tensor outTensors = Constants.newEncoder.forward(IValue.from(tempInputTensor)).toTensor();
             final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
             Log.d("tbt",  "inference time (ms): " + inferenceTime);
             final long[] results = outTensors.getDataAsLongArray();
@@ -996,11 +1152,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         else if (currentModelName.equals("VQGANDecode")) {
             // 1024 codebook
             // default workable indices
-            long[] indices = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
-            // randomly generate indices every two clicks
+            long[] indices = new long[] {2591, 1405, 3845, 1339, 3290, 3343, 3995, 3843, 3336, 1405, 1469, 3393, 1976, 153, 3244, 726, 3927, 3363, 1666, 1987, 3742, 1396, 1531, 816, 156, 2433, 3713, 1359, 3753, 3497, 2845, 608, 214, 3585, 307, 2149, 28, 1717, 57, 2489, 3791, 1128, 160, 1681, 3730, 3360, 2776, 689, 958, 2369, 1318, 1514, 166, 1336, 1901, 3724, 1175, 2145, 3382, 1449, 433, 3813, 1313, 1412};
+//             randomly generate indices every two clicks
             if (isShouldRandom == true) {
                 for (int i = 0; i < indices.length; i++) {
-                    indices[i] = random.nextInt(1024);
+                    indices[i] = random.nextInt(4096);
                 }
                 isShouldRandom = false;
             } else {
@@ -1009,13 +1165,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             final long startTime = SystemClock.elapsedRealtime();
             Tensor inputTensor = Tensor.fromBlob(indices, new long[]{64});
-            Tensor outTensors = Constants.mDecoder1.forward(IValue.from(inputTensor)).toTensor();
-//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
-            final float[] embedding_res = outTensors.getDataAsFloatArray();
-
-            outTensors = Constants.mDecoder2.forward(IValue.from(outTensors)).toTensor();
-//            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
-            outTensors = Constants.mDecoder3.forward(IValue.from(outTensors)).toTensor();
+            Tensor outTensors = Constants.newDecoder.forward(IValue.from(inputTensor)).toTensor();
 //            Log.d("tbt", "shape" + Arrays.toString(outTensors.shape()));
             final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
             Log.d("tbt",  "inference time (ms): " + inferenceTime);
@@ -1052,44 +1202,32 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             });
         }
         else if (currentModelName.equals("transformer_optimized.ptl")) {
-            long[] gt = new long[] {425,256,854,389,329,972,901,184,969,1019,515,906,172,253,589,928,937,810,966,215,610,720,365,628,856,854,642,92,247,642,558,835,788,601,400,911,417,813,903,610,937,970,462,810,539,417,308,546,761,432,323,172,469,865,1012,663,725,548,873,40,868,548,737,393};
-            long[] data = new long[] {425,320,854,388,264,972,965,188,713,1019,515,936,184,253,589,928,1000,810,710,213,610,720,381,628,856,854,646,92,247,642,558,835,784,601,400,907,297,813,902,611,937,970,462,810,571,417,308,546,633,432,323,168,469,865,1012,658,725,544,873,41,868,548,737,393};
-            Tensor inputTensor = Tensor.fromBlob(data, new long[]{1, 64});
-            Tensor inputTensor2 = Tensor.fromBlob(data, new long[]{1, 64});
+            long[] gt = new long[] {2591, 1405, 3845, 1339, 3290, 3343, 3995, 3843, 3336, 1405, 1469, 3393, 1976, 153, 3244, 726, 3927, 3363, 1666, 1987, 3742, 1396, 1531, 816, 156, 2433, 3713, 1359, 3753, 3497, 2845, 608, 214, 3585, 307, 2149, 28, 1717, 57, 2489, 3791, 1128, 160, 1681, 3730, 3360, 2776, 689, 958, 2369, 1318, 1514, 166, 1336, 1901, 3724, 1175, 2145, 3382, 1449, 433, 3813, 1313, 1412};
+            long[] data = new long[] {2591, 1405, 4096, 1339, 3290, 3343, 3995, 3843, 3336, 4096, 1469, 3393, 1976, 153, 3244, 726, 3927, 4096, 1666, 1987, 3742, 1396, 1531, 816, 156, 2433, 3713, 1359, 3753, 3497, 2845, 608, 214, 3585, 307, 2149, 28, 1717, 57, 2489, 3791, 1128, 160, 1681, 3730, 3360, 2776, 689, 958, 2369, 1318, 1514, 166, 1336, 1901, 3724, 1175, 2145, 3382, 1449, 433, 3813, 1313, 1412};
+            Tensor inputTensor = Tensor.fromBlob(data, new long[]{64});
             Log.d("tbt", "shape: " + Arrays.toString(inputTensor.shape()));
             final long startTime = SystemClock.elapsedRealtime();
-            for (int p = 0; p < Constants.recover_round; p++) {
-                IValue result = Constants.mTransformer.forward(IValue.from(inputTensor), IValue.from(inputTensor2));
-                if (result.isTuple()) {
-                    // Get the tuple and extract the tensors
-                    IValue[] outputs = result.toTuple();
-                    Tensor prediction_tensor = outputs[0].toTensor();
-                    Tensor target = outputs[1].toTensor();
-                    long[] prediction = prediction_tensor.getDataAsLongArray();
-                    int differenceCount = 0;
-                    int differenceCount_gt = 0;
-                    for (int i = 0; i < gt.length; i++) {
-                        if (data[i] != gt[i]) {
-                            differenceCount++;
-                        }
-                    }
-                    for (int i = 0; i < gt.length; i++) {
-                        if (prediction[i] != gt[i]) {
-                            differenceCount_gt++;
-                        }
-                    }
-//                    Log.d("tbt", "input: " + Arrays.toString(data));
-                    Log.d("tbt", "gt: " + Arrays.toString(gt));
-//
-                    Log.d("tbt", "result: " + Arrays.toString(prediction));
-                    Log.d("tbt", "difference count before recovery: " + differenceCount);
-                    Log.d("tbt", "difference count after recovery: " + differenceCount_gt);
+            Tensor result = Constants.newTransformer.forward(IValue.from(inputTensor)).toTensor();
 
-                    Log.d("tbt", "result length: " + prediction.length);
-                    inputTensor = Tensor.fromBlob(prediction, new long[]{1, 64});
-                    inputTensor2 = Tensor.fromBlob(prediction, new long[]{1, 64});;
+            long[] prediction = result.getDataAsLongArray();
+            int differenceCount = 0;
+            int differenceCount_gt = 0;
+            for (int i = 0; i < gt.length; i++) {
+                if (data[i] != gt[i]) {
+                    differenceCount++;
                 }
             }
+            for (int i = 0; i < gt.length; i++) {
+                if (prediction[i] != gt[i]) {
+                    differenceCount_gt++;
+                }
+            }
+            Log.d("tbt", "gt: " + Arrays.toString(gt));
+            Log.d("tbt", "result: " + Arrays.toString(prediction));
+            Log.d("tbt", "difference count before recovery: " + differenceCount);
+            Log.d("tbt", "difference count after recovery: " + differenceCount_gt);
+            Log.d("tbt", "result length: " + prediction.length);
+
             final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
             Log.d("tbt", "inference time (ms): " + inferenceTime);
 
@@ -1107,120 +1245,120 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
-            final float[] inputs = inputTensor.getDataAsFloatArray();
-
-            final long startTime = SystemClock.elapsedRealtime();
-//        Map<String, IValue> outTensors = mModule.forward(IValue.from(inputTensor)).toDictStringKey();
-            final Tensor outTensors = mModule.forward(IValue.from(inputTensor)).toTensor();
-            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
-            Log.d("ImageSegmentation",  "inference time (ms): " + inferenceTime);
-
-
-//        final Tensor outputTensor = outTensors.get("out").toTensor();
-            final Tensor outputTensor = outTensors;
-
-            final float[] results = outputTensor.getDataAsFloatArray();
-            Constants.NumFish = Math.round(results[0]);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    fishCountTextView.setText(String.valueOf(Constants.NumFish));
-                    runModelButton.setEnabled(true);
-                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                    inferenceTimeTextView.setText(inferenceTime+" ms");
-                }
-            });
-        }
-        else if (currentModelName.equals("lite_optimized_clf.ptl")) {
-            final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
-                    TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
-            final float[] inputs = inputTensor.getDataAsFloatArray();
-
-            final long startTime = SystemClock.elapsedRealtime();
-//        Map<String, IValue> outTensors = mModule.forward(IValue.from(inputTensor)).toDictStringKey();
-            final Tensor outTensors = mModule.forward(IValue.from(inputTensor)).toTensor();
-            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
-            Log.d("ImageSegmentation",  "inference time (ms): " + inferenceTime);
-
-
-//        final Tensor outputTensor = outTensors.get("out").toTensor();
-            final Tensor outputTensor = outTensors;
-
-            final float[] results = outputTensor.getDataAsFloatArray();
-
-            Constants.IsFish = clf_res_postprocess(results[0]);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    fishExistTextView.setText(clf_res_postprocess(results[0]).toString());
-                    runModelButton.setEnabled(true);
-                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                    inferenceTimeTextView.setText(inferenceTime+" ms");
-                }
-            });
+//            final float[] inputs = inputTensor.getDataAsFloatArray();
+//
+//            final long startTime = SystemClock.elapsedRealtime();
+////        Map<String, IValue> outTensors = mModule.forward(IValue.from(inputTensor)).toDictStringKey();
+//            final Tensor outTensors = mModule.forward(IValue.from(inputTensor)).toTensor();
+//            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+//            Log.d("ImageSegmentation",  "inference time (ms): " + inferenceTime);
+//
+//
+////        final Tensor outputTensor = outTensors.get("out").toTensor();
+//            final Tensor outputTensor = outTensors;
+//
+//            final float[] results = outputTensor.getDataAsFloatArray();
+//            Constants.NumFish = Math.round(results[0]);
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    fishCountTextView.setText(String.valueOf(Constants.NumFish));
+//                    runModelButton.setEnabled(true);
+//                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+//                    inferenceTimeTextView.setText(inferenceTime+" ms");
+//                }
+//            });
+//        }
+//        else if (currentModelName.equals("lite_optimized_clf.ptl")) {
+//            final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
+//                    TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
+//            final float[] inputs = inputTensor.getDataAsFloatArray();
+//
+//            final long startTime = SystemClock.elapsedRealtime();
+////        Map<String, IValue> outTensors = mModule.forward(IValue.from(inputTensor)).toDictStringKey();
+//            final Tensor outTensors = mModule.forward(IValue.from(inputTensor)).toTensor();
+//            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+//            Log.d("ImageSegmentation",  "inference time (ms): " + inferenceTime);
+//
+//
+////        final Tensor outputTensor = outTensors.get("out").toTensor();
+//            final Tensor outputTensor = outTensors;
+//
+//            final float[] results = outputTensor.getDataAsFloatArray();
+//
+//            Constants.IsFish = clf_res_postprocess(results[0]);
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    fishExistTextView.setText(clf_res_postprocess(results[0]).toString());
+//                    runModelButton.setEnabled(true);
+//                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+//                    inferenceTimeTextView.setText(inferenceTime+" ms");
+//                }
+//            });
         }
         else if (currentModelName.equals("deepfish_scripted_optimized.ptl") || currentModelName.equals("lite_optimized_seg_240p.ptl")) {
             final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                     TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
-            final float[] inputs = inputTensor.getDataAsFloatArray();
-
-            final long startTime = SystemClock.elapsedRealtime();
-//        Map<String, IValue> outTensors = mModule.forward(IValue.from(inputTensor)).toDictStringKey();
-            final Tensor outTensors = mModule.forward(IValue.from(inputTensor)).toTensor();
-            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
-            Log.d("ImageSegmentation",  "inference time (ms): " + inferenceTime);
-            final Tensor outputTensor = outTensors;
-
-            final float[] scores = outputTensor.getDataAsFloatArray();
-
-            int width = mBitmap.getWidth();
-            int height = mBitmap.getHeight();
-//        for (int i = 0; i < width * height; i++) {
-//            Log.d("ImageSegmentation",  "class 0 " + scores[i] + " class 1" + scores[i+width*height]);
-//        }
-            Log.d("ImageSegmentation",  "outputTensor len: " + scores.length);
-            Log.d("ImageSegmentation",  "bit map width: " + width);
-            Log.d("ImageSegmentation",  "bit map height: " + height);
-            int[] intValues = new int[width * height];
-            for (int j = 0; j < height; j++) {
-                for (int k = 0; k < width; k++) {
-                    int maxi = 0, maxj = 0, maxk = 0;
-                    double maxnum = -Double.MAX_VALUE;
-                    for (int i = 0; i < CLASSNUM; i++) {
-                        float score = scores[i * (width * height) + j * width + k];
-                        if (score > maxnum) {
-                            maxnum = score;
-                            maxi = i; maxj = j; maxk = k;
-                        }
-                    }
-                    if (maxi == 1) {
-//                    mBitmap.setPixel(10, 10, Color.GREEN);
-                        intValues[maxj * width + maxk] = 0xFF00FF00;
-                    }
-
-                    else
-//                    continue;
-                        intValues[maxj * width + maxk] = 0xFF000000;
-//                    intValues[maxj * width + maxk] = int(mBitmap.getColor(maxj, maxk));
-
-                }
-            }
-
-            Bitmap bmpSegmentation = Bitmap.createScaledBitmap(mBitmap, width, height, true);
-            Bitmap outputBitmap = bmpSegmentation.copy(bmpSegmentation.getConfig(), true);
-            outputBitmap.setPixels(intValues, 0, outputBitmap.getWidth(), 0, 0, outputBitmap.getWidth(), outputBitmap.getHeight());
-            final Bitmap transferredBitmap = Bitmap.createScaledBitmap(outputBitmap, mBitmap.getWidth(), mBitmap.getHeight(), true); //
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mImageView.setImageBitmap(transferredBitmap);
-                    runModelButton.setEnabled(true);
-                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                    inferenceTimeTextView.setText(inferenceTime+" ms");
-
-                }
-            });
+//            final float[] inputs = inputTensor.getDataAsFloatArray();
+//
+//            final long startTime = SystemClock.elapsedRealtime();
+////        Map<String, IValue> outTensors = mModule.forward(IValue.from(inputTensor)).toDictStringKey();
+//            final Tensor outTensors = mModule.forward(IValue.from(inputTensor)).toTensor();
+//            final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
+//            Log.d("ImageSegmentation",  "inference time (ms): " + inferenceTime);
+//            final Tensor outputTensor = outTensors;
+//
+//            final float[] scores = outputTensor.getDataAsFloatArray();
+//
+//            int width = mBitmap.getWidth();
+//            int height = mBitmap.getHeight();
+////        for (int i = 0; i < width * height; i++) {
+////            Log.d("ImageSegmentation",  "class 0 " + scores[i] + " class 1" + scores[i+width*height]);
+////        }
+//            Log.d("ImageSegmentation",  "outputTensor len: " + scores.length);
+//            Log.d("ImageSegmentation",  "bit map width: " + width);
+//            Log.d("ImageSegmentation",  "bit map height: " + height);
+//            int[] intValues = new int[width * height];
+//            for (int j = 0; j < height; j++) {
+//                for (int k = 0; k < width; k++) {
+//                    int maxi = 0, maxj = 0, maxk = 0;
+//                    double maxnum = -Double.MAX_VALUE;
+//                    for (int i = 0; i < CLASSNUM; i++) {
+//                        float score = scores[i * (width * height) + j * width + k];
+//                        if (score > maxnum) {
+//                            maxnum = score;
+//                            maxi = i; maxj = j; maxk = k;
+//                        }
+//                    }
+//                    if (maxi == 1) {
+////                    mBitmap.setPixel(10, 10, Color.GREEN);
+//                        intValues[maxj * width + maxk] = 0xFF00FF00;
+//                    }
+//
+//                    else
+////                    continue;
+//                        intValues[maxj * width + maxk] = 0xFF000000;
+////                    intValues[maxj * width + maxk] = int(mBitmap.getColor(maxj, maxk));
+//
+//                }
+//            }
+//
+//            Bitmap bmpSegmentation = Bitmap.createScaledBitmap(mBitmap, width, height, true);
+//            Bitmap outputBitmap = bmpSegmentation.copy(bmpSegmentation.getConfig(), true);
+//            outputBitmap.setPixels(intValues, 0, outputBitmap.getWidth(), 0, 0, outputBitmap.getWidth(), outputBitmap.getHeight());
+//            final Bitmap transferredBitmap = Bitmap.createScaledBitmap(outputBitmap, mBitmap.getWidth(), mBitmap.getHeight(), true); //
+//
+//            runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    mImageView.setImageBitmap(transferredBitmap);
+//                    runModelButton.setEnabled(true);
+//                    mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+//                    inferenceTimeTextView.setText(inferenceTime+" ms");
+//
+//                }
+//            });
         }
     }
 
@@ -1370,92 +1508,92 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
                     // Load the selected model
                     currentModelName = Constants.serviceNameToModelMap.get(allServiceNames[position]);
-                    try {
-                        Log.d("ImageSegmentation", currentModelName);
-                        if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
-                            Constants.IsCountingFish = true;
-                            Constants.IsDectectingFish = false;
-                            Constants.ImagingFish = false;
-                        }
-                        else if (currentModelName.equals("lite_optimized_clf.ptl"))
-                        {
-                            Constants.IsDectectingFish = true;
-                            Constants.IsCountingFish = false;
-                            Constants.ImagingFish = false;
-                        }
-                        else if (currentModelName.equals("lite_optimized_seg_240p.ptl"))
-                        {
-                            Constants.IsDectectingFish = false;
-                            Constants.IsCountingFish = false;
-                            Constants.ImagingFish = true;
-                        }
-
-                        // special handle counting fish
-                        if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl") || currentModelName.equals("lite_optimized_clf.ptl")) {
-                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
-                            currentHeight = 224;
-                            currentWidth = 224;
-                            // do we need it?
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText("224");
-                                    heightEditText.setText("224");
-                                }
-                            });
-
-                            resizeImage();
-                        } else if (currentModelName.equals("lite_optimized_seg_240p.ptl")) {
-                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
-                            currentHeight = 240;
-                            currentWidth = 426;
-                            // do we need it?
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText("426");
-                                    heightEditText.setText("240");
-                                }
-                            });
-
-                            resizeImage();
-                        } else if (currentModelName.equals("VQGANEncode")) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText(String.valueOf(compressImageSize));
-                                    heightEditText.setText(String.valueOf(compressImageSize));
-                                }
-                            });
-
-                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                        } else if (currentModelName.equals("VQGANDecode")) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText(String.valueOf(compressImageSize));
-                                    heightEditText.setText(String.valueOf(compressImageSize));
-                                }
-                            });
-
-                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
-                        } else if (currentModelName.equals("transformer_optimized.ptl")) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    widthEditText.setText(String.valueOf(compressImageSize));
-                                    heightEditText.setText(String.valueOf(compressImageSize));
-                                }
-                            });
-                            displayImageCenterCropWithSize(currentIndex, compressImageSize);
-
-                        } else {
-                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        finish();
+//                    try {
+                    Log.d("ImageSegmentation", currentModelName);
+                    if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl")) {
+                        Constants.IsCountingFish = true;
+                        Constants.IsDectectingFish = false;
+                        Constants.ImagingFish = false;
                     }
+                    else if (currentModelName.equals("lite_optimized_clf.ptl"))
+                    {
+                        Constants.IsDectectingFish = true;
+                        Constants.IsCountingFish = false;
+                        Constants.ImagingFish = false;
+                    }
+                    else if (currentModelName.equals("lite_optimized_seg_240p.ptl"))
+                    {
+                        Constants.IsDectectingFish = false;
+                        Constants.IsCountingFish = false;
+                        Constants.ImagingFish = true;
+                    }
+
+                    // special handle counting fish
+                    if (currentModelName.equals("lite_optimized_count_fish_224_224.ptl") || currentModelName.equals("lite_optimized_clf.ptl")) {
+//                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
+//                            currentHeight = 224;
+//                            currentWidth = 224;
+//                            // do we need it?
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    widthEditText.setText("224");
+//                                    heightEditText.setText("224");
+//                                }
+//                            });
+//
+//                            resizeImage();
+                    } else if (currentModelName.equals("lite_optimized_seg_240p.ptl")) {
+//                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
+//                            currentHeight = 240;
+//                            currentWidth = 426;
+//                            // do we need it?
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    widthEditText.setText("426");
+//                                    heightEditText.setText("240");
+//                                }
+//                            });
+//
+//                            resizeImage();
+                    } else if (currentModelName.equals("VQGANEncode")) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                widthEditText.setText(String.valueOf(compressImageSize));
+                                heightEditText.setText(String.valueOf(compressImageSize));
+                            }
+                        });
+
+                        displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                    } else if (currentModelName.equals("VQGANDecode")) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                widthEditText.setText(String.valueOf(compressImageSize));
+                                heightEditText.setText(String.valueOf(compressImageSize));
+                            }
+                        });
+
+                        displayImageCenterCropWithSize(currentIndex, compressImageSize);
+                    } else if (currentModelName.equals("transformer_optimized.ptl")) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                widthEditText.setText(String.valueOf(compressImageSize));
+                                heightEditText.setText(String.valueOf(compressImageSize));
+                            }
+                        });
+                        displayImageCenterCropWithSize(currentIndex, compressImageSize);
+
+                    } else {
+//                            mModule = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), currentModelName));
+                    }
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                        finish();
+//                    }
                 }
 
                 @Override

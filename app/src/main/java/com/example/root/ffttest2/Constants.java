@@ -69,6 +69,10 @@ public class Constants {
     public static Module mTransformer = null; // recover transformer
     public static Module mTransformer_256 = null; // recover transformer
 
+    public static Module newEncoder = null;
+    public static Module newDecoder = null;
+    public static Module newTransformer = null;
+
     public static int recover_round = 1;
 
     public static long[] encode_sequence; // encoder final output (64 long integer)
