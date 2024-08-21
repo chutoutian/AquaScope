@@ -10,6 +10,9 @@ import Jama.Matrix;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Decoder {
     // for ofdm decoding
     public static long[]  decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
@@ -1223,14 +1226,24 @@ public class Decoder {
         // deinterleaving
         int[] codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, 0, 8),  Constants.SF - 2);
         // hamming decoding
-        int[] nibbles = SymbolGeneration.hamming_decode(codewords,8);
+        //int[] nibbles = SymbolGeneration.hamming_decode(codewords,8);
+        Map<String, int[]> result = SymbolGeneration.hamming_decode2(codewords, 8);
+        int[] nibbles = result.get("nibbles");
+        int[] parityCheck = result.get("parity_check");
+
         int rdd = Constants.CodeRate_LoRA + 4;
         for (int i = 8; i < symbol_g.length - rdd + 1; i += rdd)
         {
             codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, i, i+ rdd ), Constants.SF);
-            int[] tem_nibbles = SymbolGeneration.hamming_decode(codewords,rdd);
+            //int[] tem_nibbles = SymbolGeneration.hamming_decode(codewords,rdd);
+            result = SymbolGeneration.hamming_decode2(codewords, rdd);
+            int[] tem_nibbles = result.get("nibbles");
+            int[] tem_parityCheck = result.get("parity_check");
             nibbles = Utils.concatArrays_int(nibbles, tem_nibbles);
+            parityCheck = Utils.concatArrays_int(parityCheck,tem_parityCheck);
         }
+
+        String errorMask = Utils.generateErrorBitString(parityCheck);
         // convert nibbles to the bytes
         int byteCount = Math.min(255,nibbles.length /2 );
         byte[] bytes = new byte[byteCount];
@@ -1248,7 +1261,10 @@ public class Decoder {
         byte[] data = SymbolGeneration.dewhiten(Arrays.copyOfRange(bytes, 0, len ));
 
 
-        long[] embedding = Utils.Bytes2Embedding(data);
+        Map.Entry<long[], String> result1 = Utils.Bytes2Embedding2(data, errorMask);
+        long[] embedding = result1.getKey();
+        String errorBits = result1.getValue();
+        //long[] embedding = Utils.Bytes2Embedding(data);
 
         // receiver t4 decode signal
         final long inferenceTime_decode_signal = SystemClock.elapsedRealtime() - startTime_decode_signal;
@@ -1261,6 +1277,7 @@ public class Decoder {
                 all_embedding += (embedding[i] + ",");
             }
             Utils.log("all_embedding =>" + all_embedding);
+            Utils.log("mask of detected wrong embeddings =>" + errorBits);
             if (all_embedding.endsWith(",")) {
                 all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
             }

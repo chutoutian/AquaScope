@@ -15,6 +15,9 @@ import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class SymbolGeneration {
     public static short[] generatePreamble(short[] bits, int[] valid_carrier,
                                            int symreps, boolean preamble, Constants.SignalType sigType) {
@@ -753,6 +756,43 @@ public class SymbolGeneration {
             }
         }
         return nibbles;
+    }
+    public static Map<String, int[]>hamming_decode2(int[] codewords,int rdd)
+    {
+
+        int[] nibbles = new int[codewords.length];
+        int[] parity_check = new int[codewords.length];
+        for (int i = 0; i < codewords.length; i++)
+        {
+            int codeword = codewords[i];
+            byte p1 = bitReduce((byte)codeword, new int[]{8, 4, 3,1});
+            byte p2 = bitReduce((byte)codeword, new int[]{7,4,2,1});
+            byte p3 = bitReduce((byte)codeword, new int[]{5,3,2,1});
+            byte p4 = bitReduce((byte)codeword, new int[]{5,4,3,2,1});
+            byte p5 = bitReduce((byte)codeword, new int[]{6,4,3,2});
+
+            switch (rdd){
+                case 4:
+                    break;
+                case 5:
+                case 6:
+                    nibbles[i] = codewords[i] % 16;
+                    break;
+                case 7:
+                case 8:
+                    int partity = p2 * 4 + p3 * 2 + p5;
+                    parity_check[i] = partity;
+                    int pf = parityFix(partity);
+                    codewords[i] = codewords[i] ^ pf;
+                    nibbles[i] = codewords[i] % 16;
+                    break;
+            }
+        }
+
+        Map<String, int[]> result = new HashMap<>();
+        result.put("nibbles", nibbles);
+        result.put("parity_check", parity_check);
+        return result;
     }
     private static byte[] hamming_encode(byte[] nibbles) {
         int nibbleNum = nibbles.length;
