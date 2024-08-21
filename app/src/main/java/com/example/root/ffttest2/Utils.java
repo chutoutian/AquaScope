@@ -2,6 +2,7 @@ package com.example.root.ffttest2;
 
 import static com.example.root.ffttest2.Constants.LOG;
 import static com.example.root.ffttest2.Constants.XCORR_MAX_VAL_HEIGHT_FAC;
+import static com.example.root.ffttest2.Constants.codebookSize;
 import static com.example.root.ffttest2.Constants.currentDirPath;
 import static com.example.root.ffttest2.Constants.fbackTime;
 import static com.example.root.ffttest2.Constants.sample_num;
@@ -766,7 +767,11 @@ public class Utils {
                 // 0711 need to adapt to 8 bit
                 String binaryString = String.format("%8s", Long.toBinaryString(value & 0xFF)).replace(' ', '0');
                 binaryStringBuilder.append(binaryString);
-            } else {
+            } else if (Constants.codebookSize == "4096") {
+                // 0711 need to adapt to 8 bit
+                String binaryString = String.format("%12s", Long.toBinaryString(value & 0xFFF)).replace(' ', '0');
+                binaryStringBuilder.append(binaryString);
+            }else {
                 String binaryString = String.format("%10s", Long.toBinaryString(value & 0x3FF)).replace(' ', '0');
                 binaryStringBuilder.append(binaryString);
             }
@@ -819,6 +824,18 @@ public class Utils {
             long[] longs = new long[numInts];
             for (int i = 0, intIndex = 0; i + 8 <= allBits.length(); i += 8, intIndex++) {
                 String intString = allBits.substring(i, i + 8);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+            }
+
+            return longs;
+        } else if (Constants.codebookSize == "4096") {
+            // 0711 need to adapt to 8 bit
+            int numInts = allBits.length() / 12; // Calculate how many 8-bit integers are needed
+
+            long[] longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 12 <= allBits.length(); i += 12, intIndex++) {
+                String intString = allBits.substring(i, i + 12);
                 long newLong = Long.parseLong(intString, 2);
                 longs[intIndex] = newLong;
             }
@@ -2763,33 +2780,68 @@ public class Utils {
             throw new FileNotFoundException("The file " + assetName + " does not exist or is empty in the directory " + context.getFilesDir().getAbsolutePath());
         }
     }
-
+//    public static long[] encode_image(Bitmap mBitmap) {
+//        float[] mu = {0.0f, 0.0f, 0.0f};
+//        float[] std = {1.0f, 1.0f, 1.0f};
+//        final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
+//                mu, std);
+//        // Convert the PyTorch tensor to a float array
+//        float[] tempArray = tempInputTensor.getDataAsFloatArray();
+//        // Apply the operation x = 2 * x - 1 to the float array
+//        for (int i = 0; i < tempArray.length; i++) {
+//            tempArray[i] = 2.0f * tempArray[i] - 1.0f;
+//        }
+//        // Convert the float array back to a PyTorch tensor
+//        Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
+//        final long startTime = SystemClock.elapsedRealtime();
+//        // run model
+//        Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
+//        outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
+//        outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+//        long[] results = outTensors.getDataAsLongArray();
+//
+//        Constants.encode_sequence = results;
+//
+//        // Beitong0711: decide if we want to use code 1024 or 256
+//        if (Constants.codebookSize == "1024" || Constants.codebookSize == "4096") {
+//            Utils.logd("use codebook " + Constants.codebookSize.toString() + " do nothing");
+//        } else if (Constants.codebookSize == "256") {
+//            Utils.logd("use codebook 256 remapping the sequence");
+//            long[] results_256 = new long[results.length];
+//            for (int i = 0; i < results.length; i++) {
+//                if (Constants.cb_1024_to_256.containsKey((int) results[i])) {
+//                    results_256[i] = Constants.cb_1024_to_256.get((int) results[i]);
+//                } else {
+//                    // Handle the case where the key is not found
+//                    Utils.logd("Key " + results[i] + " not found in dataIntKeys.");
+//                    results_256[i] = 175; // or some other default value
+//                }
+//            }
+//            Constants.encode_sequence = results_256;
+//            results = results_256;
+//        } else {
+//            Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing");
+//        }
+//
+//
+//        return results;
+//    }
 
     public static long[] encode_image(Bitmap mBitmap) {
         float[] mu = {0.0f, 0.0f, 0.0f};
         float[] std = {1.0f, 1.0f, 1.0f};
         final Tensor tempInputTensor = TensorImageUtils.bitmapToFloat32Tensor(mBitmap,
                 mu, std);
-        // Convert the PyTorch tensor to a float array
-        float[] tempArray = tempInputTensor.getDataAsFloatArray();
-        // Apply the operation x = 2 * x - 1 to the float array
-        for (int i = 0; i < tempArray.length; i++) {
-            tempArray[i] = 2.0f * tempArray[i] - 1.0f;
-        }
-        // Convert the float array back to a PyTorch tensor
-        Tensor inputTensor = Tensor.fromBlob(tempArray, tempInputTensor.shape()); // Adjust the shape as needed
         final long startTime = SystemClock.elapsedRealtime();
         // run model
-        Tensor outTensors = Constants.mEncoder1.forward(IValue.from(inputTensor)).toTensor();
-        outTensors = Constants.mEncoder2.forward(IValue.from(outTensors)).toTensor();
-        outTensors = Constants.mEncoder3.forward(IValue.from(outTensors)).toTensor();
+        Tensor outTensors = Constants.newEncoder.forward(IValue.from(tempInputTensor)).toTensor();
         long[] results = outTensors.getDataAsLongArray();
 
         Constants.encode_sequence = results;
 
         // Beitong0711: decide if we want to use code 1024 or 256
-        if (Constants.codebookSize == "1024") {
-            Utils.logd("use codebook 1024 do nothing");
+        if (Constants.codebookSize == "1024" || Constants.codebookSize == "4096") {
+            Utils.logd("use codebook " + Constants.codebookSize.toString() + " do nothing");
         } else if (Constants.codebookSize == "256") {
             Utils.logd("use codebook 256 remapping the sequence");
             long[] results_256 = new long[results.length];
@@ -2812,11 +2864,63 @@ public class Utils {
         return results;
     }
 
+//    public static Bitmap decode_image(long[] results) {
+//
+//        // Beitong0711: decide if we want to use code 1024 or 256
+//        if (Constants.codebookSize == "1024" || Constants.codebookSize == "4096") {
+//            Utils.logd("use codebook " + Constants.codebookSize.toString() + " do nothing");
+//        } else if (Constants.codebookSize == "256") {
+//            Utils.logd("decode use codebook 256 remapping the sequence");
+//            long[] results_1024 = new long[results.length];
+//            for (int i = 0; i < results.length; i++) {
+//                if (Constants.cb_256_to_1024.containsKey((int) results[i])) {
+//                    results_1024[i] = Constants.cb_256_to_1024.get((int) results[i]);
+//                } else {
+//                    // Handle the case where the key is not found
+//                    Utils.logd("Key " + results[i] + " not found in dataIntKeys.");
+//                    results_1024[i] = 0; // or some other default value
+//                }
+//            }
+//            results = results_1024;
+//        } else {
+//            Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing to decode");
+//        }
+//
+//
+//        Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+//        Tensor outTensorsdecode;
+//        if (Constants.codebookSize == "1024") {
+//            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+//        } else if (Constants.codebookSize == "256") {
+//            outTensorsdecode = Constants.mEmbedding_256.forward(IValue.from(inputTensordecode)).toTensor();
+//        } else {
+//            Utils.logd("wrong codebookSize. Still use codebook 1024 setting");
+//            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+//        }
+//        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+//        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+//        final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+//        int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+//        int pixelIndex = 0;
+//        int argbIndex = 0;
+//        for (int y = 0; y < Constants.compressImageSize; y++) {
+//            for (int x = 0; x < Constants.compressImageSize; x++) {
+//                int r = rgbData[pixelIndex++] & 0xFF; // Red component
+//                int g = rgbData[pixelIndex++] & 0xFF; // Green component
+//                int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+//                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+//                argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+//            }
+//        }
+//        Bitmap vqganGtBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+//        return vqganGtBitmap;
+//    }
+
     public static Bitmap decode_image(long[] results) {
 
         // Beitong0711: decide if we want to use code 1024 or 256
-        if (Constants.codebookSize == "1024") {
-            Utils.logd("decode use codebook 1024 do nothing");
+        if (Constants.codebookSize == "1024" || Constants.codebookSize == "4096") {
+            Utils.logd("use codebook " + Constants.codebookSize.toString() + " do nothing");
         } else if (Constants.codebookSize == "256") {
             Utils.logd("decode use codebook 256 remapping the sequence");
             long[] results_1024 = new long[results.length];
@@ -2839,14 +2943,19 @@ public class Utils {
         Tensor outTensorsdecode;
         if (Constants.codebookSize == "1024") {
             outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
         } else if (Constants.codebookSize == "256") {
             outTensorsdecode = Constants.mEmbedding_256.forward(IValue.from(inputTensordecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+        } else if (Constants.codebookSize == "4096") {
+            outTensorsdecode = Constants.newDecoder.forward(IValue.from(inputTensordecode)).toTensor();
         } else {
             Utils.logd("wrong codebookSize. Still use codebook 1024 setting");
             outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
         }
-        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
-        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+
         final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
         int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
         int pixelIndex = 0;
@@ -2864,11 +2973,91 @@ public class Utils {
         return vqganGtBitmap;
     }
 
+//    public static void decode_image_receiver(long[] results, ImageView mImageView, boolean before) {
+//
+//        // Beitong0711: decide if we want to use code 1024 or 256
+//        if (Constants.codebookSize == "1024" || Constants.codebookSize == "4096") {
+//            Utils.logd("use codebook " + Constants.codebookSize.toString() + " do nothing");
+//        } else if (Constants.codebookSize == "256") {
+//            Utils.logd("decode use codebook 256 remapping the sequence");
+//            long[] results_1024 = new long[results.length];
+//            for (int i = 0; i < results.length; i++) {
+//                if (Constants.cb_256_to_1024.containsKey((int) results[i])) {
+//                    results_1024[i] = Constants.cb_256_to_1024.get((int) results[i]);
+//                } else {
+//                    // Handle the case where the key is not found
+//                    Utils.logd("Key " + results[i] + " not found in dataIntKeys.");
+//                    results_1024[i] = 0; // or some other default value
+//                }
+//            }
+//            results = results_1024;
+//        } else {
+//            Utils.logd("wrong codebookSize. Still use codebook 1024 do nothing to decode");
+//        }
+//
+//        // receiver t6 decode image 1 (before recover)
+//        final long startTime_decode_image = SystemClock.elapsedRealtime();
+//        Tensor inputTensordecode = Tensor.fromBlob(results, new long[]{64});
+//        Tensor outTensorsdecode;
+//        if (Constants.codebookSize == "1024") {
+//            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+//        } else if (Constants.codebookSize == "256") {
+//            outTensorsdecode = Constants.mEmbedding_256.forward(IValue.from(inputTensordecode)).toTensor();
+//        } else if (Constants.codebookSize == "4096") {
+//            outTensorsdecode = Constants.newDecoder.forward(IValue.from(inputTensordecode)).toTensor();
+//        } else {
+//            Utils.logd("wrong codebookSize. Still use codebook 1024 setting");
+//            outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+//        }
+//        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+//        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+//        final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
+//        int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
+//        int pixelIndex = 0;
+//        int argbIndex = 0;
+//        for (int y = 0; y < Constants.compressImageSize; y++) {
+//            for (int x = 0; x < Constants.compressImageSize; x++) {
+//                int r = rgbData[pixelIndex++] & 0xFF; // Red component
+//                int g = rgbData[pixelIndex++] & 0xFF; // Green component
+//                int b = rgbData[pixelIndex++] & 0xFF; // Blue component
+//                int argb = 0xFF000000 | (r << 16) | (g << 8) | b;
+//                argbPixels[argbIndex++] = argb; // Store the ARGB value in the array.
+//            }
+//        }
+//        Bitmap vqganDecodedBitmap = Bitmap.createBitmap(argbPixels, Constants.compressImageSize, Constants.compressImageSize, Bitmap.Config.ARGB_8888);
+//        // receiver t6 decode image 1 (before recover)
+//        final long inferenceTime_decode_image = SystemClock.elapsedRealtime() - startTime_decode_image;
+//        if (before == true) {
+//            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image (before recover) (ms): " + inferenceTime_decode_image + "\n";
+//        } else if (before == false) {
+//            Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver decode image (after recover) (ms): " + inferenceTime_decode_image + "\n";
+//
+//        }
+//        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+//
+//        mImageView.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                mImageView.setImageBitmap(vqganDecodedBitmap);
+//            }
+//        });
+//
+//        // save receive image before recover
+//        if (Constants.allowLog) {
+//            if (before == true) {
+//                FileOperations.saveBitmapToFile(MainActivity.av, vqganDecodedBitmap, Utils.genName(Constants.SignalType.Received_Bitmap, 0) + ".png");
+//            } else if (before == false) {
+//                FileOperations.saveBitmapToFile(MainActivity.av, vqganDecodedBitmap, Utils.genName(Constants.SignalType.Recovered_Bitmap, 0) + ".png");
+//
+//            }
+//        }
+//    }
+
     public static void decode_image_receiver(long[] results, ImageView mImageView, boolean before) {
 
         // Beitong0711: decide if we want to use code 1024 or 256
-        if (Constants.codebookSize == "1024") {
-            Utils.logd("decode use codebook 1024 do nothing");
+        if (Constants.codebookSize == "1024" || Constants.codebookSize == "4096") {
+            Utils.logd("use codebook " + Constants.codebookSize.toString() + " do nothing");
         } else if (Constants.codebookSize == "256") {
             Utils.logd("decode use codebook 256 remapping the sequence");
             long[] results_1024 = new long[results.length];
@@ -2892,14 +3081,19 @@ public class Utils {
         Tensor outTensorsdecode;
         if (Constants.codebookSize == "1024") {
             outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
         } else if (Constants.codebookSize == "256") {
             outTensorsdecode = Constants.mEmbedding_256.forward(IValue.from(inputTensordecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
+            outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+        } else if (Constants.codebookSize == "4096") {
+            outTensorsdecode = Constants.newDecoder.forward(IValue.from(inputTensordecode)).toTensor();
         } else {
             Utils.logd("wrong codebookSize. Still use codebook 1024 setting");
             outTensorsdecode = Constants.mDecoder1.forward(IValue.from(inputTensordecode)).toTensor();
         }
-        outTensorsdecode = Constants.mDecoder2.forward(IValue.from(outTensorsdecode)).toTensor();
-        outTensorsdecode = Constants.mDecoder3.forward(IValue.from(outTensorsdecode)).toTensor();
+
         final byte[] rgbData = outTensorsdecode.getDataAsUnsignedByteArray();
         int[] argbPixels = new int[Constants.compressImageSize * Constants.compressImageSize]; // Array to hold ARGB pixel data.
         int pixelIndex = 0;
@@ -2942,7 +3136,67 @@ public class Utils {
         }
     }
 
-
+//    public static long[] transformer_recover(long[] embeddings) {
+//
+////        if (Constants.codebookSize == "256") {
+////            // Beitong0711 skip recover for now
+////            return embeddings;
+////        }
+//
+//        // receiver t5 transformer recover
+//        final long startTime_transformer_recover = SystemClock.elapsedRealtime();
+//
+//        long[] prediction = new long[embeddings.length];
+//
+//        Tensor inputTensorTransformer = Tensor.fromBlob(embeddings, new long[]{1, 64});
+//        Tensor inputTensorTransformer2 = Tensor.fromBlob(embeddings, new long[]{1, 64});
+//
+//        Utils.log("shape: " + Arrays.toString(inputTensorTransformer.shape()));
+//        final long startTimeTransformer = SystemClock.elapsedRealtime();
+//        for (int p = 0; p < Constants.recover_round; p++) {
+//            IValue result;
+//            if (Constants.codebookSize == "256") {
+//                result = Constants.mTransformer_256.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+//            } else if (Constants.codebookSize == "1024") {
+//                result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+//            } else if (Constants.codebookSize == "4096") {
+//                result = Constants.newTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+//            } else {
+//                result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+//            }
+//            if (result.isTuple()) {
+//                // Get the tuple and extract the tensors
+//                IValue[] outputs = result.toTuple();
+//                Tensor prediction_tensor = outputs[0].toTensor();
+//                Tensor target = outputs[1].toTensor();
+//                prediction = prediction_tensor.getDataAsLongArray();
+//                int differenceCount = 0;
+//                for (int i = 0; i < embeddings.length; i++) {
+//                    if (embeddings[i] != prediction[i]) {
+//                        differenceCount++;
+//                    }
+//                }
+////                    Log.d("tbt", "input: " + Arrays.toString(data));
+//                Utils.log("before: " + Arrays.toString(embeddings));
+//                Utils.log("after: " + Arrays.toString(prediction));
+//                Utils.log("difference after recovery: " + differenceCount);
+//                inputTensorTransformer = Tensor.fromBlob(prediction, new long[]{1, 64});
+//                inputTensorTransformer2 = Tensor.fromBlob(prediction, new long[]{1, 64});
+//            }
+//        }
+//
+//        // receiver t5 transformer recover
+//        final long inferenceTime_transformer_recover = SystemClock.elapsedRealtime() - startTime_transformer_recover;
+//        Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver transformer recover (ms): " + inferenceTime_transformer_recover + "\n";
+//        Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+//
+//        // save embedding sequence recovered
+//        if (Constants.allowLog) {
+//            FileOperations.writetofile(MainActivity.av, Arrays.toString(prediction),
+//                    Utils.genName(Constants.SignalType.Rx_Embedding_Recovered, 0) + ".txt");
+//        }
+//        return prediction;
+//    }
 
     public static long[] transformer_recover(long[] embeddings) {
 
@@ -2953,39 +3207,64 @@ public class Utils {
 
         // receiver t5 transformer recover
         final long startTime_transformer_recover = SystemClock.elapsedRealtime();
-
         long[] prediction = new long[embeddings.length];
+        if (Constants.codebookSize == "4096") {
 
-        Tensor inputTensorTransformer = Tensor.fromBlob(embeddings, new long[]{1, 64});
-        Tensor inputTensorTransformer2 = Tensor.fromBlob(embeddings, new long[]{1, 64});
+            Tensor inputTensor = Tensor.fromBlob(embeddings, new long[]{64});
+            Tensor result = Constants.newTransformer.forward(IValue.from(inputTensor)).toTensor();
 
-        Utils.log("shape: " + Arrays.toString(inputTensorTransformer.shape()));
-        final long startTimeTransformer = SystemClock.elapsedRealtime();
-        for (int p = 0; p < Constants.recover_round; p++) {
-            IValue result;
-            if (Constants.codebookSize == "256") {
-                result = Constants.mTransformer_256.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
-            } else {
-                result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
-            }
-            if (result.isTuple()) {
-                // Get the tuple and extract the tensors
-                IValue[] outputs = result.toTuple();
-                Tensor prediction_tensor = outputs[0].toTensor();
-                Tensor target = outputs[1].toTensor();
-                prediction = prediction_tensor.getDataAsLongArray();
-                int differenceCount = 0;
-                for (int i = 0; i < embeddings.length; i++) {
-                    if (embeddings[i] != prediction[i]) {
-                        differenceCount++;
-                    }
+            prediction = result.getDataAsLongArray();
+
+            int differenceCount = 0;
+            int differenceCount_gt = 0;
+            for (int i = 0; i < embeddings.length; i++) {
+                if (prediction[i] != embeddings[i]) {
+                    differenceCount++;
                 }
+            }
+            Utils.log("before: " + Arrays.toString(embeddings));
+            Utils.log("after: " + Arrays.toString(prediction));
+            Utils.log("difference after recovery: " + differenceCount);
+        } else {
+
+
+
+
+            Tensor inputTensorTransformer = Tensor.fromBlob(embeddings, new long[]{1, 64});
+            Tensor inputTensorTransformer2 = Tensor.fromBlob(embeddings, new long[]{1, 64});
+
+            Utils.log("shape: " + Arrays.toString(inputTensorTransformer.shape()));
+            final long startTimeTransformer = SystemClock.elapsedRealtime();
+            for (int p = 0; p < Constants.recover_round; p++) {
+                IValue result;
+                if (Constants.codebookSize == "256") {
+                    result = Constants.mTransformer_256.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+                } else if (Constants.codebookSize == "1024") {
+                    result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+                } else if (Constants.codebookSize == "4096") {
+                    result = Constants.newTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+                } else {
+                    result = Constants.mTransformer.forward(IValue.from(inputTensorTransformer), IValue.from(inputTensorTransformer2));
+                }
+                if (result.isTuple()) {
+                    // Get the tuple and extract the tensors
+                    IValue[] outputs = result.toTuple();
+                    Tensor prediction_tensor = outputs[0].toTensor();
+                    Tensor target = outputs[1].toTensor();
+                    prediction = prediction_tensor.getDataAsLongArray();
+                    int differenceCount = 0;
+                    for (int i = 0; i < embeddings.length; i++) {
+                        if (embeddings[i] != prediction[i]) {
+                            differenceCount++;
+                        }
+                    }
 //                    Log.d("tbt", "input: " + Arrays.toString(data));
-                Utils.log("before: " + Arrays.toString(embeddings));
-                Utils.log("after: " + Arrays.toString(prediction));
-                Utils.log("difference after recovery: " + differenceCount);
-                inputTensorTransformer = Tensor.fromBlob(prediction, new long[]{1, 64});
-                inputTensorTransformer2 = Tensor.fromBlob(prediction, new long[]{1, 64});
+                    Utils.log("before: " + Arrays.toString(embeddings));
+                    Utils.log("after: " + Arrays.toString(prediction));
+                    Utils.log("difference after recovery: " + differenceCount);
+                    inputTensorTransformer = Tensor.fromBlob(prediction, new long[]{1, 64});
+                    inputTensorTransformer2 = Tensor.fromBlob(prediction, new long[]{1, 64});
+                }
             }
         }
 

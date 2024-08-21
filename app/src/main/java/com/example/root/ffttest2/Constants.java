@@ -77,7 +77,7 @@ public class Constants {
 
     public static long[] encode_sequence; // encoder final output (64 long integer)
 
-    public static int compressImageSize = 128; // rescale image for encoding
+    public static int compressImageSize = 256; // rescale image for encoding
 
     public static Button cameraCaptureBtn;
     public static FrameLayout frameLayout;
@@ -188,7 +188,7 @@ public class Constants {
 
     public static int gap_from_spinner = 25;
 
-    public static String codebookSize = "1024"; // default 1024
+    public static String codebookSize = "4096"; // default 4096, 256, 1024 and 4096
 
     public static Map<Integer, Integer> cb_1024_to_256 = null;
     public static Map<Integer, Integer> cb_256_to_1024 = null;
@@ -280,7 +280,8 @@ public class Constants {
     public enum CodeRate {
         None,
         C4_8,
-        C4_6
+        C4_6,
+        C4_7
     }
     // LoRa related
     public enum Modulation {
@@ -987,6 +988,9 @@ public class Constants {
         else if (Constants.codeRate == Constants.CodeRate.C4_6) {
             Constants.CodeRate_LoRA = 2;
             Constants.spinner.setSelection(2);
+        } else if (Constants.codeRate == Constants.CodeRate.C4_7) {
+            Constants.CodeRate_LoRA = 3;
+            Constants.spinner.setSelection(3);
         }
 
         //String s =prefs.getString("Tx protocol",Constants.scheme.toString());

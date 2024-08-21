@@ -279,7 +279,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
         setupSpinner(settingsDialog, R.id.spinner_gap_setting, new String[]{"0", "5", "10", "25", "50"});
         setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_ofdmA", "css_ofdmWO","all"});
-        setupSpinner(settingsDialog, R.id.spinner_cbsize_setting, new String[]{"1024", "256"});
+        setupSpinner(settingsDialog, R.id.spinner_cbsize_setting, new String[]{"4096", "1024", "256"});
 
 
 
@@ -311,7 +311,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else if (Constants.codebookSize == "256") {
                     Constants.EmbeddindBytes = 64;
                     Constants.maxbits = 512;
-                } else {
+                } else if (Constants.codebookSize == "4096") {
+                    Constants.EmbeddindBytes = 96;
+                    Constants.maxbits = 768;
+                }
+                else{
                     Constants.EmbeddindBytes = 80;
                     Constants.maxbits = 640;
                 }
@@ -603,23 +607,23 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                Constants.mTransformer_256 = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "transformer_2_optimized.ptl"));
 //            }
 
-//            if (Constants.newEncoder == null) {
-////                Constants.newEncoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myEncode_vulkan_optimized.ptl"), null, Device.VULKAN);
-//                Constants.newEncoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myEncode_optimized.ptl"));
-//
-//            }
+            if (Constants.newEncoder == null) {
+//                Constants.newEncoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myEncode_vulkan_optimized.ptl"), null, Device.VULKAN);
+                Constants.newEncoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myEncode_optimized.ptl"));
+
+            }
 
             if (Constants.newDecoder == null) {
-                Constants.newDecoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myDecode_vulkan_optimized.ptl"), null, Device.VULKAN);
-//                Constants.newDecoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myDecode_normal.ptl"));
+//                Constants.newDecoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myDecode_vulkan_optimized.ptl"), null, Device.VULKAN);
+                Constants.newDecoder = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myDecode_normal.ptl"));
 
             }
 //
-//            if (Constants.newTransformer == null) {
-////                Constants.newTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myRecover_vulkan_optimized.ptl"), null, Device.VULKAN);
-//                Constants.newTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myRecover_optimized.ptl"));
-//
-//            }
+            if (Constants.newTransformer == null) {
+//                Constants.newTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myRecover_vulkan_optimized.ptl"), null, Device.VULKAN);
+                Constants.newTransformer = LiteModuleLoader.load(Utils.assetFilePath(getApplicationContext(), "myRecover_optimized.ptl"));
+
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -1647,6 +1651,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         arrayList.add("None");
         arrayList.add("4/8");
         arrayList.add("6/8");
+        arrayList.add("4/7");
+
 
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, arrayList);
@@ -1667,6 +1673,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 else if (position == 2) {
                     editor.putString("code_rate", Constants.CodeRate.C4_6.toString());
                     Constants.CodeRate_LoRA = 2;
+                }
+                else if (position == 3) {
+                    editor.putString("code_rate", Constants.CodeRate.C4_7.toString());
+                    Constants.CodeRate_LoRA = 3;
                 }
                 stopMethod();
                 try {
@@ -1859,13 +1869,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ArrayList<String> arrayList6 = new ArrayList<>();
         arrayList6.add("1024");
         arrayList6.add("256");
+        arrayList6.add("4096");
 
         ArrayAdapter<String> arrayAdapter6 = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, arrayList6);
         arrayAdapter6.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         Constants.spinnerCB.setAdapter(arrayAdapter6);
         // set default
-        int defaultPositionSpinnerCB = arrayAdapter6.getPosition("1024");
+        int defaultPositionSpinnerCB = arrayAdapter6.getPosition("4096");
         Constants.spinnerCB.setSelection(defaultPositionSpinnerCB);
         Constants.spinnerCB.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -1880,6 +1891,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 } else if (Constants.codebookSize == "256") {
                     Constants.EmbeddindBytes = 64;
                     Constants.maxbits = 512;
+                } else if (Constants.codebookSize == "4096") {
+                    Constants.EmbeddindBytes = 96;
+                    Constants.maxbits = 768;
                 } else {
                     Constants.EmbeddindBytes = 80;
                     Constants.maxbits = 640;
