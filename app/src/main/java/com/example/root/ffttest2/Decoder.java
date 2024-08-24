@@ -328,12 +328,14 @@ public class Decoder {
         else {
             // method 5
             int time_offset = 0;
-            double[] data_remove_preamble_shift = Utils.segment(data, ptime + Constants.ChirpGap + 4 * (Constants.Ns_lora + Constants.Gap) + time_offset, ptime + Constants.ChirpGap + time_offset + (numsyms + 4) * (Constants.Ns_lora + Constants.Gap) - 1);
 
-//            int delay2 = 86;  // for the specific center 0 and offset freq 1k, and FS 48000
             int delay2 = (int) Math.ceil(3.6*Constants.FS/1000.0)-1;
             delay2 = delay2%2 + delay2;
             delay2 = (int) delay2 / 2;
+            double[] data_remove_preamble_shift = Utils.segment(data, ptime + Constants.ChirpGap + 4 * (Constants.Ns_lora + Constants.Gap) + time_offset, ptime + Constants.ChirpGap + time_offset + (numsyms + 4) * (Constants.Ns_lora + Constants.Gap) - 1 + delay2);
+
+//            int delay2 = 86;  // for the specific center 0 and offset freq 1k, and FS 48000
+
             double[][] downversion_preamble = Utils.downversion(data_remove_preamble_shift);
             downversion_preamble[0] = Utils.segment(downversion_preamble[0], delay2, downversion_preamble[0].length-1);
             downversion_preamble[1] = Utils.segment(downversion_preamble[1], delay2, downversion_preamble[1].length-1);
@@ -349,10 +351,19 @@ public class Decoder {
             }
 
             // extract each symbol
+            Utils.logd("ddddebug" + numsyms);
+            Utils.logd("ddddebug" + downversion_preamble[0].length);
+            Utils.logd("ddddebug" + Constants.Ns_lora);
+            Utils.logd("ddddebug" + Constants.Gap);
+
             for (int i = 0; i < numsyms; i++) {
+                if (i == 273) {
+                    Utils.log("273");
+                }
                 double[][] sym = Utils.segment2(downversion_preamble, start, start + Constants.Ns_lora - 1);
                 double[][] sym_downsample = Utils.downsample(sym, 2 * Constants.Sample_Lora, Constants.Ns_lora);
                 start = start + Constants.Ns_lora + Constants.Gap;
+
                 double[] index = Utils.dechirp_test(sym_downsample, false, false);
                 double sym_index = Utils.MaxIndex(index);
                 //double index_tmp_test = (((double)sym_index + 10 * Constants.Sample_Lora -1) / 10)% Constants.Sample_Lora;
