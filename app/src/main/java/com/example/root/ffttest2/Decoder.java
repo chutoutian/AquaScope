@@ -1257,7 +1257,7 @@ public class Decoder {
 
         int[] symbol_remove_preamble = Utils.segment(symbol,4,symbol.length-1);
         // gray coding
-        int[] symbol_g = SymbolGeneration.gray_decoding2(symbol_remove_preamble);
+        int[] symbol_g = SymbolGeneration.gray_coding(symbol_remove_preamble);
         // deinterleaving
         int[] codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, 0, 8),  Constants.SF - 2);
         // hamming decoding

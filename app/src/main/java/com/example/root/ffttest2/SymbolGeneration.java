@@ -655,7 +655,7 @@ public class SymbolGeneration {
             int[] part = diag_interleave(subset, rdd);
             symbols_i = Utils.concatArrays_int(symbols_i, part);
         }
-        int[] symbols = gray_coding(symbols_i);
+        int[] symbols = gray_decoding2(symbols_i);
 
         return symbols;
 
