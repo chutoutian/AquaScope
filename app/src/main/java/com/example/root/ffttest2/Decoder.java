@@ -1280,7 +1280,7 @@ public class Decoder {
 
         for (int i = 8; i < symbol_g.length - rdd + 1; i += rdd)
         {
-            codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, i, i+ rdd ), Constants.SF - 2 * Constants.LDR);
+            codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, i, i+ rdd ), Constants.SF);
 //            int[] tem_nibbles = SymbolGeneration.hamming_decode(codewords,rdd);
             result = SymbolGeneration.hamming_decode2(codewords, rdd);
             int[] tem_nibbles = result.get("nibbles");
