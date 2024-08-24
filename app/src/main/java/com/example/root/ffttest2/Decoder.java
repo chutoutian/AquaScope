@@ -351,10 +351,10 @@ public class Decoder {
             }
 
             // extract each symbol
-            Utils.logd("ddddebug" + numsyms);
-            Utils.logd("ddddebug" + downversion_preamble[0].length);
-            Utils.logd("ddddebug" + Constants.Ns_lora);
-            Utils.logd("ddddebug" + Constants.Gap);
+//            Utils.logd("ddddebug" + numsyms);
+//            Utils.logd("ddddebug" + downversion_preamble[0].length);
+//            Utils.logd("ddddebug" + Constants.Ns_lora);
+//            Utils.logd("ddddebug" + Constants.Gap);
 
             for (int i = 0; i < numsyms; i++) {
                 if (i == 273) {
