@@ -65,6 +65,10 @@ import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+
+import java.util.AbstractMap;
+import java.util.Map;
+
 public class Utils {
 
     // Used to load the 'native-lib' library on application startup.
@@ -74,6 +78,109 @@ public class Utils {
 
     // Convert a Bitmap to a binary string
 
+    public static String generateErrorBitString(int[] parityCheck) {
+        StringBuilder errorBitStringBuilder = new StringBuilder();
+
+        // Loop through each nibble in parityCheck
+        for (int p : parityCheck) {
+            int wrongBit;
+
+            // Determine which bit is wrong using parity fix logic
+            if (p == 3) {  // 011 wrong b3
+                wrongBit = 4;
+            } else if (p == 5) {  // 101 wrong b4
+                wrongBit = 8;
+            } else if (p == 6) {  // 110 wrong b1
+                wrongBit = 1;
+            } else if (p == 7) {  // 111 wrong b2
+                wrongBit = 2;
+            } else {
+                wrongBit = 0;
+            }
+
+            // Convert the wrongBit to a binary string (4 bits)
+            String bitString = String.format("%04d", Integer.parseInt(Integer.toBinaryString(wrongBit)));
+
+            // Append the bit string to the builder
+            errorBitStringBuilder.append(bitString);
+        }
+
+        // Convert the StringBuilder to a string representing the error bits for all nibbles
+        return errorBitStringBuilder.toString();
+    }
+
+    public static Map.Entry<long[], String> Bytes2Embedding2(byte[] bytes, String errorMask) {
+        // Step 1: Convert bytes to a binary string
+        StringBuilder binaryStringBuilder = new StringBuilder();
+        for (byte b : bytes) {
+            String binaryString = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+            binaryStringBuilder.append(binaryString);
+        }
+
+        // The complete binary string
+        String allBits = binaryStringBuilder.toString();
+        String allCorrectnessBits = errorMask;
+
+        StringBuilder errorBitsBuilder = new StringBuilder();
+
+        long[] longs;
+
+        if (Constants.codebookSize == "1024") {
+            int numInts = allBits.length() / 10; // Calculate how many 10-bit integers are needed
+
+            longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 10 <= allBits.length(); i += 10, intIndex++) {
+                String intString = allBits.substring(i, i + 10);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+
+                String correctnessBits = allCorrectnessBits.substring(i, i + 10);
+                errorBitsBuilder.append(correctnessBits.contains("1") ? "1" : "0");
+            }
+
+            //return longs;
+        } else if (Constants.codebookSize == "256") {
+            // 0711 need to adapt to 8 bit
+            int numInts = allBits.length() / 8; // Calculate how many 8-bit integers are needed
+
+            longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 8 <= allBits.length(); i += 8, intIndex++) {
+                String intString = allBits.substring(i, i + 8);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+            }
+
+            //return longs;
+        } else if (Constants.codebookSize == "4096") {
+            // 0711 need to adapt to 8 bit
+            int numInts = allBits.length() / 12; // Calculate how many 8-bit integers are needed
+
+            longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 12 <= allBits.length(); i += 12, intIndex++) {
+                String intString = allBits.substring(i, i + 12);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+                String correctnessBits = allCorrectnessBits.substring(i, i + 12);
+                errorBitsBuilder.append(correctnessBits.contains("1") ? "1" : "0");
+            }
+
+        } else {
+            int numInts = allBits.length() / 10; // Calculate how many 10-bit integers are needed
+
+            longs = new long[numInts];
+            for (int i = 0, intIndex = 0; i + 10 <= allBits.length(); i += 10, intIndex++) {
+                String intString = allBits.substring(i, i + 10);
+                long newLong = Long.parseLong(intString, 2);
+                longs[intIndex] = newLong;
+            }
+
+            //return longs;
+        }
+        String errorBits = errorBitsBuilder.toString();
+
+        // Return both the longs array and the error bits string
+        return new AbstractMap.SimpleEntry<>(longs, errorBits);
+    }
 
     public static String convertByteArrayToBitString(byte[] byteArray) {
         StringBuilder bitString = new StringBuilder();
@@ -3772,6 +3879,9 @@ public class Utils {
     public static void stop_sensor() {
         Constants.sensorFlag = false;
     }
+
+
+
 
 
 

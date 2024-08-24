@@ -165,15 +165,16 @@
             android:layout_height="180dp"
             android:layout_marginTop="16dp"
             android:contentDescription="@string/image_view"
-            app:layout_constraintTop_toBottomOf="@+id/chirptypecontroller" />
+            app:layout_constraintTop_toBottomOf="@+id/symbol_error_count"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <ImageView
             android:id="@+id/imageView_fish2"
             android:layout_width="180dp"
             android:layout_height="180dp"
             android:contentDescription="@string/image_view"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/imageView_fish" />
+            app:layout_constraintTop_toTopOf="@+id/imageView_fish"
+            app:layout_constraintEnd_toEndOf="parent" />
 
 
         <!--    <GridLayout-->
@@ -1395,6 +1396,22 @@
             android:layout_height="35dp"
             android:text="  UseLinear"
             app:layout_constraintTop_toBottomOf="@+id/logcontroller" />
+
+        <TextView
+            android:id="@+id/embedding_error_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Embedding Error Count: 0"
+            app:layout_constraintTop_toBottomOf="@+id/chirptypecontroller"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/symbol_error_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Symbol Error Count: 0"
+            app:layout_constraintTop_toBottomOf="@+id/embedding_error_count"
+            app:layout_constraintStart_toStartOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

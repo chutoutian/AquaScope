@@ -3,6 +3,7 @@ package com.example.root.ffttest2;
 import android.app.Activity;
 import android.os.SystemClock;
 
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
 
@@ -10,6 +11,8 @@ import Jama.Matrix;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
+import java.util.HashMap;
+import java.util.Map;
 public class Decoder {
     // for ofdm decoding
     public static long[]  decode_helper(Activity av, double[] data, int[] valid_bins, int m_attempt) {
@@ -157,6 +160,39 @@ public class Decoder {
         return embedding;
     }
 
+    public static void update_symbol_error_count(int[] rx_symbols) {
+        int[] new_rx_symbols = Arrays.copyOfRange(rx_symbols, 4, rx_symbols.length);
+
+        int diff_count_raw = countDifferentElementsAtSamePosition_Symbol(Constants.gt_symbols_for_text_exp, new_rx_symbols);
+
+        Constants.symbol_error_count_view.post(new Runnable() {
+            @Override
+            public void run() {
+                Constants.symbol_error_count_view.setText(
+                        "Symbol Error Count: " + diff_count_raw + " / " + new_rx_symbols.length +
+                                " (" + Math.round((diff_count_raw / (float) new_rx_symbols.length) * 10000.0f) / 100.0f + "%)"
+                );            }
+        });
+    }
+
+
+    public static int countDifferentElementsAtSamePosition_Symbol(int[] array1, int[] array2) {
+        // Ensure both arrays have the same length to compare corresponding elements
+        if (array1.length != array2.length) {
+            throw new IllegalArgumentException("Arrays must be of the same length");
+        }
+
+        int count = 0;
+
+        // Iterate through the arrays and compare elements at the same index
+        for (int i = 0; i < array1.length; i++) {
+            if (array1[i] != array2[i]) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     public static int[] demodulate(double[] data, int m_attempt)
     {
         // preamble for detection
@@ -179,11 +215,8 @@ public class Decoder {
                     Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
         }
 
-
         // TODO improve performance
         double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+4) * (Constants.Ns_lora + Constants.Gap)-1);
-
-
 
         // new 0711 we will not use the timeoffset in our latest method
         if (Constants.scheme == Constants.Modulation.LoRa && Constants.currentEqualizationMethod != Constants.NewEqualizationMethod.method5_tv_w_to_range) {
@@ -288,6 +321,7 @@ public class Decoder {
                         Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
             }
 
+            update_symbol_error_count(detected_index_cfo);
 
             return detected_index_cfo;
         }
@@ -338,11 +372,13 @@ public class Decoder {
                 if (all_symbol_cfo.endsWith(",")) {
                     all_symbol_cfo = all_symbol_cfo.substring(0, all_symbol_cfo.length() - 1);
                 }
+
+
                 FileOperations.writetofile(MainActivity.av, all_symbol_cfo + "",
                         Utils.genName(Constants.SignalType.Rx_Symbols, m_attempt) + ".txt");
             }
 
-
+            update_symbol_error_count(detected_index_cfo);
             return detected_index_cfo;
 
         }
@@ -493,7 +529,9 @@ public class Decoder {
         return doubleArray;
     }
 
-    public static long[] decoding(Activity av, double[] received_data, int m_attempt)
+
+
+    public static Map.Entry<long[], String> decoding(Activity av, double[] received_data, int m_attempt)
     {
         //received_data = Utils.filter(received_data);
         // save data before time domain equalization
@@ -1214,24 +1252,33 @@ public class Decoder {
         Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver demodulate (ms): " + inferenceTime_demodulate + "\n";
         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
-        // receiver t4 decode signal
+        // receiver t4 decode signal //TODO: change here with error detection
         final long startTime_decode_signal = SystemClock.elapsedRealtime();
 
         int[] symbol_remove_preamble = Utils.segment(symbol,4,symbol.length-1);
         // gray coding
-        int[] symbol_g = SymbolGeneration.gray_coding(symbol_remove_preamble);
+        int[] symbol_g = SymbolGeneration.gray_decoding2(symbol_remove_preamble);
         // deinterleaving
         int[] codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, 0, 8),  Constants.SF - 2);
         // hamming decoding
-        int[] nibbles = SymbolGeneration.hamming_decode(codewords,8);
+//        int[] nibbles = SymbolGeneration.hamming_decode(codewords,8);
+        Map<String, int[]> result = SymbolGeneration.hamming_decode2(codewords, 8); // TODO: rdd
+        int[] nibbles = result.get("nibbles");
+        int[] parityCheck = result.get("parity_check");
         int rdd = Constants.CodeRate_LoRA + 4;
+
         for (int i = 8; i < symbol_g.length - rdd + 1; i += rdd)
         {
             codewords = SymbolGeneration.diag_deinterleave(Arrays.copyOfRange(symbol_g, i, i+ rdd ), Constants.SF - 2 * Constants.LDR);
-            int[] tem_nibbles = SymbolGeneration.hamming_decode(codewords,rdd);
+//            int[] tem_nibbles = SymbolGeneration.hamming_decode(codewords,rdd);
+            result = SymbolGeneration.hamming_decode2(codewords, rdd);
+            int[] tem_nibbles = result.get("nibbles");
+            int[] tem_parityCheck = result.get("parity_check");
             nibbles = Utils.concatArrays_int(nibbles, tem_nibbles);
+            parityCheck = Utils.concatArrays_int(parityCheck,tem_parityCheck);
         }
         // convert nibbles to the bytes
+        String errorMask = Utils.generateErrorBitString(parityCheck);
         int byteCount = Math.min(255,nibbles.length /2 );
         byte[] bytes = new byte[byteCount];
         for (int i = 0; i < byteCount; i++) {
@@ -1248,7 +1295,10 @@ public class Decoder {
         byte[] data = SymbolGeneration.dewhiten(Arrays.copyOfRange(bytes, 0, len ));
 
 
-        long[] embedding = Utils.Bytes2Embedding(data);
+        Map.Entry<long[], String> result1 = Utils.Bytes2Embedding2(data, errorMask);
+        long[] embedding = result1.getKey();
+        String errorBits = result1.getValue();
+//        long[] embedding = Utils.Bytes2Embedding(data);
 
         // receiver t4 decode signal
         final long inferenceTime_decode_signal = SystemClock.elapsedRealtime() - startTime_decode_signal;
@@ -1261,11 +1311,16 @@ public class Decoder {
                 all_embedding += (embedding[i] + ",");
             }
             Utils.log("all_embedding =>" + all_embedding);
+            Utils.log("mask of detected wrong embeddings =>" + errorBits);
             if (all_embedding.endsWith(",")) {
                 all_embedding = all_embedding.substring(0, all_embedding.length() - 1);
             }
             FileOperations.writetofile(MainActivity.av, Arrays.toString(embedding),
                     Utils.genName(Constants.SignalType.Rx_Embedding, m_attempt) + ".txt");
+
+            // write mask
+            FileOperations.writetofile(MainActivity.av, errorBits,
+                    Utils.genName(Constants.SignalType.Rx_Mask, m_attempt) + ".txt");
         }
 
         String finalMessage = "Embedding received #" + m_attempt;
@@ -1281,7 +1336,7 @@ public class Decoder {
             }
         });
 
-        return embedding;
+        return new AbstractMap.SimpleEntry<>(embedding, errorBits);
     }
 
 //    public static int detect(int start_index, double[] sampled_signal){

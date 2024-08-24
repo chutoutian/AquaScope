@@ -12,6 +12,8 @@ import android.view.View;
 import android.widget.Button;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
+import java.util.AbstractMap;
+import java.util.Map;
 
 import org.pytorch.IValue;
 import org.pytorch.Tensor;
@@ -20,7 +22,7 @@ import org.pytorch.torchvision.TensorImageUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-
+import java.util.List;
 public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
     Activity av;
     int num_measurements = 0;
@@ -220,7 +222,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 // overwrite more settings
                 Constants.volume = 1.0f;
-                Constants.codeRate = Constants.CodeRate.C4_8;
+                Constants.codeRate = Constants.CodeRate.C4_8; //TODO: this now is hardcoded
                 Constants.expMode = Constants.Experiment.dataCollection;
 
                 Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
@@ -305,7 +307,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             else if (Constants.user.equals(Constants.User.Bob)) {
                 // overwrite more settings
                 Constants.volume = 1.0f;
-                Constants.codeRate = Constants.CodeRate.C4_8;
+                Constants.codeRate = Constants.CodeRate.C4_8; // TODO: This now is hardcoded
                 Constants.expMode = Constants.Experiment.dataCollection;
 
                 Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
@@ -449,6 +451,37 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         });
     }
 
+    public static void update_embedding_error_count(long[] embeddings, long[]prediction) {
+        int diff_count_raw = countDifferentElementsAtSamePosition(Constants.gt_embeddings_for_text_exp, embeddings);
+
+        int diff_count_recover = countDifferentElementsAtSamePosition(Constants.gt_embeddings_for_text_exp, prediction);
+        Constants.embedding_error_count_view.post(new Runnable() {
+            @Override
+            public void run() {
+                Constants.embedding_error_count_view.setText(
+                        "Embedding Error Count: " + diff_count_raw + "  " + diff_count_recover +
+                                " (" + Math.round((diff_count_recover / (float) embeddings.length) * 10000.0f) / 100.0f + "%)"
+                );            }
+        });
+    }
+
+
+    public static int countDifferentElementsAtSamePosition(long[] array1, long[] array2) {
+        // Ensure both arrays have the same length to compare corresponding elements
+        if (array1.length != array2.length) {
+            throw new IllegalArgumentException("Arrays must be of the same length");
+        }
+
+        int count = 0;
+
+        // Iterate through the arrays and compare elements at the same index
+        for (int i = 0; i < array1.length; i++) {
+            if (array1[i] != array2[i]) {
+                count++;
+            }
+        }
+        return count;
+    }
     // encode, generate signal, send signal
     public int work(int m_attempt, boolean skipSleep) {
         if (Constants.scheme == Constants.Modulation.OFDM_freq_adapt) {
@@ -578,6 +611,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     // decode 2, after recover
                     Utils.decode_image_receiver(prediction, mImageView2, false);
 
+                    update_embedding_error_count(embeddings, prediction);
+
                     // save receiver latency to file
                     Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
                     FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
@@ -614,16 +649,27 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     if (Constants.scheme == Constants.Modulation.LoRa)
                     {
                         // get embedding
-                        long[] embeddings = Decoder.decoding(av,data_signal,m_attempt);
+                        Map.Entry<long[], String> result = Decoder.decoding(av, data_signal, m_attempt);
+                        long[] embeddings = result.getKey();
+                        String errorbits = result.getValue();
+                        long[] masked_embeddings = Arrays.copyOf(embeddings, embeddings.length);
+
+                        for (int i = 0; i < errorbits.length(); i++) {
+                            if (errorbits.charAt(i) == '1') {  // Changed "1" to '1' since it's a char comparison
+                                masked_embeddings[i] = 4096;   // Fixed the variable name from masked_embeddisngs to masked_embeddings
+                            }
+                        }
 
                         // recover
-                        long[] prediction = Utils.transformer_recover(embeddings);
+                        long[] prediction = Utils.transformer_recover(masked_embeddings);
 
                         // decode 1, before recover
                         Utils.decode_image_receiver(embeddings, mImageView, true);
 
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                        update_embedding_error_count(embeddings, prediction);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -647,6 +693,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                        update_embedding_error_count(embeddings, prediction);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -829,6 +877,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     // decode 2, after recover
                     Utils.decode_image_receiver(prediction, mImageView2, false);
 
+                    update_embedding_error_count(embeddings, prediction);
+
                     // save receiver latency to file
                     Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
                     FileOperations.writetofile(MainActivity.av, Constants.Receiver_Latency_Str,
@@ -867,16 +917,27 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     if (Constants.scheme == Constants.Modulation.LoRa)
                     {
                         // get embedding
-                        long[] embeddings = Decoder.decoding(av,data_signal,m_attempt);
+                        Map.Entry<long[], String> result = Decoder.decoding(av, data_signal, m_attempt);
+                        long[] embeddings = result.getKey();
+                        String errorbits = result.getValue();
+                        long[] masked_embeddings = Arrays.copyOf(embeddings, embeddings.length);
+
+                        for (int i = 0; i < errorbits.length(); i++) {
+                            if (errorbits.charAt(i) == '1') {  // Changed "1" to '1' since it's a char comparison
+                                masked_embeddings[i] = 4096;   // Fixed the variable name from masked_embeddisngs to masked_embeddings
+                            }
+                        }
 
                         // recover
-                        long[] prediction = Utils.transformer_recover(embeddings);
+                        long[] prediction = Utils.transformer_recover(masked_embeddings);
 
                         // decode 1, before recover
                         Utils.decode_image_receiver(embeddings, mImageView, true);
 
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                        update_embedding_error_count(embeddings, prediction);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -900,6 +961,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
+
+                        update_embedding_error_count(embeddings, prediction);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);

@@ -1380,6 +1380,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                 });
 
+        Constants.symbol_error_count_view = findViewById(R.id.symbol_error_count);
+        Constants.embedding_error_count_view = findViewById(R.id.embedding_error_count);
         mImageView = findViewById(R.id.imageView_fish);
         mImageView2 = findViewById(R.id.imageView_fish2);
         Constants.logswitch = findViewById(R.id.logcontroller);

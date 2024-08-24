@@ -110,7 +110,7 @@ public class Constants {
     }};
 
     public static float[] VolumeCandidates = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
-    public static int[] SF_Candidates = {3,4,5,6,7};
+    public static int[] SF_Candidates = {3, 4, 5, 6, 7};
     public static int[] FC_Candidates = {2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000};
     public static int[] BW_Candidates = {1000, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000};
     public static int[] SendDelay_Candidates = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 12000, 15000};
@@ -121,6 +121,7 @@ public class Constants {
     public static int spinnerStateChangeSleepTime = 300;
 
     public static boolean isLinearChirp = true;
+
     public enum NewEqualizationMethod {
         nouse, // do not use any equalization
         method1_once, // only do equalization at the beginning, no time varied channel consideration
@@ -129,6 +130,7 @@ public class Constants {
         method4_tv_w_to, // time varied channel considered, insert new preambles, time correct, resample
         method5_tv_w_to_range // most advanced with range limit
     }
+
     public static NewEqualizationMethod currentEqualizationMethod = NewEqualizationMethod.nouse;
 
     public static double[] NonlinearCoeff = {1, 0};
@@ -165,11 +167,11 @@ public class Constants {
     public static int datacollection_mode_switch_time = 20;
     public static int[] datacollection_time_delay_map;
     public static int[] datacollection_time_out_map;
-    public static int datacollection_current_instance_index=0;
+    public static int datacollection_current_instance_index = 0;
 
     public static View overlayView = null;
 
-//    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"}; // first 3 time are predicable
+    //    public static String[] all_datacollection_schemes = {"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"}; // first 3 time are predicable
     public static String[] all_datacollection_schemes = {"proposed"};
 
 
@@ -195,7 +197,20 @@ public class Constants {
 
     public static double soundSpeed = 340;
 
+    public static TextView symbol_error_count_view = null;
+    public static TextView embedding_error_count_view = null;
+    public static long[] gt_embeddings_for_text_exp = {
+            2591L, 1405L, 3845L, 1339L, 3290L, 3343L, 3995L, 3843L, 3336L, 1405L, 1469L, 3393L,
+            1976L, 153L, 3244L, 726L, 3927L, 3363L, 1666L, 1987L, 3742L, 1396L, 1531L, 816L,
+            156L, 2433L, 3713L, 1359L, 3753L, 3497L, 2845L, 608L, 214L, 3585L, 307L, 2149L,
+            28L, 1717L, 57L, 2489L, 3791L, 1128L, 160L, 1681L, 3730L, 3360L, 2776L, 689L, 958L,
+            2369L, 1318L, 1514L, 166L, 1336L, 1901L, 3724L, 1175L, 2145L, 3382L, 1449L, 433L,
+            3813L, 1313L, 1412L
+    };
 
+    public static int[] gt_symbols_for_text_exp = {
+            1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 24, 2, 14, 5, 20, 15, 11, 23, 10, 24, 28, 0, 1, 1, 4, 28, 11, 3, 28, 24, 22, 9, 8, 15, 0, 20, 13, 17, 15, 6, 24, 23, 28, 14, 4, 17, 1, 7, 17, 12, 4, 30, 28, 19, 0, 17, 11, 10, 13, 15, 23, 12, 5, 24, 5, 3, 1, 5, 25, 29, 23, 6, 23, 8, 18, 0, 21, 4, 19, 27, 12, 29, 20, 17, 1, 21, 25, 20, 23, 24, 22, 14, 29, 6, 22, 9, 22, 1, 30, 28, 1, 11, 28, 13, 23, 1, 8, 28, 10, 0, 12, 2, 13, 30, 26, 14, 5, 21, 0, 19, 11, 24, 13, 4, 4, 4, 5, 12, 28, 28, 10, 29, 20, 4, 8, 7, 29, 3, 2, 13, 24, 27, 22, 14, 13, 29, 21, 30, 13, 31, 0, 29, 7, 26, 3, 29, 2, 3, 20, 5, 13, 17, 28, 13, 27, 11, 2, 12, 11, 9, 27, 28, 18, 31, 15, 23, 1, 28, 7, 20, 31, 5, 17, 5, 5, 24, 21, 19, 19, 30, 26, 26, 8, 22, 17, 14, 24, 1, 25, 26, 17, 15, 4, 7, 20, 0, 15, 15, 12, 29, 18, 21, 29, 13, 10, 20, 10, 11, 23, 20, 28, 18, 31, 17, 17, 24, 6, 3, 8, 9, 1, 4, 21, 6, 13, 25, 27, 29, 5, 28, 3, 23, 30, 3, 2, 13, 0, 26, 3, 24, 13, 12, 31, 10, 8, 23, 22, 7, 12, 0, 27, 19, 13, 23, 11, 13, 23, 12, 5, 29, 15, 27, 13
+    };
 
     // ****************************** End of Codec Related Global Variables ******************************
 
@@ -253,6 +268,7 @@ public class Constants {
         Rx_Symbols,
         Sent_Symbols,
         Rx_Embedding,
+        Rx_Mask,
         Battery_Level,
         Timestamp,
         Before_Equalization_Rx_Raw_Symbols,
