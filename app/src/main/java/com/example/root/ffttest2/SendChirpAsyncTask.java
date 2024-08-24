@@ -451,7 +451,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
         });
     }
 
-    public static void update_embedding_error_count(long[] embeddings, long[]prediction) {
+    public static void update_embedding_error_count(long[] embeddings, long[]prediction, int mask_count) {
         int diff_count_raw = countDifferentElementsAtSamePosition(Constants.gt_embeddings_for_text_exp, embeddings);
 
         int diff_count_recover = countDifferentElementsAtSamePosition(Constants.gt_embeddings_for_text_exp, prediction);
@@ -460,7 +460,8 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             public void run() {
                 Constants.embedding_error_count_view.setText(
                         "Embedding Error Count: " + diff_count_raw + "  " + diff_count_recover +
-                                " (" + Math.round((diff_count_recover / (float) embeddings.length) * 10000.0f) / 100.0f + "%)"
+                                " (" + Math.round((diff_count_recover / (float) embeddings.length) * 10000.0f) / 100.0f + "%) " +
+                                "Mask_count: " + mask_count
                 );            }
         });
     }
@@ -611,7 +612,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     // decode 2, after recover
                     Utils.decode_image_receiver(prediction, mImageView2, false);
 
-                    update_embedding_error_count(embeddings, prediction);
+                    update_embedding_error_count(embeddings, prediction, 0);
 
                     // save receiver latency to file
                     Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -653,9 +654,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         long[] embeddings = result.getKey();
                         String errorbits = result.getValue();
                         long[] masked_embeddings = Arrays.copyOf(embeddings, embeddings.length);
-
+                        int mask_count = 0;
                         for (int i = 0; i < errorbits.length(); i++) {
                             if (errorbits.charAt(i) == '1') {  // Changed "1" to '1' since it's a char comparison
+                                mask_count = mask_count + 1;
                                 masked_embeddings[i] = 4096;   // Fixed the variable name from masked_embeddisngs to masked_embeddings
                             }
                         }
@@ -669,7 +671,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
 
-                        update_embedding_error_count(embeddings, prediction);
+                        update_embedding_error_count(embeddings, prediction, mask_count);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -694,7 +696,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
 
-                        update_embedding_error_count(embeddings, prediction);
+                        update_embedding_error_count(embeddings, prediction, 0);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -877,7 +879,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                     // decode 2, after recover
                     Utils.decode_image_receiver(prediction, mImageView2, false);
 
-                    update_embedding_error_count(embeddings, prediction);
+                    update_embedding_error_count(embeddings, prediction, 0);
 
                     // save receiver latency to file
                     Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -921,9 +923,10 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         long[] embeddings = result.getKey();
                         String errorbits = result.getValue();
                         long[] masked_embeddings = Arrays.copyOf(embeddings, embeddings.length);
-
+                        int mask_count = 0;
                         for (int i = 0; i < errorbits.length(); i++) {
                             if (errorbits.charAt(i) == '1') {  // Changed "1" to '1' since it's a char comparison
+                                mask_count += 1;
                                 masked_embeddings[i] = 4096;   // Fixed the variable name from masked_embeddisngs to masked_embeddings
                             }
                         }
@@ -937,7 +940,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
 
-                        update_embedding_error_count(embeddings, prediction);
+                        update_embedding_error_count(embeddings, prediction, mask_count);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
@@ -962,7 +965,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                         // decode 2, after recover
                         Utils.decode_image_receiver(prediction, mImageView2, false);
 
-                        update_embedding_error_count(embeddings, prediction);
+                        update_embedding_error_count(embeddings, prediction, 0);
 
                         // save receiver latency to file
                         Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
