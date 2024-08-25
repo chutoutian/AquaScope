@@ -200,20 +200,7 @@ public class Decoder {
         int start = ptime+Constants.ChirpGap;
         int numsyms = SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes);
 
-        // write into files
-        if (Constants.allowLog) {
-            StringBuilder rxRawSymbolBuilder = new StringBuilder();
-            for (int j = 0; j < data.length; j++) {
-                rxRawSymbolBuilder.append(data[j]);
-                rxRawSymbolBuilder.append("\n");
-            }
-            String rx_raw_symbol = rxRawSymbolBuilder.toString();
-//            if (rx_raw_symbol.endsWith(",")) {
-//                rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
-//            }
-            FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
-                    Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
-        }
+
 
         // TODO improve performance
         double[] data_remove_preamble = Utils.segment(data,start,start + (numsyms+4) * (Constants.Ns_lora + Constants.Gap)-1);
@@ -357,9 +344,6 @@ public class Decoder {
 //            Utils.logd("ddddebug" + Constants.Gap);
 
             for (int i = 0; i < numsyms; i++) {
-                if (i == 273) {
-                    Utils.log("273");
-                }
                 double[][] sym = Utils.segment2(downversion_preamble, start, start + Constants.Ns_lora - 1);
                 double[][] sym_downsample = Utils.downsample(sym, 2 * Constants.Sample_Lora, Constants.Ns_lora);
                 start = start + Constants.Ns_lora + Constants.Gap;
@@ -1104,8 +1088,8 @@ public class Decoder {
             int to_change_limit = (int)Math.ceil((double)section_len / (double)Constants.FS * max_relative_speed / sound_speed * (double)Constants.FS * to_change_limit_factor);
 
 
-            Utils.logd("num symbol " + SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes));
-            Utils.logd("num sections " + num_sections);
+//            Utils.logd("num symbol " + SymbolGeneration.calc_sym_num(Constants.EmbeddindBytes));
+//            Utils.logd("num sections " + num_sections);
             Matrix symbolTx = new Matrix(sendingSignalArray, 1);
             int start = 0;
             start = ptime+Constants.ChirpGap; // skip preambles
@@ -1254,6 +1238,22 @@ public class Decoder {
             received_data = output_data;
         }
         // receiver t3 demodulate
+
+        // write into files demodulate input equalized raw symbols
+        if (Constants.allowLog) {
+            StringBuilder rxRawSymbolBuilder = new StringBuilder();
+            for (int j = 0; j < received_data.length; j++) {
+                rxRawSymbolBuilder.append(received_data[j]);
+                rxRawSymbolBuilder.append("\n");
+            }
+            String rx_raw_symbol = rxRawSymbolBuilder.toString();
+//            if (rx_raw_symbol.endsWith(",")) {
+//                rx_raw_symbol = rx_raw_symbol.substring(0, rx_raw_symbol.length() - 1);
+//            }
+            FileOperations.writetofile(MainActivity.av, rx_raw_symbol + "",
+                    Utils.genName(Constants.SignalType.Rx_Raw_Symbols, m_attempt) + ".txt");
+        }
+
         final long startTime_demodulate = SystemClock.elapsedRealtime();
 
         int[] symbol = demodulate(received_data,m_attempt);

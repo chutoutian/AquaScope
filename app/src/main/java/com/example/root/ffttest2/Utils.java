@@ -2275,9 +2275,10 @@ public class Utils {
             final long inferenceTime_receive_signal = SystemClock.elapsedRealtime() - startTime_receive_signal;
             Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
             Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
+            double[] truncated_sounding_signal = Arrays.copyOf(sounding_signal, sounding_signal_counter + 500); // 500 for extra length for filtering
 
 
-            return sounding_signal;
+            return truncated_sounding_signal;
 
         }
         return null;
@@ -2528,8 +2529,10 @@ public class Utils {
             Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
             Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
+            double[] truncated_sounding_signal = Arrays.copyOf(sounding_signal, sounding_signal_counter + 500); // 500 for extra length for filtering
 
-            return sounding_signal;
+
+            return truncated_sounding_signal;
 
         }
         return null;
