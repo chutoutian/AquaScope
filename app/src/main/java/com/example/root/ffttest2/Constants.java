@@ -314,7 +314,7 @@ public class Constants {
 
     public static int Sample_Lora = 32;
 
-    public static int CodeRate_LoRA = 4; // (code rate = 4/8 (1:4/5 2:4/6 3:4/7 4:4/8))
+    public static int CodeRate_LoRA = 3; // (code rate = 4/8 (1:4/5 2:4/6 3:4/7 4:4/8))
     //public static int LDR = 0;
 
     public static int BW = 2000; // bandwidth 125kHz which should be changed in the acoustic system (12.5kHz for testing)
