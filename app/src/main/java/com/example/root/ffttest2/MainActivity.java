@@ -272,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_env, new String[]{"air", "bridge", "pool", "boat"});
         setupSpinner(settingsDialog, R.id.spinner_distance, new String[]{"1m", "3m", "5m", "10m", "15m", "20m"});
         setupSpinner(settingsDialog, R.id.spinner_mobility, new String[]{"static", "slow", "fast"});
-        setupSpinner(settingsDialog, R.id.spinner_depth, new String[]{"1m", "2m", "5m"});
+        setupSpinner(settingsDialog, R.id.spinner_depth, new String[]{"0dot5m", "1dot5m", "2dot5m", "1m", "2m", "5m"});
         setupSpinner(settingsDialog, R.id.spinner_orientation, new String[]{"0", "90", "180"});
         setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "2", "5", "10", "20", "30"});
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
