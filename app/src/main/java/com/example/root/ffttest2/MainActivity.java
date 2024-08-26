@@ -278,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
         setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
         setupSpinner(settingsDialog, R.id.spinner_gap_setting, new String[]{"0", "5", "10", "25", "50"});
-        setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_ofdmA", "css_ofdmWO","all"});
+        setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_ofdmA", "css_ofdmWO","all", "no_ofdmall"});
         setupSpinner(settingsDialog, R.id.spinner_cbsize_setting, new String[]{"4096", "1024", "256"});
 
 
@@ -467,6 +467,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                 break;
                             case "all":
                                 Constants.all_datacollection_schemes = new String[]{"proposed", "css", "ofdm_wo_adapt", "ofdm_adapt"};
+                                break;
+                            case "no_ofdmall":
+                                Constants.all_datacollection_schemes = new String[]{"proposed", "css", "ofdm_adapt"};
                                 break;
                             default:
                                 Constants.all_datacollection_schemes = new String[]{"proposed"};
