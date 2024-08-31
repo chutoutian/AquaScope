@@ -274,11 +274,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupSpinner(settingsDialog, R.id.spinner_mobility, new String[]{"static", "slow", "fast"});
         setupSpinner(settingsDialog, R.id.spinner_depth, new String[]{"0dot5m", "1dot5m", "2dot5m", "1m", "2m", "5m"});
         setupSpinner(settingsDialog, R.id.spinner_orientation, new String[]{"0", "90", "180"});
-        setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "2", "5", "10", "20", "30"});
+        setupSpinner(settingsDialog, R.id.spinner_times, new String[]{"1", "2", "3", "5", "10", "20", "30"});
         setupSpinner(settingsDialog, R.id.spinner_imagecount, new String[]{"1", "2", "3", "4", "5"});
         setupSpinner(settingsDialog, R.id.spinner_init_time_delay, new String[]{"25", "10", "40", "50", "100"});
         setupSpinner(settingsDialog, R.id.spinner_gap_setting, new String[]{"0", "5", "10", "25", "50"});
-        setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_ofdmA", "css_ofdmWO","all", "no_ofdmall"});
+        setupSpinner(settingsDialog, R.id.spinner_method_setting, new String[]{"proposed", "ofdmA", "proposed_css", "proposed_ofdmA", "css_ofdmWO","all", "no_ofdmall", "css"});
         setupSpinner(settingsDialog, R.id.spinner_cbsize_setting, new String[]{"4096", "1024", "256"});
 
 
@@ -470,6 +470,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                 break;
                             case "no_ofdmall":
                                 Constants.all_datacollection_schemes = new String[]{"proposed", "css", "ofdm_adapt"};
+                                break;
+                            case "proposed_css":
+                                Constants.all_datacollection_schemes = new String[]{"proposed", "css"};
+                                break;
+                            case "css":
+                                Constants.all_datacollection_schemes = new String[]{"css"};
                                 break;
                             default:
                                 Constants.all_datacollection_schemes = new String[]{"proposed"};

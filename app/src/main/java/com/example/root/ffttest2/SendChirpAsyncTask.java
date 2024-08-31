@@ -222,7 +222,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
 
                 // overwrite more settings
                 Constants.volume = 1.0f;
-                Constants.codeRate = Constants.CodeRate.C4_8; //TODO: this now is hardcoded
+//                Constants.codeRate = Constants.CodeRate.C4_7; //TODO: this now is hardcoded
                 Constants.expMode = Constants.Experiment.dataCollection;
 
                 Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
@@ -307,7 +307,7 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
             else if (Constants.user.equals(Constants.User.Bob)) {
                 // overwrite more settings
                 Constants.volume = 1.0f;
-                Constants.codeRate = Constants.CodeRate.C4_8; // TODO: This now is hardcoded
+//                Constants.codeRate = Constants.CodeRate.C4_7; // TODO: This now is hardcoded
                 Constants.expMode = Constants.Experiment.dataCollection;
 
                 Constants.datacollection_total_instance_count = Constants.datacollection_times * Constants.datacollection_image_count * Constants.all_datacollection_schemes.length;
@@ -378,6 +378,18 @@ public class SendChirpAsyncTask extends AsyncTask<Void, Void, Void> {
                                     }
                                 }
                             });
+
+                            Constants.overlay_textview.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (res == 0) {
+                                        Constants.embedding_error_count_view.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[saved_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                    } else {
+                                        Constants.embedding_error_count_view.setText(finalCurrent_instance_index + "/" + Constants.datacollection_total_instance_count + "\n" + "Time left: " + (Constants.datacollection_time_out_map[Constants.datacollection_time_out_map.length - 1] - Constants.datacollection_time_out_map[saved_index]) + " Seconds" + "\n" + "image" + image_id + "\n" + scheme + "\n" + Constants.setup_description + "\n" + "# " + finalP + "\n" + Utils.get_receiver_res_str());
+                                    }
+                                }
+                            });
+
                             // move sleep before each speaker play
                             Constants.datacollection_current_instance_index += 1;
                         }

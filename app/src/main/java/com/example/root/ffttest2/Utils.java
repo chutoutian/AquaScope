@@ -2070,6 +2070,8 @@ public class Utils {
                 }
                 else if(Constants.ImagingFish)
                 {
+//                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*300); // TODO this can be more precise freq all and freq adapt will not have the same
+
                     int numrounds = (int) Math.ceil((double)maxcodedbits/2); // TODO: later set the default bandwidth
                     len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*numrounds); // assume smallest bin number is 2, then 1300 / 2 = 650 rounds
 
@@ -2217,7 +2219,7 @@ public class Utils {
                                 }
 
                                 // plot Spec and SNR
-                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
+//                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
 
                                 Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
                             }
@@ -2275,7 +2277,7 @@ public class Utils {
             final long inferenceTime_receive_signal = SystemClock.elapsedRealtime() - startTime_receive_signal;
             Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
             Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
-            double[] truncated_sounding_signal = Arrays.copyOf(sounding_signal, sounding_signal_counter + 500); // 500 for extra length for filtering
+            double[] truncated_sounding_signal = Arrays.copyOf(sounding_signal, sounding_signal_counter + 1500); // 500 for extra length for filtering
 
 
             return truncated_sounding_signal;
@@ -2323,6 +2325,8 @@ public class Utils {
                 }
                 else if(Constants.ImagingFish)
                 {
+//                    len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*300); // TODO this can be more precise freq all and freq adapt will not have the same
+
                     int numrounds = (int) Math.ceil((double)maxcodedbits/2); // 30 bins 1500hz for OFDM_wo_adapt
                     len = ChirpSamples+Constants.ChirpGap+((Constants.Ns+Constants.Cp)*numrounds);
 
@@ -2469,7 +2473,7 @@ public class Utils {
                                 }
 
                                 // plot Spec and SNR
-                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
+//                                ChannelEstimate.extractSignal_withsymbol_helper(MainActivity.av, sounding_signal, 0, m_attempt);
 
                                 Utils.logd("copy ("+xcorr_out[1]+","+filt.length+") to ("+sounding_signal_counter+")");
                             }
@@ -2529,7 +2533,7 @@ public class Utils {
             Constants.Receiver_Latency_Str = Constants.Receiver_Latency_Str + "receiver receive signal (ms): " + inferenceTime_receive_signal + "\n";
             Utils.log("Receiver_Latency_Str: " + Constants.Receiver_Latency_Str);
 
-            double[] truncated_sounding_signal = Arrays.copyOf(sounding_signal, sounding_signal_counter + 500); // 500 for extra length for filtering
+            double[] truncated_sounding_signal = Arrays.copyOf(sounding_signal, sounding_signal_counter + 1500); // 500 for extra length for filtering
 
 
             return truncated_sounding_signal;
