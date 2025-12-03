@@ -1,29 +1,66 @@
+<div align="center">
 
-# Android Studio code
-Real time underwater imaging application using Android studio. The project was originally built with Android Studio Arctic Fox 2022.3.1 Patch 1, and has been tested on Samsung Galaxy S9 phones.
+# AquaScope: Reliable Underwater Image Transmission on Mobile Devices
 
-Press the "Send" button at the bottom in the air and then dip into water. When change the parameters in the interface, I would suggest to restart the app at the receiver or wait for several seconds.
+[📄 Paper (arXiv)](https://arxiv.org/abs/2502.10891) | [🌐 Project Website]() | [📁 Data & Checkpoints (Google Drive)]()
 
-Add additional 5% samples for each symbol and add 4 preambles (up-up-down-down) at both the beginning and the middle of the packet (can be further optimized)
+</div>
 
-The folder `matlab_decoder` contains offline processing codes for the received raw data. For details, please refer to `README.md` in `matlab_decoder`
+---
 
-| System component               | main files and APIs                                                                                                                 |
-|--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| Protocol sequence logic        | SendChirpAsyncTask.java/work<br/>   SendChirpAsyncTask.java/send_data_helper <br/>                                                  |
-| Preamble generation (Alice)    | SymbolGeneration.java/generateDataSymbols_LoRa (convert encoded data to symbol)                                                     |
-| Encoding data packet (Alice)   | SymbolGeneration.java/encode_LoRa (encode data)                                                                                     |
-| Demodulating data packet (Bob) | Decoder.java/demodulate (demodulate the received packet)                                                                            |
-| Decoding packet (Bob)          | Decoder.java/decoding (decode the demodulated symbols)                                                                              |
-| Other key components           | Utils.java/waitForData (logics of listening sounds and detecting the preamble)<br/> Utils.java/GenerateChirp_LoRa (generate chirps) |
+## 🧭 Overview
 
-| PHY Parameters | Explanations                                                                                                                                                                                                                             |
-|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Volume         | The volume of transmitting sound (0-1)                                                                                                                                                                                                   |
-| Send Delay     | Delay (default 3000ms) after pushing the "Send" button which is used to overcome the difficulty of sending message underwater                                                                                                            |
-| BW             | Bandwidth (suggested 2000-4000Hz)                                                                                                                                                                                                        |
-| FC             | Carrier Frequency (suggested 2500 for 2-3khz, and 3000 for 4khz)                                                                                                                                                                         |
-| SF             | Spread Factor (suggested 6 or below, SF = 7 takes a long time)                                                                                                                                                                           |
-| # measurements | Number of measurements in one experiments (push the "Send" button once)                                                                                                                                                                  |
-| Code rate      | Error correction code (None: no correction code; 4/8 add 4 bits for every 4 data bits; 6/8; add 2 bits for every 4 bits)                                                                                                                 |
-| Tx protocol    | Different schemes Proposed: chirp-based transmission; OFDMwiadapt: OFDM with frequency adaptation; OFDMwoadapt: OFDM without frequency adaptation; Noise: just use one phone to measure the environment noise; Chirp: send a 500ms chirp |
+**AquaScope** is the first underwater communication system that enables image transmission on commodity mobile devices which leverages the generative image codecs. 
+
+---
+
+## 🚧 Project Status
+
+We are actively improving this repository.
+
+### ✅ Done
+
+- [x] Released andriod code
+- [x] Released checkpoints
+
+### 🔜 Upcoming
+
+- [ ] Release offline processing code (matlab)
+- [ ] Release fine-tuning codes and instructions
+- [ ] Update usage instructions 
+- [ ] Refactor and clean up the repository
+
+
+---
+
+## 🙏 Acknowledgments
+
+This project builds on top of [AquaApp](https://github.com/uw-x/watercomms).
+
+---
+
+## 📜 License
+
+This project is released under the [MIT License](LICENSE).
+
+---
+
+## 🔗 Citation
+
+If you use our work, please cite:
+
+```bibtex
+@misc{tian2025aquascopereliableunderwaterimage,
+  title         = {AquaScope: Reliable Underwater Image Transmission on Mobile Devices},
+  author        = {Beitong Tian and Lingzhi Zhao and Bo Chen and Mingyuan Wu and Haozhen Zheng and Deepak Vasisht and Francis Y. Yan and Klara Nahrstedt},
+  year          = {2025},
+  eprint        = {2502.10891},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.NI},
+  url           = {https://arxiv.org/abs/2502.10891},
+}
+
+
+
+
+
