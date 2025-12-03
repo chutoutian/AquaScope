@@ -35,7 +35,7 @@ We are actively improving this repository.
 
 The project was originally built with Android Studio Arctic Fox 2022.3.1 Patch 1, and has been tested on Samsung Galaxy S21 phones.
 
-In Android Studio, under device manger, copy the all checkpoint files to the path /data/data/com.example.aquascope/files.
+Clone the repo under branch **`dev_new_model`**  In Android Studio, under device manger, copy the all checkpoint files to the path /data/data/com.example.aquascope/files.
 
 
 
