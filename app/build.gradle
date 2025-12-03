@@ -7,7 +7,7 @@ android {
     compileSdkVersion 31
     defaultConfig {
         multiDexEnabled true
-        applicationId "com.example.root.ffttest2"
+        applicationId 'com.example.aquascope'
         minSdkVersion 24
         targetSdkVersion 31
         buildToolsVersion "29.0.0"
