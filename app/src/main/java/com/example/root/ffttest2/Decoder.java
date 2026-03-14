@@ -143,7 +143,7 @@ public class Decoder {
          String finalMessage = message;
          ***/
 
-        String finalMessage = "Embedding received #" + m_attempt;
+        String finalMessage = "Image received #" + m_attempt;
         Utils.log("rx_bits_before_coding=>"+coded);
         Utils.log("rx_bits_after_coding =>"+ uncoded);
         av.runOnUiThread(new Runnable() {
@@ -153,7 +153,7 @@ public class Decoder {
                 //Utils.sendNotification(av, "Notification",finalMessage, R.drawable.warning2);
                 Constants.msgview.setText(finalMessage);
                 //Constants.imgview.setImageBitmap(image);
-                Utils.sendNotification(av, "Notification","Embedding received", R.drawable.warning2);
+                Utils.sendNotification(av, "Notification","Image received", R.drawable.warning2);
 
             }
         });
@@ -1334,7 +1334,7 @@ public class Decoder {
                     Utils.genName(Constants.SignalType.Rx_Mask, m_attempt) + ".txt");
         }
 
-        String finalMessage = "Embedding received #" + m_attempt;
+        String finalMessage = "Image received #" + m_attempt;
         av.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1342,7 +1342,7 @@ public class Decoder {
                 //Utils.sendNotification(av, "Notification",finalMessage, R.drawable.warning2);
                 Constants.msgview.setText(finalMessage);
                 //Constants.imgview.setImageBitmap(image);
-                Utils.sendNotification(av, "Notification","Embedding received", R.drawable.warning2);
+                Utils.sendNotification(av, "Notification","Image received", R.drawable.warning2);
 
             }
         });

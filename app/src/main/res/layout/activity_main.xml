@@ -21,6 +21,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/imageView_fish"
             app:layout_constraintTop_toBottomOf="@+id/imageView_fish2" />
@@ -32,6 +33,7 @@
             android:layout_alignParentBottom="true"
             android:layout_marginStart="8dp"
             android:layout_marginTop="24dp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/graphProd" />
@@ -1204,6 +1206,7 @@
             android:layout_height="17dp"
             android:layout_marginStart="8dp"
             android:layout_marginBottom="24dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@+id/FishExistTitle"
             app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
 
@@ -1213,6 +1216,7 @@
             android:layout_height="50dp"
             android:layout_marginTop="12dp"
             android:text="Fish?"
+            android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/fishCountTitle" />
 
@@ -1222,6 +1226,7 @@
             android:layout_height="17dp"
             android:layout_marginStart="12dp"
             android:layout_marginBottom="12dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@+id/inferenceTimeTitle"
             app:layout_constraintStart_toEndOf="@+id/inferenceTimeTitle" />
 
@@ -1231,6 +1236,7 @@
             android:layout_height="50dp"
             android:layout_marginTop="24dp"
             android:text="Inference Time:"
+            android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@+id/graphProd4"
             tools:layout_editor_absoluteX="0dp" />
 
@@ -1293,6 +1299,7 @@
             android:layout_width="180dp"
             android:layout_height="180dp"
             android:layout_marginTop="24dp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/graphProd4" />
 
@@ -1359,6 +1366,7 @@
             android:layout_height="17dp"
             android:layout_marginStart="8dp"
             android:layout_marginBottom="20dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@+id/fishCountTitle"
             app:layout_constraintStart_toStartOf="@+id/inferenceTime" />
 
@@ -1368,6 +1376,7 @@
             android:layout_height="50dp"
             android:layout_marginTop="16dp"
             android:text="Fish \nCount:"
+            android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@+id/inferenceTimeTitle"
             tools:layout_editor_absoluteX="0dp" />
 
