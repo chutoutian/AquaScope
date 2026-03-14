@@ -22,23 +22,60 @@ We are actively improving this repository.
 
 - [x] Released andriod code
 - [x] Released checkpoints
+- [x] Update usage instructions
+- [x] Provide scripts to reproduce the experimental results in the paper
 
 ### 🔜 Upcoming
 
 - [ ] Release offline processing code (matlab)
 - [ ] Release fine-tuning codes and instructions
-- [ ] Update usage instructions 
-- [ ] Refactor and clean up the repository
 
 
-## ⚙️ Quick Start on Andriod Phone
+## ⚙️ Quick Start on Android Phone
 
 The project was originally built with Android Studio Arctic Fox 2022.3.1 Patch 1, and has been tested on Samsung Galaxy S21 phones.
 
-Clone the repo under branch **`dev_new_model`**  In Android Studio, under device manger, copy the all checkpoint files to the path /data/data/com.example.aquascope/files.
+
+### Step 1: Clone the repository
+
+Clone the repository and switch to the `dev_new_model` branch.
+
+```bash
+git clone https://github.com/chutoutian/AquaScope.git
+cd AquaScope
+git checkout dev_new_model
+```
+
+### Step 2: Build and run the app
+
+1. Open the project in **Android Studio**.
+2. Connect your Android phone and make sure **USB debugging** is enabled.
+3. In **Device Manager**, copy all [checkpoint](https://drive.google.com/file/d/1zg30JxvskZU5_nYn1bSiV0O40uyTQa9b/view?usp=sharing) files to `/data/data/com.example.aquascope/files`.
+4. Build and run the app on the phone.
+
+### Step 3 (Running Example)
 
 
+Set **ExpMode** to **testExp**.
 
+#### Sender
+1. Choose one device as the sender.
+2. Select **Encode Image**.
+3. Click **Run Model**.
+4. Click **Send**. (You should hear the transmission sound)
+
+#### Receiver
+1. Choose the other device as the receiver.
+2. Select **Decode Image**.
+3. Wait for the image to be received and displayed.
+
+### Step 3 (Scaled Experiment)
+
+
+1. Set **ExpMode** to **end2endTest**.
+2. Click **Ready**.
+3. Configure the corresponding parameters in the pop-up UI.
+4. Click **Finish** after the setup is complete.
 
 ---
 
