@@ -23,7 +23,7 @@ We are actively improving this repository.
 - [x] Released andriod code
 - [x] Released checkpoints
 - [x] Update usage instructions
-- [x] Provide scripts to reproduce the experimental results in the paper
+- [x] Provide [scripts and intermediate artifacts](https://drive.google.com/file/d/1axzOUDHiYk7i9FqVtyatEYHc2TYmgpe5/view?usp=sharing) to reproduce the experimental results in the paper
 
 ### 🔜 Upcoming
 
