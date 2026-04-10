@@ -23,7 +23,8 @@ We are actively improving this repository.
 - [x] Released andriod code
 - [x] Released checkpoints
 - [x] Update usage instructions
-- [x] Provide [scripts and intermediate artifacts](https://drive.google.com/file/d/1axzOUDHiYk7i9FqVtyatEYHc2TYmgpe5/view?usp=sharing) to reproduce the experimental results in the paper
+- [x] Provide [scripts and intermediate artifacts](https://drive.google.com/file/d/1ReZj-Afcy2YXzlZkiSbVr95FOwAh-oYQ/view?usp=sharing) to reproduce the experimental results in the paper
+
 
 ### 🔜 Upcoming
 
@@ -33,12 +34,11 @@ We are actively improving this repository.
 
 ## ⚙️ Quick Start on Android Phone
 
-The project was originally built with Android Studio Arctic Fox 2022.3.1 Patch 1, and has been tested on Samsung Galaxy S21 phones.
+> **Requirements:** Android Studio Arctic Fox 2022.3.1 Patch 1 · Tested on Samsung Galaxy S21
 
+---
 
-### Step 1: Clone the repository
-
-Clone the repository and switch to the `dev_new_model` branch.
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/chutoutian/AquaScope.git
@@ -46,38 +46,45 @@ cd AquaScope
 git checkout dev_new_model
 ```
 
-### Step 2: Build and run the app
+---
 
-1. Open the project in **Android Studio**.
-2. Connect your Android phone and make sure **USB debugging** is enabled.
-3. In **Device Manager**, copy all [checkpoint](https://drive.google.com/file/d/1zg30JxvskZU5_nYn1bSiV0O40uyTQa9b/view?usp=sharing) files to `/data/data/com.example.aquascope/files`.
+### Step 2: Build and Run the App
+
+1. Open the project (AquaScope) in **Android Studio**.
+2. Connect your Android phone with **USB debugging** enabled.
+3. Copy all [checkpoint](https://drive.google.com/file/d/1zg30JxvskZU5_nYn1bSiV0O40uyTQa9b/view?usp=sharing) files to `/data/data/com.example.aquascope/files` via **Device Manager**.
 4. Build and run the app on the phone.
 
-### Step 3 (Running Example)
+---
 
+### Step 3: Run an Experiment
 
-Set **ExpMode** to **testExp**.
+Choose one of the two modes below.
 
-#### Sender
-1. Choose one device as the sender.
-2. Select **Encode Image**.
-3. Click **Run Model**.
-4. Click **Send**. (You should hear the transmission sound)
+#### 🔹 Option A — Running Example (`testExp`)
 
-#### Receiver
-1. Choose the other device as the receiver.
-2. Select **Decode Image**.
-3. Wait for the image to be received and displayed.
+Set **ExpMode** to `testExp`, then follow the steps for each role:
 
-### Step 3 (Scaled Experiment)
+| Role | Steps |
+|------|-------|
+| **Sender** | 1. Select **Encode Image** → 2. Click **Run Model** → 3. Click **Send** *(listen for transmission sound)* |
+| **Receiver** | 1. Select **Decode Image** → 2. Wait for the image to be received and displayed |
 
+#### 🔹 Option B — Scaled Experiment (`end2endTest`)
 
-1. Set **ExpMode** to **end2endTest**.
-2. Click **Ready**.
-3. Configure the corresponding parameters in the pop-up UI.
-4. Click **Finish** after the setup is complete.
+Set **ExpMode** to `end2endTest`, then:
+
+1. Click **Ready**.
+2. Configure the parameters in the pop-up UI.
+3. Click **Finish** after setup is complete.
 
 ---
+
+## 📊 Reproducing Paper Results
+
+1. Download the scripts and dataset (collected from the real world) from [Google Drive](https://drive.google.com/file/d/1zg30JxvskZU5_nYn1bSiV0O40uyTQa9b/view?usp=sharing).
+2. Navigate to each folder and run the corresponding script to reproduce the results
+
 
 ## 🙏 Acknowledgments
 
