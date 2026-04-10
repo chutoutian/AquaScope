@@ -8,9 +8,18 @@
 
 ---
 
+
 ## 🧭 Overview
 
 **AquaScope** is the first underwater communication system that enables image transmission on commodity mobile devices which leverages the generative image codecs. 
+
+---
+
+> [!IMPORTANT]
+> For the latest updates and features, switch to the [`dev_new_model`](https://github.com/chutoutian/AquaScope/tree/dev_new_model) branch:
+> ```bash
+> git checkout dev_new_model
+> ```
 
 ---
 
